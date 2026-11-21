@@ -119,7 +119,11 @@ fn succeed(format: Format, reply: Reply) -> ExitCode {
     let stdout = &mut std::io::stdout().lock();
     match (reply.body, format) {
         (Body::Raw(text), _) => print(stdout, &text),
-        (Body::Result { json, .. }, Format::Json) => print(stdout, &format!("{json}\n")),
+        // No JSON output holds a raw control character (section 15.1).
+        (Body::Result { json, .. }, Format::Json) => print(
+            stdout,
+            &format!("{}\n", hibi::engine::escape_controls(&json)),
+        ),
         (Body::Result { human, .. }, Format::Human) => {
             let stderr = &mut std::io::stderr().lock();
             for w in &reply.warnings {
@@ -140,7 +144,10 @@ fn fail(format: Format, command: &str, errors: Vec<Error>) -> ExitCode {
                     r#"{{"ok":false,"command":"{command}","errors":[{{"code":"internal","message":"the error does not serialize","remediation":null}}]}}"#
                 )
             });
-            print(&mut std::io::stdout().lock(), &format!("{json}\n"));
+            print(
+                &mut std::io::stdout().lock(),
+                &format!("{}\n", hibi::engine::escape_controls(&json)),
+            );
         }
         Format::Human => {
             let stderr = &mut std::io::stderr().lock();

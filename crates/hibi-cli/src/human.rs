@@ -112,8 +112,11 @@ fn role_name(side: &Side) -> String {
     }
 }
 
+/// An anchor as JSON for a line a caller may paste back. Every control
+/// character is written as a JSON escape, so that [`plain`] removes
+/// nothing from it and the line selects the same unit when it is pasted.
 fn anchor_json(anchor: &Anchor) -> String {
-    serde_json::to_string(anchor).unwrap_or_default()
+    hibi::engine::escape_controls(&serde_json::to_string(anchor).unwrap_or_default())
 }
 
 // ---------------------------------------------------------------------------

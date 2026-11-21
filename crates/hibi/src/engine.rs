@@ -63,7 +63,7 @@ pub use resolve::{
 pub use types::{
     Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Envelope,
     ErrorEnvelope, NEXT_NOTE, Reason, Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, Warning,
-    WarningCode, excerpt, sh_quote, side_remediation, unavailable_remediation,
+    WarningCode, escape_controls, excerpt, sh_quote, side_remediation, unavailable_remediation,
 };
 pub use write::{
     ClaimOutput, ClaimResult, MarkOutput, MarkResult, ReanchorOutput, RetireOutput, RetireResult,

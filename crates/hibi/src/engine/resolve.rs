@@ -333,17 +333,23 @@ fn candidates_of(
             None
         }
     });
-    let compact = loc.is_file_or_repo() && !loc.as_str().contains('#') && {
-        // After the scheme, `::` would end the locator in compact syntax.
-        let path = loc.as_str().split_once(':').map_or("", |(_, rest)| rest);
-        !path.replacen("//", "", 1).contains("::")
-    };
+    // Compact syntax has no escapes: a locator or symbol with a control
+    // character is given as JSON.
+    let compact = loc.is_file_or_repo()
+        && !loc.as_str().contains('#')
+        && !loc.as_str().chars().any(char::is_control)
+        && {
+            // After the scheme, `::` would end the locator in compact syntax.
+            let path = loc.as_str().split_once(':').map_or("", |(_, rest)| rest);
+            !path.replacen("//", "", 1).contains("::")
+        };
     let anchors = units
         .iter()
         .take(MAX_CANDIDATES)
         .map(|u| {
             let unique = u.sel.symbol.as_deref().filter(|symbol| {
                 compact
+                    && !symbol.chars().any(char::is_control)
                     && !symbol.contains('#')
                     && !symbol.contains("::")
                     && all.as_ref().is_some_and(|all| {
@@ -355,8 +361,10 @@ fn candidates_of(
             });
             match unique {
                 Some(symbol) => format!("{loc}#{symbol}"),
-                None => serde_json::to_string(&Anchor::new(loc.clone(), u.sel.clone()))
-                    .unwrap_or_default(),
+                None => super::types::escape_controls(
+                    &serde_json::to_string(&Anchor::new(loc.clone(), u.sel.clone()))
+                        .unwrap_or_default(),
+                ),
             }
         })
         .collect();

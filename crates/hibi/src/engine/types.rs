@@ -154,6 +154,25 @@ pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
     })
 }
 
+/// `json`, which is JSON text, with every control character that JSON may
+/// hold raw written as `\u00XX`: U+007F and U+0080 to U+009F. (A JSON
+/// writer already escapes U+0000 to U+001F.) Such a character can stand
+/// only inside a string of the text, so the result is the same JSON value.
+/// It is used for every JSON output, so that no output holds a raw control
+/// character, and for an anchor printed as JSON, which then survives a
+/// terminal and can be pasted back as it is.
+pub fn escape_controls(json: &str) -> String {
+    let mut out = String::with_capacity(json.len());
+    for c in json.chars() {
+        if matches!(c, '\u{7f}'..='\u{9f}') {
+            out.push_str(&format!("\\u{:04x}", c as u32));
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
 /// The remediation of a side that is `unavailable` with `reason`, given
 /// what the provider or the registry said. For `resource_unavailable` it
 /// is that message, cut to [`DETAIL_CHARS`], and what to do after it; for

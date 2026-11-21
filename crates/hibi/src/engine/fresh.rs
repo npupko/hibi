@@ -152,8 +152,10 @@ pub fn corroborate(claim: &Claim, marks: &[&Mark], resolved: &mut [Resolved]) {
         if marked {
             unit.context_changed = false;
         } else if anchor.sel.symbol.is_none() {
-            let select = serde_json::to_string(&Anchor::new(anchor.loc.clone(), unit.sel.clone()))
-                .unwrap_or_default();
+            let select = super::types::escape_controls(
+                &serde_json::to_string(&Anchor::new(anchor.loc.clone(), unit.sel.clone()))
+                    .unwrap_or_default(),
+            );
             *r = Resolved::Uncorroborated(Candidates {
                 units: vec![(**unit).clone()],
                 anchors: vec![select],

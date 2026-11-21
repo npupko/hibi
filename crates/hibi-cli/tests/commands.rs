@@ -2471,6 +2471,109 @@ fn human_output_has_no_control_characters_from_file_text() {
     assert!(!raw.contains('\u{1b}'));
 }
 
+/// Section 15.1: no JSON output holds a raw control character. DEL and the
+/// C1 controls, which a JSON writer may leave raw, are written as escapes,
+/// in results and in errors, and the value read back is unchanged.
+#[test]
+fn json_output_escapes_del_and_c1_controls() {
+    let repo = seeded();
+    let sentence = "The \u{7f}cap\u{85} is \u{9b}five.";
+    repo.write("docs/c1.md", &format!("# C1\n\n{sentence}\n"));
+    let out = repo.run(&[
+        "--now",
+        NOW,
+        "claim",
+        "Cap",
+        "--subject",
+        "file:docs/c1.md::is",
+    ]);
+    assert_eq!(out.status, 0, "{out:?}");
+    for (raw, escaped) in [
+        ('\u{7f}', "\\u007f"),
+        ('\u{85}', "\\u0085"),
+        ('\u{9b}', "\\u009b"),
+    ] {
+        assert!(!out.stdout.contains(raw), "{:?}", out.stdout);
+        assert!(out.stdout.contains(escaped), "{:?}", out.stdout);
+    }
+    let v = out.json();
+    // (U+0085 is white space, so the label holds a space in its place.)
+    assert_eq!(
+        v["claims"][0]["claim"]["sides"][0]["unit"]["label"],
+        sentence.replace('\u{85}', "")
+    );
+    // An error message that quotes the text.
+    let failed = repo.run(&[
+        "--now",
+        NOW,
+        "claim",
+        "Cap",
+        "--subject",
+        "file:docs/c1.md::The \u{7f}cap\u{85} is \u{9b}six.",
+    ]);
+    assert_eq!(failed.status, 1);
+    assert!(
+        !failed.stdout.chars().any(|c| c.is_control() && c != '\n'),
+        "{:?}",
+        failed.stdout
+    );
+    assert!(failed.stdout.contains("\\u007fcap"), "{:?}", failed.stdout);
+}
+
+/// The `anchor:` line of the text output is JSON with every control
+/// character escaped: nothing is stripped from it, and pasted back it
+/// selects the unit it names.
+#[test]
+fn an_anchor_line_with_control_characters_can_be_pasted_back() {
+    let repo = seeded();
+    let first = "The \u{7f}cap\u{9b} is 5.";
+    let text = format!("# Caps\n\n{first}\n\nAnother cap\u{7f} is 7.\n");
+    repo.write("docs/caps.md", &text);
+    // The quote stands in two sentences: the error lists an anchor each.
+    let failed = repo.human(&[
+        "--now",
+        NOW,
+        "claim",
+        "Cap",
+        "--subject",
+        "file:docs/caps.md::cap",
+    ]);
+    assert_eq!(failed.status, 1, "{failed:?}");
+    assert!(
+        failed.stderr.contains("side_ambiguous"),
+        "{}",
+        failed.stderr
+    );
+    assert!(
+        !failed.stderr.chars().any(|c| c.is_control() && c != '\n'),
+        "{:?}",
+        failed.stderr
+    );
+    let anchor = json_anchor_in(&failed.stderr);
+    assert!(anchor.contains("\\u007f"), "{anchor}");
+    let v = j(&repo, &["claim", "Cap", "--subject", &anchor]);
+    let side = &v["claims"][0]["claim"]["sides"][0];
+    assert_eq!(side["state"], "same");
+    assert_eq!(side["unit"]["label"], first);
+
+    // The same for a candidate under a stored side.
+    let id = s(&v["claims"][0]["id"]).to_owned();
+    repo.write("docs/caps.md", &text.replace("is 5.", "is 6."));
+    let human = repo.human(&["--now", NOW, "status", &id]);
+    let line = human
+        .stdout
+        .lines()
+        .find_map(|l| l.trim_start().strip_prefix("anchor: "))
+        .unwrap_or_else(|| panic!("{}", human.stdout));
+    assert!(line.contains("\\u007fcap\\u009b"), "{line}");
+    let v = j(&repo, &["reanchor", &id, "--subject", line]);
+    assert_eq!(v["claim"]["state"], "fresh");
+    assert_eq!(
+        v["claim"]["sides"][0]["unit"]["label"],
+        "The \u{7f}cap\u{9b} is 6."
+    );
+}
+
 /// Section 9.2: a quote that is found exactly in another sentence does not
 /// make that sentence the claim's unit. The side is missing with the
 /// sentence as a candidate, `mark` is refused, the caller anchors the
