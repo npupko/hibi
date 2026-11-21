@@ -121,8 +121,9 @@ $ hibi status
 4 claims: 1 fresh, 1 stale, 1 expired, 1 retired
 
 c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T06:36:09Z (m1-cz9vm7gwd2zh00fbxyfq)
+  marked 2026-11-21T06:50:04Z (m1-eddvp5ecpntrd5f3q2pf)
   subject  file:docs/retry.md  missing (not_exact)
+    the anchor matches no unit exactly
     stored: quote "The delay between attempts doubles each time, starting at 200 ms."
     1 candidate; each is a guess, read it before you anchor to it:
     - sentence "The delay between attempts doubles every time, starting at …", line 5
@@ -151,7 +152,7 @@ subject to it with a quote of your own:
 ```text output
 $ hibi reanchor c1-6exa --subject 'file:docs/retry.md::doubles every time'
 c1-6exasfv5q6wh17yqtfmn is retired and replaced by the new claim c1-mdm107xhmdkbrfbr7awv
-  mark m1-130djd6apswwh4shnv4c, retirement r1-qbp40g4z3wey1ckv9n9w
+  mark m1-a52vh20fpy6e9exadaze, retirement r1-e3f420hb3racfmp93078
   was stale: subject file:docs/retry.md missing (not_exact); now marked: make sure you re-checked it
   subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
     {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"up after 3 attempts.\nThe delay between attempts ","suffix":", starting at 200 ms.\n\n## Timeouts\n\nEach attempt","pos":117}}
@@ -183,7 +184,7 @@ prints one JSON object. The fields an agent reads from `status`:
 | `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
 | `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `unit`, `fp`, `markedFp`, `remediation` and `detail`; `candidates` and `candidatesTotal` for a side that is missing (`not_exact`) or ambiguous; `text` with `--detail` |
 | `claims[].sides[].candidates[]` | A unit the anchor could mean: `key`, `kind`, `label`, `line`, `endLine`, `text` (at most 240 characters), `anchor` (a string that selects that unit alone) and `sameFingerprint`. At most 20 are listed; `candidatesTotal` counts all of them. |
-| `claims[].sides[].detail` | For an unavailable side: the message that says why, from the provider or from hibi. For a changed side whose symbol still names the declaration but whose stored quote is gone from it: "the stored quote is no longer in this unit". Otherwise `null` |
+| `claims[].sides[].detail` | For an unavailable side: the message that says why, from the provider or from hibi. For a `not_exact` side: its cause, "the anchor matches no unit exactly" (found by similarity) or "the quoted text was found, but not where it was stored, and the unit there is not the one that was marked". For a changed side whose quoted text is gone from its declaration: "the stored quote is no longer in this unit". Otherwise `null` |
 | `claims[].sides[].remediation` | For a side that cannot be evaluated: the limit or the cause and what you can do, otherwise `null` |
 | `claims[].next` | The command to run after a successful re-check, or `null` |
 | `nextNote` | The reminders: re-check a statement before running its `next`; when it no longer holds, fix the text or the code, or retire the claim; and a candidate is a guess to read before you anchor to it |

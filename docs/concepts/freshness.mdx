@@ -43,10 +43,10 @@ Consequences:
 | State | Reason | Meaning |
 |---|---|---|
 | `same` | | The unit's fingerprint equals the one in the reference mark |
-| `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs. For a symbol whose stored quote is gone from the declaration, `detail` says "the stored quote is no longer in this unit" |
+| `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs. When a symbol's quoted text is gone from the declaration entirely, `detail` says "the stored quote is no longer in this unit" |
 | `changed` | `no_mark` | The claim has no mark |
 | `missing` | `selector_not_found` | The resource exists, but no unit matches the anchor |
-| `missing` | `not_exact` | No unit matches the anchor exactly, or the exact match is not corroborated; `candidates` lists the units it could mean |
+| `missing` | `not_exact` | No unit matches the anchor exactly, or the quote was found exactly but nothing confirms the unit is the marked one; `detail` says which. `candidates` lists the units it could mean |
 | `missing` | `resource_not_found` | The file or resource does not exist |
 | `ambiguous` | `several_units` | The anchor matches several units; `candidates` lists them |
 | `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example a whole code file that no longer parses |
@@ -80,8 +80,9 @@ stays `missing` until you re-anchor it.
 
 An unavailable side also carries `detail`, the message that says why, from
 the provider or from hibi, and `remediation`, what the limit or the cause is
-and what you can do. A changed side whose stored quote is gone from its
-declaration carries a `detail` as well. The text output prints both under
+and what you can do. A `missing` side with reason `not_exact`, and a changed
+side whose quoted text is gone from its declaration, carry a `detail` as
+well. The text output prints both under
 the side. For a scheme whose declaration was
 removed:
 
@@ -90,7 +91,7 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T06:40:17Z (m1-42yc7z9vw886wac1hg00)
+  marked 2026-11-21T06:50:07Z (m1-tx8vtsd1sa7sgcpkbk9x)
   subject  ref:notes  unavailable (scheme_not_declared)
     the scheme ref is not declared in .hibi/hibi.toml
     Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.

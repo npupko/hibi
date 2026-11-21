@@ -128,7 +128,7 @@ hibi claim "The client gives up after 5 attempts." \
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw  created  m1-65gfwtpr5zm3tye21c1z  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-dbv50xcvkr3wg5jnbtfw  created  m1-2rtrj0b7e1yasz41tm0s  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 Now someone changes `MAX_ATTEMPTS` to 3. In the next session the agent asks
@@ -142,16 +142,14 @@ hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-dbv50xcvkr3wg5jnbtfw  stale  The client gives up after 5 attempts.
-  marked 2026-11-21T06:36:08Z (m1-65gfwtpr5zm3tye21c1z)
+  marked 2026-11-21T06:50:02Z (m1-2rtrj0b7e1yasz41tm0s)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
-    the stored quote is no longer in this unit
   next: hibi mark c1-dbv50xcvkr3wg5jnbtfw
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
-The symbol still finds `MAX_ATTEMPTS`, but the line stored with it is gone,
-and the line under the side says so. `next` assumes the statement still
+`next` assumes the statement still
 holds. It does not: the code says 3. The
 agent fixes the sentence to "It gives up after 3 attempts." and replaces the
 claim with one that states the new fact. An id can be shortened to a unique
@@ -165,7 +163,7 @@ hibi reanchor c1-dbv5 \
 
 ```text output
 c1-dbv50xcvkr3wg5jnbtfw is retired and replaced by the new claim c1-24t09j90dg85esm4e3e9
-  mark m1-ez6c9tw286fmtpr5n7nx, retirement r1-46e7myf18vtvt9ebb268
+  mark m1-wf5ewq7ww6kpzqc9mg3r, retirement r1-80fwz45fsm0kprh27eys
   was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
   subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
     {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}

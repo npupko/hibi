@@ -97,9 +97,9 @@ error: side_ambiguous: the subject (file:docs/cache.md): the anchor matches 2 un
 **A stored anchor** is resolved on every later run:
 
 1. A `symbol` that names exactly one declaration selects it. The quote then
-   only decides which text the stored selector keeps. When the stored quote
-   is no longer in the declaration, the side is `changed`, and its detail
-   says "the stored quote is no longer in this unit".
+   only decides which text the stored selector keeps. When the quoted text
+   is gone from the declaration entirely, the side is `changed`, and its
+   detail says "the stored quote is no longer in this unit".
 2. A `symbol` that names several declarations, such as Python `@overload`
    stubs or a function defined twice, is compared with each of them. The
    quote and the context stored around it are looked for in each
@@ -136,9 +136,16 @@ these holds:
 
 Otherwise, for an anchor without a symbol, the side is `missing` with reason
 `not_exact`, and the unit is listed as a candidate. For an anchor whose
-symbol names one declaration, the symbol identifies the unit: the side is
-`changed`, and its detail says "the stored quote is no longer in this
-unit".
+symbol names one declaration, the symbol identifies the unit, and the side
+is `changed`.
+
+A `not_exact` side says which of its two causes it has, on the line under
+the side, in `detail` and at the start of the `side_missing` error:
+
+| Message | Cause |
+|---|---|
+| "the anchor matches no unit exactly" | The quote or symbol was not found; the candidates were found by similarity |
+| "the quoted text was found, but not where it was stored, and the unit there is not the one that was marked" | The quote was found exactly, but nothing confirms that the unit is the one that was checked |
 
 For a sentence, this means:
 
@@ -161,8 +168,9 @@ $ hibi status c1-zknq
 2 claims: 1 fresh, 1 stale, 0 expired, 0 retired
 
 c1-zknqk32fkewpten5cf77  stale  Each attempt times out after 30 seconds.
-  marked 2026-11-21T06:37:34Z (m1-pec9pt34s77pq4j6hng5)
+  marked 2026-11-21T06:50:33Z (m1-54x3j2njebgmh0xsz46d)
   subject  file:docs/timeouts.md  missing (not_exact)
+    the quoted text was found, but not where it was stored, and the unit there is not the one that was marked
     stored: quote "30 s"
     1 candidate; each is a guess, read it before you anchor to it:
     - sentence "The client waits 30 s between attempts.", line 4
@@ -175,6 +183,24 @@ Re-check each statement before running its next command. If it no longer holds, 
 
 `mark` refuses the claim until you re-anchor it or retire it.
 
+For code, a claim on `src/wait.py#wait::time.sleep(BACKOFF_SECONDS * 2 ** n)`
+stays tied to `wait` through its symbol. Editing the quoted line, for
+example `2` to `3`, makes the side `changed`. Removing the line makes it
+`changed` too, and the side says that the quoted text is gone:
+
+```text output
+$ hibi status c1-1ykm
+5 claims: 2 fresh, 3 stale, 0 expired, 0 retired
+
+c1-1ykmsy7by40m2awtzhtb  stale  The client waits between attempts.
+  marked 2026-11-21T06:50:33Z (m1-3akat59fmxcym2wxdpqs)
+  evidence 1  file:src/wait.py  changed (fingerprint_differs)  function "wait", lines 3-4
+    the stored quote is no longer in this unit
+  next: hibi mark c1-1ykmsy7by40m2awtzhtb
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
 ### Duplicated declarations
 
 A claim on `def limit()` in `src/queue.py` stays fresh after a second
@@ -186,7 +212,7 @@ $ hibi status --detail c1-5eaf
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-5eaf6x2yrjb6xrkx2yqe  fresh  The queue holds 100 jobs.
-  marked 2026-11-21T06:36:15Z (m1-hfdcczejz8sg4cz4we0j)
+  marked 2026-11-21T06:50:15Z (m1-r0hevpmmrmxt9jdt7hdp)
   subject  file:README.md  same  sentence "The limit is applied per worker.", line 5
     | The limit is applied per worker.
   evidence 1  file:src/queue.py  same  function "limit", lines 4-5
@@ -204,8 +230,9 @@ $ hibi status c1-hq4t
 3 claims: 2 fresh, 1 stale, 0 expired, 0 retired
 
 c1-hq4tecap6tc6bz0zbppm  stale  Parsing an int gives an int.
-  marked 2026-11-21T06:36:15Z (m1-59sg5sd485b8erx91fsv)
+  marked 2026-11-21T06:50:15Z (m1-t48stzv2y3mksx4dstv3)
   evidence 1  file:src/parse.py  missing (not_exact)
+    the anchor matches no unit exactly
     stored: symbol parse, quote "@overload"
     2 candidates; each is a guess, read it before you anchor to it:
     - function "parse", line 5
@@ -335,7 +362,7 @@ and can be anchored:
 
 ```text output
 $ hibi claim "Jobs run at most 3 times." --subject "file:src/jobs.py#Job::Jobs run at most 3 times" --evidence "file:src/jobs.py#Job.retries"
-c1-qvbjt2ph1pgeyxqzpj2w  created  m1-vbyrhj5akk1281xcgb1r  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
+c1-qvbjt2ph1pgeyxqzpj2w  created  m1-w8583058btss48bzm8dw  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
 ```
 
 ## Renames
@@ -350,8 +377,9 @@ $ hibi status
 3 claims: 1 fresh, 2 stale, 0 expired, 0 retired
 
 c1-3mz8p0vyhcqppgjbvtyh  stale  limit returns 100.
-  marked 2026-11-21T06:36:14Z (m1-rpmmgq6pnapzqsg73bzh)
+  marked 2026-11-21T06:50:13Z (m1-3c5jfvtqfy5p1m9psb7z)
   evidence 1  file:src/jobs.py  missing (not_exact)
+    the anchor matches no unit exactly
     stored: symbol limit, quote "def limit():"
     1 candidate; each is a guess, read it before you anchor to it:
     - function "queue_limit", line 7
@@ -360,8 +388,9 @@ c1-3mz8p0vyhcqppgjbvtyh  stale  limit returns 100.
   next: hibi reanchor c1-3mz8p0vyhcqppgjbvtyh --evidence 1=<anchor>
 
 c1-wza47tv2t7g9czrk16x4  stale  The queue holds 100 jobs.
-  marked 2026-11-21T06:36:14Z (m1-2ck6ka3z3bbdsbnmmrts)
+  marked 2026-11-21T06:50:12Z (m1-jn4xcw9f713gfk3ps1e6)
   evidence 1  file:src/jobs.py  missing (not_exact)
+    the anchor matches no unit exactly
     stored: symbol limit, quote "def limit():"
     1 candidate; each is a guess, read it before you anchor to it:
     - function "queue_limit", line 7
@@ -378,7 +407,7 @@ holds, anchor to it:
 ```text output
 $ hibi reanchor c1-3mz8 --statement 'queue_limit returns 100.' --evidence 1=file:src/jobs.py#queue_limit
 c1-3mz8p0vyhcqppgjbvtyh is retired and replaced by the new claim c1-gnn5034a914fjregkzbx
-  mark m1-dcyjedcgxva30wn5eyvj, retirement r1-jrf7y32hppzsz40nvrzy
+  mark m1-zfv0a2p24szj6vm9h3c2, retirement r1-9ahyvb9zqmw719f44nnc
   was stale: evidence 1 file:src/jobs.py missing (not_exact); now marked: make sure you re-checked it
   subject file:README.md (sentence "The limit is applied per worker.", line 5)
     {"loc":"file:README.md","sel":{"quote":"The limit is applied per worker.","prefix":"runs at most 3 times.\nThe queue holds 100 jobs.\n","suffix":"\n","pos":62}}
@@ -395,7 +424,7 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-5hktdkt5a4dmvmc90eec  stale  At most 100 jobs are queued.
-  marked 2026-11-21T06:36:10Z (m1-xqbm6dff7w4m9nk4m23a)
+  marked 2026-11-21T06:50:06Z (m1-9dy6zkp5dmqmh0x3wecz)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
     stored: symbol JOB_LIMIT, quote "JOB_LIMIT = 100"
   next: hibi reanchor c1-5hktdkt5a4dmvmc90eec --evidence 1=<anchor>
@@ -414,8 +443,9 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-d0a4yrq9pmv59dc0ggqa  stale  The request timeout is stored in whole seconds.
-  marked 2026-11-21T06:36:10Z (m1-yqqmewgm5yyjfeptee0z)
+  marked 2026-11-21T06:50:06Z (m1-rzthd1vtje44jymae3qc)
   evidence 1  file:src/config.rs  missing (not_exact)
+    the anchor matches no unit exactly
     stored: symbol Config.timeout_secs, quote "pub timeout_secs: u32"
     1 candidate; each is a guess, read it before you anchor to it:
     - field "Settings.timeout_secs", line 5; same content as at the reference mark

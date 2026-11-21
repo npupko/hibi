@@ -50,7 +50,7 @@ $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T06:40:17Z (m1-42yc7z9vw886wac1hg00)
+  marked 2026-11-21T06:50:07Z (m1-tx8vtsd1sa7sgcpkbk9x)
   subject  ref:notes  unavailable (provider_not_registered)
     the user config has no provider command for scheme ref
   next: hibi providers
@@ -91,7 +91,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-regrhf1hta0k48q82xea  created  m1-42yc7z9vw886wac1hg00  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-regrhf1hta0k48q82xea  created  m1-tx8vtsd1sa7sgcpkbk9x  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -111,7 +111,7 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T06:40:17Z (m1-42yc7z9vw886wac1hg00)
+  marked 2026-11-21T06:50:07Z (m1-tx8vtsd1sa7sgcpkbk9x)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
   next: hibi mark c1-regrhf1hta0k48q82xea
 
@@ -247,7 +247,7 @@ key or an unlisted one.
 | `label` | no | One line for people |
 | `range` | no | `{"start", "end", "line", "endLine"}`: UTF-8 byte offsets into the resource text (start inclusive, end exclusive) and 1-based line numbers. Leave it out when the resource is not text. |
 | `approx` | no, default `false` | In `resolve`: the selector did not match exactly, and the unit was found by similarity or fallback. hibi never resolves a side to such a unit: when any unit of an answer has `approx: true`, the side is `missing` with reason `not_exact` and the units are listed as its candidates. |
-| `contextChanged` | no, default `false` | In `resolve`, for a stored selector (one with `prefix`, `suffix` or `pos`): the quote was found exactly, but the text around it no longer equals the stored `prefix` and `suffix`; or, when a symbol names one declaration, the stored quote is no longer in it exactly. hibi then accepts the unit only if its fingerprint is one a mark of the claim recorded. Otherwise the side is `missing` (`not_exact`) with the unit as its candidate, or, for a selector with a `symbol`, `changed` with the detail "the stored quote is no longer in this unit". A provider that does not compare context leaves it `false`. |
+| `contextChanged` | no, default `false` | In `resolve`, for a stored selector (one with `prefix`, `suffix` or `pos`): the quote was found exactly, but the text around it no longer equals the stored `prefix` and `suffix`; or, when a symbol names one declaration, the stored quote is not found in it at all. hibi then accepts the unit only if its fingerprint is one a mark of the claim recorded. Otherwise the side is `missing` (`not_exact`) with the unit as its candidate, or, for a selector with a `symbol`, `changed` with the detail "the stored quote is no longer in this unit". A provider that does not compare context leaves it `false`. |
 | `refuse` | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units` and `quote_in_comment`. |
 
 A fingerprint is `b3:<profile>:<hex>`: `b3` says the digest is BLAKE3,

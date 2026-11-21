@@ -68,7 +68,7 @@ Ask the user before each of these steps; they change the repository.
 
    | Edit | Side | Then |
    |---|---|---|
-   | Code under a `#symbol` changed | `changed`; when the stored quote is gone from it, the side also says "the stored quote is no longer in this unit" | Read the change, re-check, `hibi mark` |
+   | Code under a `#symbol` changed | `changed`; when the quoted text was removed entirely, the side also says "the stored quote is no longer in this unit" | Read the change, re-check, `hibi mark` |
    | A sentence edited at its quoted words or right around them | `missing` (`not_exact`), the edited sentence is a candidate | Read the candidate, re-check, `hibi reanchor` to its anchor |
    | A long sentence edited away from its quote | `changed` | Read the change, re-check, `hibi mark` |
    | A neighbouring sentence edited, or the sentence moved unchanged | nothing: the claim stays fresh | |
@@ -84,7 +84,7 @@ Ask the user before each of these steps; they change the repository.
 
    | `reason` | What to do |
    |---|---|
-   | `not_exact` | The stored anchor is not found exactly, or found only in a unit that nothing confirms is the marked one. `candidates` lists units it could mean, each with an `anchor` that selects it: first units with the marked content (`sameFingerprint: true`), then the provider's. A candidate is a guess: read it. If it is the unit the claim is about, re-check the statement against it, then run `next` with that anchor. The right unit may not be listed; then find it yourself. |
+   | `not_exact` | The line under the side says which: "the anchor matches no unit exactly" (found by similarity), or "the quoted text was found, but not where it was stored, ..." (found exactly in a unit that nothing confirms is the marked one). `candidates` lists units it could mean, each with an `anchor` that selects it: first units with the marked content (`sameFingerprint: true`), then the provider's. A candidate is a guess: read it. If it is the unit the claim is about, re-check the statement against it, then run `next` with that anchor. The right unit may not be listed; then find it yourself. |
    | `selector_not_found` | No candidate: the unit was rewritten, removed, or moved to another file (only the side's own file is searched). Find it with `git diff` or `git log -p`, re-check, and re-anchor. If it is gone, ask the user before you retire. |
    | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
    | `several_units` | The anchor matches several units, listed in `candidates`. Choose the one the statement is about and re-anchor to its `anchor`. |
