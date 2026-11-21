@@ -17,7 +17,7 @@ use crate::store::{ORPHAN_RECORD, StoreWarning, UNKNOWN_REPLACEMENT};
 pub const TEXT_EXCERPT_CHARS: usize = 240;
 
 /// The sentence `status` carries once in `nextNote` (section 15.2).
-pub const NEXT_NOTE: &str = "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.";
+pub const NEXT_NOTE: &str = "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A candidate listed under a side is a guess at where its unit went: read it before you anchor to it.";
 
 /// Schema helper: a field that is always present and may be `null`.
 pub(crate) struct Nullable<T>(std::marker::PhantomData<T>);
@@ -94,7 +94,9 @@ closed_enum!(
         RepoNotFound => "repo_not_found",
         RepoNotAllowed => "repo_not_allowed",
         ProviderError => "provider_error",
+        ResourceUnavailable => "resource_unavailable",
         SelectorNotFound => "selector_not_found",
+        NotExact => "not_exact",
         SeveralUnits => "several_units",
         NoMark => "no_mark",
         FingerprintDiffers => "fingerprint_differs",
@@ -128,8 +130,7 @@ closed_enum!(
 /// for a reason that does not make a side unavailable in a write.
 pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
     Some(match reason {
-        Reason::SchemeNotDeclared
-        | Reason::ProviderNotRegistered
+        Reason::ProviderNotRegistered
         | Reason::ProviderFailed
         | Reason::RepoNotAllowed
         | Reason::RepoNotFound => "hibi providers",
@@ -139,11 +140,30 @@ pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
         Reason::NotText => {
             "The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
         }
+        Reason::SchemeNotDeclared => {
+            "Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim."
+        }
         Reason::ProviderError => {
             "The provider gave an answer hibi cannot use. Run hibi providers --check <scheme> to see what it gets wrong; for a claim that exists, retire it if the resource is gone for good."
         }
         _ => return None,
     })
+}
+
+/// The remediation of a side that is `unavailable` with `reason`, given
+/// what the provider or the registry said. For `resource_unavailable` it
+/// is that message, cut to [`DETAIL_CHARS`], and what to do after it; for
+/// the other reasons it is [`unavailable_remediation`].
+pub fn side_remediation(reason: Reason, message: Option<&str>) -> Option<String> {
+    if reason == Reason::ResourceUnavailable {
+        let said = excerpt(
+            message.unwrap_or("the resource cannot be read now"),
+            DETAIL_CHARS,
+        );
+        let said = said.trim_end_matches(['.', ' ']);
+        return Some(format!("{said}. Run the command again once that is fixed."));
+    }
+    unavailable_remediation(reason).map(str::to_owned)
 }
 
 /// One entry of `warnings` in the JSON envelope (section 15.1).
@@ -255,7 +275,7 @@ pub struct Side {
     pub state: SideState,
     #[schemars(with = "Nullable<Reason>")]
     pub reason: Option<Reason>,
-    pub approx: bool,
+    /// The unit the side resolves to exactly, or `null`.
     #[schemars(with = "Nullable<UnitRef>")]
     pub unit: Option<UnitRef>,
     /// The current fingerprint.
@@ -265,18 +285,57 @@ pub struct Side {
     #[schemars(with = "Nullable<Fingerprint>")]
     pub marked_fp: Option<Fingerprint>,
     /// For a side that cannot be evaluated: what the limit or the cause is
-    /// and what the author can do ([`unavailable_remediation`]). `null` for
-    /// every other side; a side that changed, is missing or is ambiguous
-    /// is answered by the claim's `next`.
+    /// and what the author can do ([`unavailable_remediation`]). For
+    /// `resource_unavailable` it is the provider's own message and what to
+    /// do after it. `null` for every other side; a side that changed, is
+    /// missing or is ambiguous is answered by the claim's `next`.
     #[schemars(with = "Nullable<String>")]
     pub remediation: Option<String>,
-    /// Present only when `state` is `ambiguous`.
+    /// For a side that cannot be evaluated: what the provider or the
+    /// registry said, cut to [`DETAIL_CHARS`] characters. `null` otherwise.
+    #[schemars(with = "Nullable<String>")]
+    pub detail: Option<String>,
+    /// Present when the side is `ambiguous`, or `missing` with reason
+    /// `not_exact`: the units the stored anchor could mean, at most
+    /// [`MAX_CANDIDATES`](super::MAX_CANDIDATES). A candidate is a guess to
+    /// check, never the side's unit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub candidates: Option<Vec<UnitRef>>,
-    /// The current unit text. Present only with `--detail`, and for an
-    /// approximate side in the output of `mark` (cut to 240 characters).
+    pub candidates: Option<Vec<Candidate>>,
+    /// Present with `candidates`: how many there are in all.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub candidates_total: Option<usize>,
+    /// The current unit text. Present only with `--detail`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
+}
+
+/// The provider's or the registry's message on a side is cut to this many
+/// characters.
+pub const DETAIL_CHARS: usize = 500;
+
+/// One unit a side's anchor could mean (section 15.2).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Candidate {
+    pub key: String,
+    pub kind: String,
+    #[schemars(with = "Nullable<String>")]
+    pub label: Option<String>,
+    #[schemars(with = "Nullable<usize>")]
+    pub line: Option<usize>,
+    #[schemars(with = "Nullable<usize>")]
+    pub end_line: Option<usize>,
+    /// The unit text cut to 240 characters, or `null` when the provider
+    /// gave none.
+    #[schemars(with = "Nullable<String>")]
+    pub text: Option<String>,
+    /// An anchor that selects this unit and no other unit of the resource,
+    /// to give to `reanchor`: `<loc>#<symbol>`, or a JSON anchor.
+    pub anchor: String,
+    /// True when the unit's fingerprint equals the side's fingerprint in
+    /// the reference mark: the unit is the one that was marked, and it
+    /// moved or was renamed. `false` also when the claim has no mark.
+    pub same_fingerprint: bool,
 }
 
 /// ClaimView of section 15.2.

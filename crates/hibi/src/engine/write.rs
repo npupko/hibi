@@ -21,7 +21,7 @@ use super::resolve::{Resolved, describe_unit, resolve_anchors};
 use super::run_warnings;
 use super::types::{
     Accepted, ClaimView, NEXT_NOTE, Nullable, Reason, SideState, TEXT_EXCERPT_CHARS, Warning,
-    excerpt, sh_quote, unavailable_remediation,
+    excerpt, sh_quote, side_remediation,
 };
 
 /// One entry of `claims` in the output of `claim`.
@@ -138,24 +138,26 @@ fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> O
             return Some(Error::new(Code::UnknownScheme, format!("{what}: {detail}")));
         }
     }
+    // A new anchor that was found only by similarity: the caller asked for
+    // text or a symbol that is not there.
+    if new && let Resolved::NotExact(_) = r {
+        return Some(Error::new(
+            Code::SelectorNotExact,
+            format!("{what}: {detail}"),
+        ));
+    }
     Some(match state {
         SideState::Missing => Error::new(
             Code::SideMissing,
             format!("{what} resolves to no unit ({reason}): {detail}"),
         ),
-        SideState::Ambiguous => {
-            let detail = match r {
-                Resolved::Several(units) if new => candidates(anchor, units),
-                _ => detail,
-            };
-            Error::new(Code::SideAmbiguous, format!("{what}: {detail}"))
-        }
+        SideState::Ambiguous => Error::new(Code::SideAmbiguous, format!("{what}: {detail}")),
         _ => {
             let e = Error::new(
                 Code::SideUnavailable,
                 format!("{what} cannot be evaluated ({reason}): {detail}"),
             );
-            match unavailable_remediation(reason) {
+            match side_remediation(reason, Some(&detail)) {
                 Some(fix) => e.with_remediation(fix),
                 None => e.without_remediation(),
             }
@@ -221,39 +223,6 @@ fn advise(providers: &mut Providers, loc: &Locator, e: Error) -> Error {
     }
 }
 
-/// The units a new anchor matched, one per line of the message: kind,
-/// label, line, and an anchor that selects that unit. The anchor is the
-/// compact form when the candidates differ in symbol, and otherwise the
-/// unit's completed anchor as JSON, which carries the context and position
-/// that tell the candidates apart.
-fn candidates(anchor: &Anchor, units: &[Unit]) -> String {
-    let by_symbol = units.iter().all(|u| u.sel.symbol.is_some())
-        && units
-            .iter()
-            .enumerate()
-            .all(|(i, u)| units[..i].iter().all(|v| v.sel.symbol != u.sel.symbol));
-    let lines: Vec<String> = units
-        .iter()
-        .map(|u| {
-            let label = u.label.as_deref().unwrap_or(&u.key);
-            let line = u
-                .range
-                .map_or_else(String::new, |r| format!(", line {}", r.line));
-            let select = match (&u.sel.symbol, by_symbol && anchor.loc.is_file_or_repo()) {
-                (Some(symbol), true) => format!("{}#{symbol}", anchor.loc),
-                _ => serde_json::to_string(&Anchor::new(anchor.loc.clone(), u.sel.clone()))
-                    .unwrap_or_default(),
-            };
-            format!("{} {:?}{line}: {select}", u.kind, excerpt(label, 80))
-        })
-        .collect();
-    format!(
-        "the anchor matches {} units; use one of these anchors: {}",
-        units.len(),
-        lines.join("; ")
-    )
-}
-
 /// The write checks of `claim` step 2 for a new anchor: first that applies.
 fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r Unit, Error> {
     if let Some(e) = unresolved_error(index, anchor, r, true) {
@@ -261,20 +230,6 @@ fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r U
     }
     let unit = r.unit().expect("no failure means one unit");
     let what = format!("{} ({})", side_name(index), anchor.loc);
-    if unit.approx {
-        let found = match &unit.text {
-            Some(t) => format!(
-                "{}, text {:?}",
-                describe_unit(unit),
-                excerpt(t, TEXT_EXCERPT_CHARS)
-            ),
-            None => describe_unit(unit),
-        };
-        return Err(Error::new(
-            Code::SelectorNotExact,
-            format!("{what} resolved only approximately; found {found}"),
-        ));
-    }
     if let Some(refuse) = unit.refuse {
         let (code, why) = match refuse {
             crate::provider::Refuse::QuoteSpansUnits => {
@@ -330,12 +285,11 @@ fn duplicate_evidence(sides: &[(Anchor, &str)]) -> Result<(), Error> {
 }
 
 /// A resolution as it will be once the completed selector is stored: the
-/// same unit, exact.
+/// same unit, with nothing to refuse.
 fn as_stored(r: &Resolved) -> Resolved {
     match r {
         Resolved::One(u) => {
             let mut u = u.clone();
-            u.approx = false;
             u.refuse = None;
             Resolved::One(u)
         }
@@ -409,9 +363,7 @@ fn view_after(
         }
     }
     let eval = evaluate(claim, &marks, false, resolved, now)?;
-    Ok(claim_view(claim, &eval, resolved, options, &|id| {
-        index.is_retired(id)
-    }))
+    Ok(claim_view(claim, &eval, resolved, options))
 }
 
 fn finish(errors: Vec<Error>, indexed: bool) -> Vec<Error> {
@@ -500,20 +452,27 @@ struct Built<'p> {
 /// part of what the caller named. The context and position of a quote
 /// (`prefix`, `suffix`, `pos`) never count: they change when text near the
 /// quote is edited.
-fn same_claim(existing: &Claim, resolved: &[Resolved], new: &Built<'_>) -> bool {
-    same_fields(existing, &new.claim)
+///
+/// `new` is the claim built from the completed selectors, `keys` the key
+/// of the unit each of its sides resolved to, and `asked_quote` whether
+/// the caller gave a quote for that side.
+fn same_claim(
+    existing: &Claim,
+    resolved: &[Resolved],
+    new: &Claim,
+    keys: &[&str],
+    asked_quote: &[bool],
+) -> bool {
+    same_fields(existing, new)
         && existing
             .sides()
             .zip(resolved)
-            .zip(new.claim.sides().zip(&new.resolved))
-            .zip(&new.input.anchors)
-            .all(|(((old, old_r), (side, new_r)), asked)| {
+            .zip(new.sides())
+            .zip(keys.iter().zip(asked_quote))
+            .all(|(((old, old_r), side), (key, asked))| {
                 old.sel.symbol == side.sel.symbol
-                    && (asked.sel.quote.is_none() || old.sel.quote == side.sel.quote)
-                    && match (old_r.unit(), new_r.unit()) {
-                        (Some(a), Some(b)) => a.key == b.key,
-                        _ => false,
-                    }
+                    && (!asked || old.sel.quote == side.sel.quote)
+                    && old_r.unit().is_some_and(|u| u.key == *key)
             })
 }
 
@@ -673,7 +632,20 @@ fn claim_elements(
         } else {
             candidates
                 .iter()
-                .filter(|(c, rs)| same_claim(c, rs, b))
+                .filter(|(c, rs)| {
+                    let keys: Vec<&str> = b
+                        .resolved
+                        .iter()
+                        .filter_map(|r| r.unit().map(|u| u.key.as_str()))
+                        .collect();
+                    let asked: Vec<bool> = b
+                        .input
+                        .anchors
+                        .iter()
+                        .map(|a| a.sel.quote.is_some())
+                        .collect();
+                    keys.len() == b.resolved.len() && same_claim(c, rs, &b.claim, &keys, &asked)
+                })
                 .min_by(|(x, _), (y, _)| x.id.cmp(&y.id))
         };
         let (target, target_resolved): (&Claim, Vec<Resolved>) = match existing {
@@ -854,7 +826,7 @@ fn mark_elements(
                 .map_err(|e| vec![e])?;
             // Where the table gives no command, the error keeps its own
             // remediation: the cause and what the author can do.
-            let e = match next_command(claim, &eval, &rs, &|id| index.is_retired(id)) {
+            let e = match next_command(claim, &eval) {
                 Some(next) => e.with_remediation(next),
                 None => e,
             };
@@ -887,10 +859,7 @@ fn mark_elements(
         return Err(finish(errors, indexed));
     }
 
-    let options = ViewOptions {
-        detail: false,
-        approx_excerpt: true,
-    };
+    let options = ViewOptions::default();
     let mut marks = Vec::with_capacity(results.len());
     for (claim, mark, rs, before) in &results {
         let view = view_after(claim, &index, &batch, rs, options, now).map_err(|e| vec![e])?;
@@ -1051,7 +1020,19 @@ pub fn reanchor(
         if *new {
             units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, e))?);
         } else if let Some(e) = unresolved_error(n, anchor, r, false) {
-            return Err(advise(providers, &anchor.loc, e));
+            // A kept side that no longer resolves to one unit has to be
+            // replaced, with an anchor the caller chooses.
+            return Err(match r.failure() {
+                Some((SideState::Missing | SideState::Ambiguous, _)) => {
+                    let option = if n == 0 {
+                        "--subject <anchor>".to_owned()
+                    } else {
+                        format!("--evidence {n}=<anchor>")
+                    };
+                    e.with_remediation(format!("hibi reanchor {} {option}", old.id))
+                }
+                _ => advise(providers, &anchor.loc, e),
+            });
         } else {
             units.push(r.unit().expect("no failure means one unit"));
         }
@@ -1069,7 +1050,6 @@ pub fn reanchor(
         .zip(units.iter().map(|u| u.key.as_str()))
         .collect();
     duplicate_evidence(&keyed)?;
-    let sides = mark_sides(&stored, &units);
     let subject = stored.remove(0);
     let new = Claim::new(statement, subject, stored, recheck, note)?;
 
@@ -1095,26 +1075,64 @@ pub fn reanchor(
         .with_remediation(reanchor_with_note(&old.id, input)));
     }
 
+    // The new claim may be a live claim under another id: the same claim
+    // by the rule of `claim`, stored with a context that has since gone out
+    // of date. The old claim is then merged into that one.
+    let twin: Option<(&Claim, Vec<Resolved>)> = if index.claim(new.id.as_str()).is_some() {
+        None
+    } else {
+        let keys: Vec<&str> = units.iter().map(|u| u.key.as_str()).collect();
+        let asked: Vec<bool> = plan
+            .iter()
+            .map(|(a, replaced)| *replaced && a.sel.quote.is_some())
+            .collect();
+        let others: Vec<&Claim> = index
+            .live()
+            .filter(|c| c.id != old.id && same_fields(c, &new))
+            .collect();
+        let other_anchors: Vec<&Anchor> = others.iter().flat_map(|c| c.sides()).collect();
+        let mut other_resolved = resolve_anchors(providers, &other_anchors).into_iter();
+        others
+            .into_iter()
+            .map(|c| {
+                let rs: Vec<Resolved> = other_resolved.by_ref().take(c.side_count()).collect();
+                (c, rs)
+            })
+            .filter(|(c, rs)| same_claim(c, rs, &new, &keys, &asked))
+            .min_by(|(x, _), (y, _)| x.id.cmp(&y.id))
+    };
+
     // Step 6.
     let mut batch = Batch::default();
-    let merged = index.claim(new.id.as_str()).is_some();
+    let merged = twin.is_some() || index.claim(new.id.as_str()).is_some();
+    let (target, target_resolved): (Claim, Vec<Resolved>) = match twin {
+        Some((c, rs)) => (c.clone(), rs),
+        None => (new, resolved.iter().map(as_stored).collect()),
+    };
     if !merged {
-        batch.claims.push(new.clone());
+        batch.claims.push(target.clone());
     }
-    let mark = Mark::new(new.id.clone(), now, by.clone(), sides, None)?;
-    let retirement = Retirement::new(old.id.clone(), Some(new.id.clone()), now, by, None)?;
+    let target_anchors: Vec<Anchor> = target.sides().cloned().collect();
+    let mark = Mark::new(
+        target.id.clone(),
+        now,
+        by.clone(),
+        mark_sides(&target_anchors, &units),
+        None,
+    )?;
+    let retirement = Retirement::new(old.id.clone(), Some(target.id.clone()), now, by, None)?;
     batch.marks.push(mark.clone());
     batch.retirements.push(retirement.clone());
 
-    let stored_resolutions: Vec<Resolved> = resolved.iter().map(as_stored).collect();
     let view = view_after(
-        &new,
+        &target,
         &index,
         &batch,
-        &stored_resolutions,
+        &target_resolved,
         ViewOptions::default(),
         now,
     )?;
+    let new = target;
     store.append(&batch)?;
     Ok(ReanchorOutput {
         old: old.id.clone(),

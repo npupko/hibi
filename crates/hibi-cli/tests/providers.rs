@@ -143,7 +143,7 @@ fn r28_a_listed_scheme_without_registration_is_unavailable_and_starts_nothing() 
     assert_eq!(ids(&v), vec![id.clone()]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 1, "fresh": 0, "drifted": 0, "stale": 1, "expired": 0, "retired": 0})
+        json!({"claims": 1, "fresh": 0, "stale": 1, "expired": 0, "retired": 0})
     );
     let claim = &v["claims"][0];
     assert_eq!(claim["state"], "stale");
@@ -266,7 +266,19 @@ fn r28_a_scheme_that_is_not_listed_is_unknown() {
     assert_eq!(claim["sides"][0]["state"], "unavailable");
     assert_eq!(claim["sides"][0]["reason"], "scheme_not_declared");
     assert_eq!(claim["sides"][1]["state"], "same");
-    assert_eq!(claim["next"], "hibi providers");
+    // No command fits: the side says what to do.
+    assert_eq!(claim["next"], Value::Null);
+    assert_eq!(
+        claim["sides"][0]["remediation"],
+        "Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim."
+    );
+    assert!(
+        claim["sides"][0]["detail"]
+            .as_str()
+            .unwrap()
+            .contains("ref"),
+        "{claim}"
+    );
 
     let out = run(&["claim", "x", "--subject", "ref:notes"]);
     assert_eq!(out.code(), "unknown_scheme", "{out:?}");
@@ -386,7 +398,6 @@ fn a_registered_provider_resolves_and_detects_a_changed_note() {
     );
     assert_eq!(subject["state"], "same");
     assert_eq!(subject["reason"], Value::Null);
-    assert_eq!(subject["approx"], false);
     assert_eq!(
         subject["unit"],
         json!({"key": "n1", "kind": "note", "label": "Retries are capped at 5.",
@@ -405,7 +416,7 @@ fn a_registered_provider_resolves_and_detects_a_changed_note() {
     assert_eq!(ids(&v), Vec::<String>::new());
     assert_eq!(
         v["summary"],
-        json!({"claims": 1, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 1, "fresh": 1, "stale": 0, "expired": 0, "retired": 0})
     );
     let detail = repo.json(&["status", "--detail", &id]);
     assert_eq!(

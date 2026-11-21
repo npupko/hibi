@@ -356,6 +356,13 @@ pub fn set_err(world: &Shared, l: &str, code: ProviderErrorCode) {
         .insert(l.into(), Err(perr(code)));
 }
 
+pub fn set_err_message(world: &Shared, l: &str, code: ProviderErrorCode, message: &str) {
+    world
+        .borrow_mut()
+        .resources
+        .insert(l.into(), Err(ProviderError::new(code, message)));
+}
+
 /// Replace the text (and so the fingerprint) of one unit.
 pub fn edit(world: &Shared, l: &str, key: &str, text: &str) {
     let mut w = world.borrow_mut();

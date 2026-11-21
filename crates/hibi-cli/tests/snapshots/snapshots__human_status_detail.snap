@@ -18,6 +18,6 @@ c1-b1cqk12je92xh6d4na21  stale  The cache holds 64 entries.
     | }
   next: hibi mark c1-b1cqk12je92xh6d4na21
 
-Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ---- standard error ----
 (empty)

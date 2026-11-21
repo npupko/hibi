@@ -115,14 +115,20 @@ fn by_id(v: &Value) -> BTreeMap<String, Value> {
         .collect()
 }
 
-/// `[state, reason, approx]` of every side of a ClaimView.
+/// `[state, reason, has candidates]` of every side of a ClaimView.
 fn sides(view: &Value) -> Value {
     Value::Array(
         view["sides"]
             .as_array()
             .expect("sides is an array")
             .iter()
-            .map(|side| json!([side["state"], side["reason"], side["approx"]]))
+            .map(|side| {
+                json!([
+                    side["state"],
+                    side["reason"],
+                    side.get("candidates").is_some()
+                ])
+            })
             .collect(),
     )
 }
@@ -369,12 +375,12 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
                     }},
                     "state": "same",
                     "reason": null,
-                    "approx": false,
                     "unit": {"key": "sentence:34da78fbbacf", "kind": "sentence",
                         "label": "The cache holds 64 entries.", "line": 3, "endLine": 3},
                     "fp": "b3:prose-v1:34da78fbbacfbf227381ac83d86394ff",
                     "markedFp": "b3:prose-v1:34da78fbbacfbf227381ac83d86394ff",
-                    "remediation": null
+                    "remediation": null,
+                    "detail": null
                 },
                 {
                     "index": 1,
@@ -388,12 +394,12 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
                     }},
                     "state": "same",
                     "reason": null,
-                    "approx": false,
                     "unit": {"key": "function:limit", "kind": "function",
                         "label": "limit", "line": 2, "endLine": 5},
                     "fp": "b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5",
                     "markedFp": "b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5",
-                    "remediation": null
+                    "remediation": null,
+                    "detail": null
                 }
             ],
             "next": null
@@ -950,12 +956,9 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     assert_eq!(v["claims"], json!([]));
     assert_eq!(
         v["summary"],
-        json!({"claims": 8, "fresh": 8, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 8, "fresh": 8, "stale": 0, "expired": 0, "retired": 0})
     );
-    assert_eq!(
-        v["nextNote"],
-        "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
-    );
+    assert_eq!(v["nextNote"], hibi::engine::NEXT_NOTE);
     assert_eq!(v["since"], Value::Null);
     assert_eq!(v["now"], NOW);
 
@@ -984,15 +987,11 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     assert_eq!(v["now"], TOMORROW);
     assert_eq!(
         v["summary"],
-        json!({"claims": 8, "fresh": 1, "drifted": 1, "stale": 6, "expired": 1, "retired": 0})
+        json!({"claims": 8, "fresh": 0, "stale": 7, "expired": 1, "retired": 0})
     );
-    // The default selection is the same eight: every one has a `next`,
-    // the drifted fresh claim included.
+    // The default selection is the same eight: every one has a `next`.
     assert_eq!(at(&repo, TOMORROW, &["status"])["claims"], v["claims"]);
-    assert_eq!(
-        v["nextNote"],
-        "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
-    );
+    assert_eq!(v["nextNote"], hibi::engine::NEXT_NOTE);
     let mut sorted = ids(&v);
     assert_eq!(sorted.len(), 8);
     let listed_order = sorted.clone();
@@ -1056,54 +1055,76 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     assert_eq!(c["state"], "stale");
     assert_eq!(
         sides(c),
-        json!([["ambiguous", "several_units", false], same])
+        json!([["ambiguous", "several_units", true], same])
     );
     let candidates = c["sides"][0]["candidates"].as_array().unwrap();
     assert_eq!(candidates.len(), 2);
     assert_eq!(candidates[0]["line"], 7);
     assert_eq!(candidates[1]["line"], 13);
     assert_eq!(candidates[0]["label"], "The retry count is 3.");
+    assert_eq!(c["sides"][0]["candidatesTotal"], 2);
+    // Each candidate carries an anchor that selects it alone.
+    assert_ne!(candidates[0]["anchor"], candidates[1]["anchor"]);
+    for candidate in candidates {
+        assert_eq!(candidate["sameFingerprint"], true);
+        assert!(s(&candidate["anchor"]).starts_with('{'), "{candidate}");
+    }
     assert_eq!(
         s(&c["next"]),
         format!("hibi reanchor {ambiguous} --subject <anchor>")
     );
-    // `candidates` is present only on an ambiguous side.
+    // `candidates` is present only on a side that has some.
     assert!(c["sides"][1].get("candidates").is_none());
 
-    // The container was renamed: the method is found by its quote, its
-    // fingerprint is the same, the claim stays fresh and wants a reanchor.
+    // The container was renamed: the method is found only by similarity.
+    // That is a guess, so the side is missing and the method is a
+    // candidate; its content is what was marked.
     let c = &claims[&fresh_approx];
-    assert_eq!(c["state"], "fresh");
-    assert_eq!(sides(c), json!([same, ["same", null, true]]));
-    assert_eq!(c["sides"][1]["unit"]["key"], "method:Store.get");
-    assert_eq!(s(&c["next"]), format!("hibi reanchor {fresh_approx}"));
+    assert_eq!(c["state"], "stale");
+    assert_eq!(sides(c), json!([same, ["missing", "not_exact", true]]));
+    assert_eq!(c["sides"][1]["unit"], Value::Null);
+    assert_eq!(
+        c["sides"][1]["candidates"],
+        json!([{
+            "key": "method:Store.get", "kind": "method", "label": "Store.get",
+            "line": c["sides"][1]["candidates"][0]["line"],
+            "endLine": c["sides"][1]["candidates"][0]["endLine"],
+            "text": c["sides"][1]["candidates"][0]["text"],
+            "anchor": "file:src/c.rs#Store.get",
+            "sameFingerprint": true
+        }])
+    );
+    assert_eq!(
+        s(&c["next"]),
+        format!("hibi reanchor {fresh_approx} --evidence 1=<anchor>")
+    );
 
-    // The function itself was renamed: stale with an approximate side
-    // falls through to mark.
+    // The function itself was renamed, and its body differs from the mark
+    // by the name: a candidate with another fingerprint.
     let c = &claims[&stale_approx];
     assert_eq!(c["state"], "stale");
+    assert_eq!(sides(c), json!([same, ["missing", "not_exact", true]]));
+    let candidate = &c["sides"][1]["candidates"][0];
+    assert_eq!(candidate["key"], "function:time_out");
+    assert_eq!(candidate["anchor"], "file:src/a.rs#time_out");
+    assert_eq!(candidate["sameFingerprint"], false);
     assert_eq!(
-        sides(c),
-        json!([same, ["changed", "fingerprint_differs", true]])
+        s(&c["next"]),
+        format!("hibi reanchor {stale_approx} --evidence 1=<anchor>")
     );
-    assert_eq!(c["sides"][1]["unit"]["key"], "function:time_out");
-    assert_eq!(s(&c["next"]), format!("hibi mark {stale_approx}"));
+    // No `next` holds a candidate: the anchor is the caller's to choose.
+    for c in claims.values() {
+        assert!(!s(&c["next"]).contains("Store.get"), "{c}");
+        assert!(!s(&c["next"]).contains("time_out"), "{c}");
+    }
 
-    // The default selection is the stale and the expired claims and the
-    // drifted fresh one, and every one of them has a `next`.
+    // The default selection is the stale and the expired claims, and
+    // every one of them has a `next`.
     let v = at(&repo, TOMORROW, &["status"]);
     let default = by_id(&v);
     assert_eq!(default.len(), 8);
-    assert_eq!(default[&fresh_approx]["state"], "fresh");
-    assert_eq!(
-        s(&default[&fresh_approx]["next"]),
-        format!("hibi reanchor {fresh_approx}")
-    );
     for (id, c) in &default {
         assert_eq!(c["next"], claims[id]["next"], "{id}");
-        if id == &fresh_approx {
-            continue;
-        }
         assert!(matches!(s(&c["state"]), "stale" | "expired"), "{id}");
         let next = s(&c["next"]);
         assert!(
@@ -1143,8 +1164,7 @@ fn status_selects_by_state_by_locator_and_by_id() {
     j(&repo, &["retire", &retired]);
     repo.write("src/a.rs", &CODE.replace("= 64;", "= 128;"));
 
-    let summary =
-        json!({"claims": 3, "fresh": 1, "drifted": 0, "stale": 1, "expired": 0, "retired": 1});
+    let summary = json!({"claims": 3, "fresh": 1, "stale": 1, "expired": 0, "retired": 1});
 
     // Default: stale and expired only.
     let v = j(&repo, &["status"]);
@@ -1399,7 +1419,7 @@ fn r36_reanchor_with_a_new_statement_replaces_the_claim() {
     let v = j(&repo, &["status"]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 2, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 1})
+        json!({"claims": 2, "fresh": 1, "stale": 0, "expired": 0, "retired": 1})
     );
 
     // A retired claim cannot be re-anchored again.
@@ -1701,7 +1721,7 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
     let v = j(&repo, &["status"]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 8, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 7})
+        json!({"claims": 8, "fresh": 1, "stale": 0, "expired": 0, "retired": 7})
     );
     assert_eq!(ids(&j(&repo, &["list"])), [eighth]);
 }
@@ -1783,14 +1803,95 @@ fn reanchor_applies_the_write_checks_to_replaced_and_added_sides() {
 }
 
 // ---------------------------------------------------------------------------
-// R37 and R55: approximate sides
+// R37 and R55: similarity proposes, it never resolves
 // ---------------------------------------------------------------------------
 
-/// R37: a renamed function whose claim has a quote reports `changed` with
-/// `approx: true`; after the re-check and `mark`, `next` is a `reanchor`
-/// command, and that command stores the new symbol.
+/// A function moves to another file. Nothing in the old file is taken for
+/// it: the side is missing, `mark` and a `reanchor` that keeps the side
+/// are refused, and only an anchor the caller chooses moves the claim. A
+/// later change at the new place makes the claim stale.
 #[test]
-fn r37_a_renamed_function_is_changed_and_approx_then_wants_a_reanchor() {
+fn a_function_moved_to_another_file_is_missing_until_the_caller_anchors_it() {
+    let repo = seeded();
+    repo.write("notes.md", "# Notes\n\nThe default threshold is 50.\n");
+    repo.write(
+        "report.py",
+        "def threshold():\n    return 50\n\n\ndef other():\n    return 1\n",
+    );
+    let id = repo.claim(
+        "The default threshold is 50.",
+        "file:notes.md::The default threshold is 50.",
+        &["file:report.py#threshold"],
+    );
+    repo.write("report.py", "def other():\n    return 1\n");
+    repo.write("config.py", "def threshold():\n    return 50\n");
+
+    let v = j(&repo, &["status"]);
+    assert_eq!(ids(&v), [id.as_str()]);
+    assert_eq!(
+        v["summary"],
+        json!({"claims": 1, "fresh": 0, "stale": 1, "expired": 0, "retired": 0})
+    );
+    let view = &v["claims"][0];
+    assert_eq!(view["state"], "stale");
+    let side = &view["sides"][1];
+    assert_eq!(side["state"], "missing");
+    assert!(
+        matches!(s(&side["reason"]), "selector_not_found" | "not_exact"),
+        "{side}"
+    );
+    assert_eq!(side["unit"], Value::Null);
+    assert_eq!(side["fp"], Value::Null);
+    assert!(side.get("approx").is_none(), "{side}");
+    let next = format!("hibi reanchor {id} --evidence 1=<anchor>");
+    assert_eq!(s(&view["next"]), next);
+
+    // `mark` does not accept another unit of the old file in its place.
+    let e = refused(&repo, &["mark", &id]);
+    assert_eq!(e["code"], "side_missing");
+    assert_eq!(s(&e["remediation"]), next);
+    // Nor does a `reanchor` that keeps the side.
+    let e = refused(
+        &repo,
+        &["reanchor", &id, "--statement", "The threshold is 50."],
+    );
+    assert_eq!(e["code"], "side_missing");
+    assert_eq!(s(&e["remediation"]), next);
+
+    // The caller names the new place.
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &["reanchor", &id, "--evidence", "1=file:config.py#threshold"],
+    );
+    let new = id_of(&v["new"], "c1-");
+    assert_eq!(v["merged"], false);
+    assert_eq!(v["accepted"]["was"], "stale");
+    assert_eq!(v["claim"]["state"], "fresh");
+    assert_eq!(v["claim"]["next"], Value::Null);
+    assert_eq!(v["claim"]["sides"][1]["anchor"]["loc"], "file:config.py");
+    assert_eq!(repo.state(&id), "retired");
+    assert_eq!(j(&repo, &["status"])["claims"], json!([]));
+
+    // The function changes at its new place: the claim says so.
+    repo.write("config.py", "def threshold():\n    return 60\n");
+    let view = repo.view(&new);
+    assert_eq!(view["state"], "stale");
+    assert_eq!(
+        sides(&view),
+        json!([
+            ["same", null, false],
+            ["changed", "fingerprint_differs", false]
+        ])
+    );
+    assert_eq!(s(&view["next"]), format!("hibi mark {new}"));
+}
+
+/// R37: a renamed function whose claim has a quote is found only by
+/// similarity. It is a candidate under a missing side, `mark` is refused,
+/// and `reanchor` with the candidate's anchor stores the new symbol.
+#[test]
+fn r37_a_renamed_function_is_a_candidate_and_never_the_side() {
     let repo = seeded();
     let id = repo.claim(
         "The cache holds 64 entries.",
@@ -1803,48 +1904,90 @@ fn r37_a_renamed_function_is_changed_and_approx_then_wants_a_reanchor() {
     assert_eq!(view["state"], "stale");
     assert_eq!(
         sides(&view),
-        json!([
-            ["same", null, false],
-            ["changed", "fingerprint_differs", true]
-        ])
+        json!([["same", null, false], ["missing", "not_exact", true]])
     );
-    assert_eq!(view["sides"][1]["unit"]["key"], "function:max_cache_size");
-    assert_eq!(view["sides"][1]["unit"]["label"], "max_cache_size");
+    let side = &view["sides"][1];
+    assert_eq!(side["unit"], Value::Null);
+    assert_eq!(side["fp"], Value::Null);
     // The stored anchor still names the old symbol.
-    assert_eq!(view["sides"][1]["anchor"]["sel"]["symbol"], "limit");
-    // Stale with an approximate side: re-check and mark first.
-    assert_eq!(s(&view["next"]), format!("hibi mark {id}"));
-
-    let v = at(&repo, "2026-11-20T13:00:00Z", &["mark", &id]);
-    assert_eq!(v["marks"][0]["claim"], id.as_str());
-    let mark = id_of(&v["marks"][0]["mark"], "m1-");
-    let marked = &v["marks"][0]["claimView"];
-    assert_eq!(marked["mark"], mark.as_str());
-    assert_eq!(marked["state"], "fresh");
+    assert_eq!(side["anchor"]["sel"]["symbol"], "limit");
+    assert_eq!(side["candidatesTotal"], 1);
+    let candidate = &side["candidates"][0];
     assert_eq!(
-        sides(marked),
-        json!([["same", null, false], ["same", null, true]])
+        keys(candidate),
+        [
+            "anchor",
+            "endLine",
+            "key",
+            "kind",
+            "label",
+            "line",
+            "sameFingerprint",
+            "text"
+        ]
     );
-    assert_eq!(s(&marked["next"]), format!("hibi reanchor {id}"));
+    assert_eq!(candidate["key"], "function:max_cache_size");
+    assert_eq!(candidate["kind"], "function");
+    assert_eq!(candidate["label"], "max_cache_size");
+    assert_eq!(candidate["anchor"], "file:src/a.rs#max_cache_size");
+    assert!(s(&candidate["text"]).contains("let max_entries = 64;"));
+    let next = format!("hibi reanchor {id} --evidence 1=<anchor>");
+    assert_eq!(s(&view["next"]), next);
 
-    let view = repo.view(&id);
-    assert_eq!(view["state"], "fresh");
-    assert_eq!(view["sides"][1]["approx"], true);
-    assert_eq!(s(&view["next"]), format!("hibi reanchor {id}"));
+    let e = refused(&repo, &["mark", &id]);
+    assert_eq!(e["code"], "side_missing");
+    assert!(s(&e["message"]).contains("not_exact"), "{e}");
+    assert!(
+        s(&e["message"]).contains("file:src/a.rs#max_cache_size"),
+        "{e}"
+    );
+    assert_eq!(s(&e["remediation"]), next);
+    let e = refused(&repo, &["reanchor", &id]);
+    assert_eq!(e["code"], "side_missing");
+    assert_eq!(s(&e["remediation"]), next);
 
-    // Running that command stores the new symbol and clears `approx`.
-    let v = at(&repo, "2026-11-20T14:00:00Z", &["reanchor", &id]);
+    // A new claim cannot be made on a guess either.
+    let e = refused(
+        &repo,
+        &[
+            "claim",
+            "Another",
+            "--subject",
+            "file:src/a.rs#limit::let max_entries = 64;",
+        ],
+    );
+    assert_eq!(e["code"], "selector_not_exact");
+
+    // The text output lists the candidate, its anchor and what it is.
+    let human = repo.human(&["--now", NOW, "status"]);
+    for part in [
+        "missing (not_exact)",
+        "1 candidate, found by similarity; each is a guess, read it before you anchor to it:",
+        "- function \"max_cache_size\", line ",
+        "anchor: file:src/a.rs#max_cache_size",
+    ] {
+        assert!(human.stdout.contains(part), "{part}: {}", human.stdout);
+    }
+    assert!(!human.stdout.contains("approximately"), "{}", human.stdout);
+
+    // The caller read the candidate and chose it.
+    let anchor = format!("1={}", s(&candidate["anchor"]));
+    let v = at(
+        &repo,
+        "2026-11-20T14:00:00Z",
+        &["reanchor", &id, "--evidence", &anchor],
+    );
     assert_eq!(v["old"], id.as_str());
     let new = id_of(&v["new"], "c1-");
     assert_ne!(new, id);
-    assert_eq!(v["claim"]["id"], new.as_str());
+    assert_eq!(
+        v["accepted"]["sides"],
+        json!([{"index": 1, "role": "evidence", "loc": "file:src/a.rs",
+            "state": "missing", "reason": "not_exact"}])
+    );
     assert_eq!(
         v["claim"]["sides"][1]["anchor"]["sel"]["symbol"],
         "max_cache_size"
-    );
-    assert_eq!(
-        v["claim"]["sides"][1]["anchor"]["sel"]["quote"],
-        "let max_entries = 64;"
     );
     assert_eq!(
         sides(&v["claim"]),
@@ -1855,130 +1998,66 @@ fn r37_a_renamed_function_is_changed_and_approx_then_wants_a_reanchor() {
     assert_eq!(repo.view(&new)["next"], Value::Null);
 }
 
-/// R55: `mark` on a claim with an approximate side succeeds, keeps the
-/// claim id and shows `approx: true` with the unit and its text; `status`
-/// then gives `reanchor` for the fresh claim.
+/// R55: a reworded sentence is not the sentence that was marked. The new
+/// wording is a candidate with its text and a JSON anchor; `mark` is
+/// refused and writes nothing; `reanchor` with that anchor works.
 #[test]
-fn r55_mark_accepts_an_approx_side_and_shows_what_was_marked() {
+fn r55_a_reworded_sentence_is_a_candidate_and_mark_is_refused() {
     let repo = seeded();
     let id = repo.claim("Retries", RETRY_SUBJECT, &[LIMIT_EVIDENCE]);
-    // The sentence is reworded slightly: the quote is found only
-    // approximately.
     repo.write(
         "docs/a.md",
         &DOC.replace("retry count is 3", "retry count is 4"),
     );
 
-    let view = repo.view(&id);
+    let v = j(&repo, &["status"]);
+    assert_eq!(ids(&v), [id.as_str()]);
+    assert!(v["summary"].get("drifted").is_none());
+    assert!(!s(&v["nextNote"]).contains("drifted"));
+    assert!(s(&v["nextNote"]).contains("A candidate listed under a side is a guess"));
+    let view = &v["claims"][0];
     assert_eq!(view["state"], "stale");
     assert_eq!(
-        sides(&view),
-        json!([
-            ["changed", "fingerprint_differs", true],
-            ["same", null, false]
-        ])
+        sides(view),
+        json!([["missing", "not_exact", true], ["same", null, false]])
     );
-    // A stale claim with an approximate side gets `mark`, not `reanchor`.
-    assert_eq!(s(&view["next"]), format!("hibi mark {id}"));
-    assert!(view["sides"][0].get("text").is_none());
+    let candidate = &view["sides"][0]["candidates"][0];
+    assert_eq!(candidate["kind"], "sentence");
+    assert_eq!(candidate["label"], "The retry count is 4.");
+    assert_eq!(candidate["text"], "The retry count is 4.");
+    assert_eq!(candidate["line"], 5);
+    assert_eq!(candidate["sameFingerprint"], false);
+    let anchor = s(&candidate["anchor"]).to_owned();
+    let parsed: Value = serde_json::from_str(&anchor).expect("a JSON anchor");
+    assert_eq!(parsed["loc"], "file:docs/a.md");
+    assert_eq!(parsed["sel"]["quote"], "The retry count is 4.");
+    let next = format!("hibi reanchor {id} --subject <anchor>");
+    assert_eq!(s(&view["next"]), next);
 
-    let v = at(&repo, "2026-11-20T13:00:00Z", &["mark", &id]);
-    assert_eq!(v["command"], "mark");
-    assert_eq!(v["marks"].as_array().unwrap().len(), 1);
-    assert_eq!(
-        keys(&v["marks"][0]),
-        ["accepted", "claim", "claimView", "mark"]
-    );
-    assert_eq!(v["marks"][0]["accepted"]["was"], "stale");
-    assert_eq!(v["marks"][0]["claim"], id.as_str());
-    let mark = id_of(&v["marks"][0]["mark"], "m1-");
-    let marked = &v["marks"][0]["claimView"];
-    assert_eq!(marked["id"], id.as_str());
-    assert_eq!(marked["state"], "fresh");
-    assert_eq!(marked["mark"], v["marks"][0]["mark"]);
-    assert_eq!(marked["markedAt"], "2026-11-20T13:00:00Z");
-    // The approximate side carries its unit and its text without --detail.
-    let side = &marked["sides"][0];
-    assert_eq!(side["state"], "same");
-    assert_eq!(side["approx"], true);
-    assert_eq!(
-        side["unit"],
-        json!({"key": "sentence:62c439043516", "kind": "sentence",
-            "label": "The retry count is 4.", "line": 5, "endLine": 5})
-    );
-    assert_eq!(side["text"], "The retry count is 4.");
-    assert_eq!(side["fp"], side["markedFp"]);
-    // The exact side does not carry text.
-    assert_eq!(marked["sides"][1]["approx"], false);
-    assert!(marked["sides"][1].get("text").is_none());
-    assert_eq!(s(&marked["next"]), format!("hibi reanchor {id}"));
+    let e = refused(&repo, &["mark", &id]);
+    assert_eq!(e["code"], "side_missing");
+    assert_eq!(s(&e["remediation"]), next);
+    assert_eq!(repo.records("marks").len(), 1);
 
-    // The claim id is kept: one claim, two marks, no retirement.
-    assert_eq!(repo.records("claims").len(), 1);
-    assert_eq!(repo.records("marks").len(), 2);
-    let listed = j(&repo, &["list", &id]);
-    assert_eq!(listed["retirements"], json!([]));
-    assert_eq!(listed["marks"][1]["id"], mark.as_str());
-    assert_ne!(listed["marks"][0]["id"], mark.as_str());
-    assert_eq!(
-        listed["claim"]["subject"]["sel"]["quote"],
-        "The retry count is 3."
+    let v = at(
+        &repo,
+        "2026-11-20T14:00:00Z",
+        &["reanchor", &id, "--subject", &anchor],
     );
-
-    // `status <id>`: fresh, approximate, `next` is the reanchor command.
-    let view = repo.view(&id);
-    assert_eq!(view["state"], "fresh");
-    assert_eq!(
-        sides(&view),
-        json!([["same", null, true], ["same", null, false]])
-    );
-    assert_eq!(s(&view["next"]), format!("hibi reanchor {id}"));
-    // Fresh but drifted: its `next` asks for something, so the default
-    // listing shows it and the summary counts it.
-    let default = j(&repo, &["status"]);
-    assert_eq!(ids(&default), [id.as_str()]);
-    assert_eq!(default["claims"][0]["state"], "fresh");
-    assert_eq!(
-        s(&default["claims"][0]["next"]),
-        format!("hibi reanchor {id}")
-    );
-    assert_eq!(default["summary"]["fresh"], 1);
-    assert_eq!(default["summary"]["drifted"], 1);
-    let human = repo.human(&["--now", NOW, "status"]);
-    assert!(
-        human.stdout.contains("1 fresh (1 drifted)"),
-        "{}",
-        human.stdout
-    );
-    assert!(
-        human.stdout.contains("its anchor drifted"),
-        "{}",
-        human.stdout
-    );
-    assert!(
-        !human.stdout.contains("Re-check each stale or expired"),
-        "{}",
-        human.stdout
-    );
-
-    // The reanchor refreshes the quote.
-    let v = at(&repo, "2026-11-20T14:00:00Z", &["reanchor", &id]);
-    assert_eq!(v["old"], id.as_str());
     let new = id_of(&v["new"], "c1-");
     assert_ne!(new, id);
-    assert_eq!(v["claim"]["id"], new.as_str());
     assert_eq!(
         v["claim"]["sides"][0]["anchor"]["sel"]["quote"],
         "The retry count is 4."
     );
-    assert_eq!(v["claim"]["sides"][0]["approx"], false);
+    assert_eq!(v["claim"]["state"], "fresh");
     assert_eq!(v["claim"]["next"], Value::Null);
+    assert_eq!(j(&repo, &["status"])["claims"], json!([]));
 }
 
-/// R55: the text of an approximate side in `mark` output is cut to 240
-/// characters.
+/// The text of a candidate is cut to 240 characters.
 #[test]
-fn r55_mark_cuts_the_text_of_an_approx_side_to_240_characters() {
+fn the_text_of_a_candidate_is_cut_to_240_characters() {
     let repo = seeded();
     let long: String = (0..60).map(|n| format!("word{n} ")).collect();
     let sentence = format!("The list is {}and it ends here.", long);
@@ -1990,21 +2069,134 @@ fn r55_mark_cuts_the_text_of_an_approx_side_to_240_characters() {
         &format!("# Long\n\n{}\n", sentence.replace("word7 ", "word-seven ")),
     );
     let view = repo.view(&id);
-    assert_eq!(
-        sides(&view),
-        json!([["changed", "fingerprint_differs", true]])
+    assert_eq!(sides(&view), json!([["missing", "not_exact", true]]));
+    let text = s(&view["sides"][0]["candidates"][0]["text"]);
+    assert_eq!(text.chars().count(), 240);
+    assert!(text.starts_with("The list is word0 word1 "));
+}
+
+/// The first JSON anchor in an error message.
+fn json_anchor_in(message: &str) -> String {
+    let start = message.find("{\"loc\"").expect("a JSON anchor");
+    let end = message[start..].find("}}").expect("the end of the anchor") + start + 2;
+    message[start..end].to_owned()
+}
+
+/// A candidate is printed as `#symbol` only when that symbol is unique in
+/// the whole resource; otherwise as its completed anchor in JSON, which
+/// selects it alone. Python property pairs, a Rust inherent method beside
+/// a trait method, and TypeScript get and set forms share a symbol.
+#[test]
+fn a_candidate_anchor_selects_one_unit_of_the_whole_resource() {
+    let repo = seeded();
+    repo.write(
+        "prop.py",
+        "class P:\n    @property\n    def v(self):\n        return self._v\n\n    @v.setter\n    def v(self, x):\n        self._v = x\n\n\nclass Q:\n    def v(self):\n        return self._v\n",
     );
-    let v = j(&repo, &["mark", &id]);
-    let side = &v["marks"][0]["claimView"]["sides"][0];
-    assert_eq!(side["approx"], true);
-    assert_eq!(s(&side["text"]).chars().count(), 240);
-    assert!(s(&side["text"]).starts_with("The list is word0 word1 "));
+    repo.write(
+        "a.rs",
+        "struct A;\ntrait T { fn run(&self) -> u8; }\nimpl A {\n    fn run(&self) -> u8 {\n        1\n    }\n}\nimpl T for A {\n    fn run(&self) -> u8 {\n        1\n    }\n}\n",
+    );
+    repo.write(
+        "c.ts",
+        "class C {\n  private x = 1;\n  get v() {\n    return this.x;\n  }\n  set v(n: number) {\n    this.x = n;\n  }\n}\nclass D {\n  v() {\n    return this.x;\n  }\n}\n",
+    );
+    // (anchor, the symbol that is unique, the symbol that is not)
+    for (anchor, unique, shared) in [
+        (
+            "file:prop.py::return self._v",
+            "file:prop.py#Q.v",
+            "file:prop.py#P.v",
+        ),
+        (
+            "file:c.ts::return this.x;",
+            "file:c.ts#D.v",
+            "file:c.ts#C.v",
+        ),
+        (
+            "file:a.rs::fn run(&self) -> u8",
+            "file:a.rs#T.run",
+            "file:a.rs#A.run",
+        ),
+    ] {
+        let e = refused(&repo, &["claim", "S", "--subject", anchor]);
+        assert_eq!(e["code"], "side_ambiguous", "{anchor}: {e}");
+        let message = s(&e["message"]);
+        assert!(message.contains(&format!(": {unique}")), "{message}");
+        // The shared symbol alone would be ambiguous again: it is never
+        // offered.
+        assert!(!message.contains(shared), "{message}");
+        assert!(refused(&repo, &["claim", "S", "--subject", shared])["code"] == "side_ambiguous");
+
+        // Each offered anchor makes a claim on one unit.
+        let chosen = json_anchor_in(message);
+        let v = j(&repo, &["claim", anchor, "--subject", &chosen]);
+        assert_eq!(v["claims"][0]["claim"]["state"], "fresh", "{chosen}");
+        let v = j(&repo, &["claim", anchor, "--subject", unique]);
+        assert_eq!(v["claims"][0]["created"], true, "{unique}");
+    }
+}
+
+/// An anchor that matches very many units: twenty candidates and the
+/// count of all of them. (The engine tests cover a stored side.)
+#[test]
+fn at_most_twenty_candidates_are_shown_with_the_total() {
+    let repo = seeded();
+    let many: String = (0..25).map(|_| "The item is ready.\n\n").collect();
+    repo.write("docs/list.md", &format!("# List\n\n{many}"));
+
+    let e = refused(
+        &repo,
+        &[
+            "claim",
+            "Again",
+            "--subject",
+            "file:docs/list.md::The item is ready.",
+        ],
+    );
+    assert_eq!(e["code"], "side_ambiguous");
+    let message = s(&e["message"]);
+    assert!(message.contains("matches 25 units"), "{message}");
+    assert_eq!(message.matches("{\"loc\"").count(), 20, "{message}");
+    assert!(message.ends_with("; and 5 more"), "{message}");
+}
+
+/// `reanchor` onto a unit that a live claim with the same statement
+/// already covers merges into that claim, also when the stored context of
+/// that claim is out of date and the ids would differ.
+#[test]
+fn reanchor_onto_the_same_claim_under_another_id_merges() {
+    let repo = seeded();
+    let first = repo.claim("The limit.", "file:src/a.rs#limit", &[]);
+    let second = repo.claim("The limit.", "file:src/a.rs#timeout", &[]);
+    assert_ne!(first, second);
+    // Text before the function changes: the stored context of the first
+    // claim is now out of date, and its unit is the same.
+    repo.write("src/a.rs", &format!("// A new first line.\n\n{CODE}"));
+    assert_eq!(repo.state(&first), "fresh");
+
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &["reanchor", &second, "--subject", "file:src/a.rs#limit"],
+    );
+    assert_eq!(v["merged"], true, "{v}");
+    assert_eq!(v["new"], first.as_str());
+    assert_eq!(v["claim"]["id"], first.as_str());
+    assert_eq!(v["claim"]["state"], "fresh");
+    assert_eq!(repo.records("claims").len(), 2, "no third claim");
+    assert_eq!(repo.state(&second), "retired");
+    let v = j(&repo, &["status"]);
+    assert_eq!(
+        v["summary"],
+        json!({"claims": 2, "fresh": 1, "stale": 0, "expired": 0, "retired": 1})
+    );
 }
 
 /// R55: editing the quoted line of a declaration anchored by symbol does
-/// not make the side `approx`; the symbol identifies the unit.
+/// not lose the side; the symbol identifies the unit exactly.
 #[test]
-fn r55_editing_the_quoted_line_under_a_symbol_is_not_approx() {
+fn r55_editing_the_quoted_line_under_a_symbol_keeps_the_side() {
     let repo = seeded();
     let id = repo.claim(
         "The cache holds 64 entries.",
@@ -2028,8 +2220,7 @@ fn r55_editing_the_quoted_line_under_a_symbol_is_not_approx() {
     assert_eq!(view["sides"][1]["unit"]["key"], "function:limit");
     assert_eq!(s(&view["next"]), format!("hibi mark {id}"));
 
-    // After the mark the claim is fresh with no approximate side, so
-    // there is nothing more to do.
+    // After the mark the claim is fresh and there is nothing more to do.
     let v = at(&repo, "2026-11-20T13:00:00Z", &["mark", &id]);
     let marked = &v["marks"][0]["claimView"];
     assert_eq!(marked["state"], "fresh");
@@ -2042,7 +2233,7 @@ fn r55_editing_the_quoted_line_under_a_symbol_is_not_approx() {
     assert_eq!(repo.view(&id)["next"], Value::Null);
 
     // The quoted line is deleted altogether: still the same unit, by
-    // symbol, and still not approximate.
+    // symbol.
     repo.write(
         "src/a.rs",
         "pub fn limit() -> u32 {\n    256\n}\n\npub fn timeout() -> u32 {\n    30\n}\n",
@@ -2408,7 +2599,7 @@ fn retire_takes_several_ids_and_reports_already_retired() {
     let v = j(&repo, &["status"]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 3, "fresh": 0, "drifted": 0, "stale": 0, "expired": 0, "retired": 3})
+        json!({"claims": 3, "fresh": 0, "stale": 0, "expired": 0, "retired": 3})
     );
 }
 

@@ -823,40 +823,53 @@ fn reanchor_errors_write_nothing() {
     assert_eq!((store.appends.get(), store.counts()), before);
 }
 
-/// Steps 3 and 4: a kept side may be approximate and refused; its selector
-/// is refreshed to the completed selector of the unit found.
+/// Step 3: the `refuse` of a kept side is not checked (it was accepted
+/// when the claim was made), while a kept side that the provider finds
+/// only by similarity fails: a guess is not a resolution.
 #[test]
-fn reanchor_refreshes_a_kept_approximate_side() {
+fn reanchor_keeps_a_refused_side_and_fails_on_a_guessed_one() {
     let (w, mut p, store) = setup();
     let old = claim_at(&store, &mut p, on("S", "k1"), "2026-01-01T00:00:00Z");
-    let mut renamed = approx(unit("k9", "note", "Retries are capped at 9."));
-    renamed.refuse = Some(Refuse::QuoteSpansUnits);
+    let mut refused = unit("k1", "note", "Retries are capped at 5.");
+    refused.refuse = Some(Refuse::QuoteSpansUnits);
     w.borrow_mut()
         .overrides
-        .insert(anchor("t:a", key_sel("k1")), Ok(vec![renamed]));
-    {
-        let mut world = w.borrow_mut();
-        let units = world.resources.get_mut("t:a").unwrap().as_mut().unwrap();
-        units[0] = unit("k9", "note", "Retries are capped at 9.");
-    }
+        .insert(anchor("t:a", key_sel("k1")), Ok(vec![refused]));
     let out = reanchor(
         &store,
         &mut p,
         ReanchorInput {
             claim: old.to_string(),
+            statement: Some("S, reworded".into()),
             ..ReanchorInput::default()
         },
     )
     .unwrap();
-    let ledger = store.ledger();
-    assert_eq!(
-        ledger.claim(out.new.as_str()).unwrap().subject,
-        anchor("t:a", key_sel("k9"))
-    );
-    assert!(!out.claim.sides[0].approx);
+    assert_eq!(out.claim.state, ClaimState::Fresh);
     assert_eq!(out.claim.next, None);
-    let v = view(&store, &mut p, &out.new);
-    assert_eq!((v.state, v.sides[0].approx), (ClaimState::Fresh, false));
+
+    let before = (store.appends.get(), store.counts());
+    w.borrow_mut().overrides.insert(
+        anchor("t:a", key_sel("k1")),
+        Ok(vec![approx(unit("k9", "note", "Retries are capped at 5."))]),
+    );
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: out.new.to_string(),
+            statement: Some("S, again".into()),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::SideMissing);
+    assert!(e.message.contains("not_exact"), "{e}");
+    assert!(
+        e.message.contains(r#"{"loc":"t:a","sel":{"key":"k9"}}"#),
+        "{e}"
+    );
+    assert_eq!((store.appends.get(), store.counts()), before);
 }
 
 /// R54: a reanchor whose result equals a retired claim fails with

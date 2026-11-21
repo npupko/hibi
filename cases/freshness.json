@@ -1106,7 +1106,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "9.2: provider error unavailable: unavailable, provider_error",
+    "name": "9.2: provider error unavailable: unavailable, resource_unavailable",
     "input": {
       "recheck": null,
       "retired": false,
@@ -1132,7 +1132,7 @@
       "sides": [
         {
           "state": "unavailable",
-          "reason": "provider_error"
+          "reason": "resource_unavailable"
         }
       ]
     },

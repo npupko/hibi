@@ -53,11 +53,14 @@ pub use report::{
     Builtin, ProvidersOutput, RepoReport, SchemeReport, providers_report, repo_reports,
     scheme_reports,
 };
-pub use resolve::{Resolved, reason_of_no_provider, resolve_anchors, resolve_with, side_of_error};
+pub use resolve::{
+    Candidates, MAX_CANDIDATES, Resolved, reason_of_no_provider, resolve_anchors, resolve_with,
+    side_of_error,
+};
 pub use types::{
-    Accepted, AcceptedSide, ClaimState, ClaimView, Envelope, ErrorEnvelope, NEXT_NOTE, Reason,
-    Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, Warning, WarningCode, excerpt, sh_quote,
-    unavailable_remediation,
+    Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Envelope,
+    ErrorEnvelope, NEXT_NOTE, Reason, Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, Warning,
+    WarningCode, excerpt, sh_quote, side_remediation, unavailable_remediation,
 };
 pub use write::{
     ClaimOutput, ClaimResult, MarkOutput, MarkResult, ReanchorOutput, RetireOutput, RetireResult,

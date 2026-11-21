@@ -210,15 +210,12 @@ fn status_selection_summary_and_order() {
     assert_eq!(ids(&out), sorted(vec![stale.clone(), expired.clone()]));
     assert_eq!(
         serde_json::to_value(out.summary).unwrap(),
-        serde_json::json!({"claims": 4, "fresh": 1, "drifted": 0, "stale": 1, "expired": 1, "retired": 1})
+        serde_json::json!({"claims": 4, "fresh": 1, "stale": 1, "expired": 1, "retired": 1})
     );
     assert_eq!(out.since, None);
     assert_eq!(out.now, now());
     assert_eq!(out.snapshot, "mem:4:4:1");
-    assert_eq!(
-        out.next_note,
-        "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
-    );
+    assert_eq!(out.next_note, engine::NEXT_NOTE);
 
     // --state.
     let out = run(
@@ -321,7 +318,7 @@ fn status_json_shape() {
         json,
         serde_json::json!({
             "ok": true, "command": "status", "now": NOW, "snapshot": "mem:1:1:0", "since": null,
-            "summary": {"claims": 1, "fresh": 0, "drifted": 0, "stale": 1, "expired": 0, "retired": 0},
+            "summary": {"claims": 1, "fresh": 0, "stale": 1, "expired": 0, "retired": 0},
             "claims": [{
                 "id": id, "statement": "Retries are capped.", "recheck": "P90D", "note": null,
                 "state": "stale", "mark": mark, "markedAt": "2026-11-01T00:00:00Z",
@@ -329,20 +326,20 @@ fn status_json_shape() {
                 "sides": [
                     {"index": 0, "role": "subject",
                      "anchor": {"loc": "t:a", "sel": {"key": "k1"}},
-                     "state": "changed", "reason": "fingerprint_differs", "approx": false,
+                     "state": "changed", "reason": "fingerprint_differs",
                      "unit": {"key": "k1", "kind": "note", "label": "new text",
                               "line": null, "endLine": null},
                      "fp": hibi::fingerprint::prose_v1("new text"),
                      "markedFp": hibi::fingerprint::prose_v1("retries are capped at 5"),
-                     "remediation": null},
+                     "remediation": null, "detail": null},
                     {"index": 1, "role": "evidence",
                      "anchor": {"loc": "u:b", "sel": {"key": "k1"}},
-                     "state": "same", "reason": null, "approx": false,
+                     "state": "same", "reason": null,
                      "unit": {"key": "k1", "kind": "note", "label": "evidence",
                               "line": null, "endLine": null},
                      "fp": hibi::fingerprint::prose_v1("evidence"),
                      "markedFp": hibi::fingerprint::prose_v1("evidence"),
-                     "remediation": null}
+                     "remediation": null, "detail": null}
                 ],
                 "next": format!("hibi mark {id}")
             }],

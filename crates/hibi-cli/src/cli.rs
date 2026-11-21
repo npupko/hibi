@@ -184,15 +184,19 @@ mark matches the current fingerprint of every side, stale when none does, \
 expired when a mark matches but the recheck period has passed, and retired \
 when it was retired.
 
-Without arguments every claim that needs attention is listed: the stale and \
-expired ones, and fresh claims that drifted. A claim drifted when one of its \
-anchors was found only approximately, because the text it quotes was \
-reworded or its symbol was renamed: the claim still holds, and `hibi \
-reanchor` brings the stored anchor up to date.
+Without arguments the stale and expired claims are listed. Each listed claim \
+shows the sides that are not the same as at its mark, and the next command \
+to run. Re-check the statement before you run that command.
 
-Each listed claim shows the sides that are not the same as at its mark, and \
-the next command to run. Re-check a stale or expired statement before you \
-run that command. The summary always counts every claim in the store.")]
+A side is missing when its stored anchor finds no unit exactly. If the unit \
+moved, was renamed or was reworded, hibi lists what it found by similarity \
+as candidates under that side, each with an anchor. A candidate is a guess: \
+hibi never uses one by itself. Read the candidate, and if it is the unit \
+the statement is about, give its anchor to `hibi reanchor`. A candidate \
+marked as having the same content as at the last mark is the marked unit, \
+moved or renamed.
+
+The summary always counts every claim in the store.")]
     Status(StatusArgs),
 
     /// Record that claims were checked again and still hold
@@ -200,8 +204,9 @@ run that command. The summary always counts every claim in the store.")]
 Add a mark to each claim: a record that you checked the statement again \
 against the current content and it still holds. The claims become fresh.
 
-Every side must resolve to one unit. If a side is missing or matches several \
-units, use `hibi reanchor` to point it at the right unit. If the statement is \
+Every side must resolve to exactly one unit. If a side is missing or matches \
+several units, use `hibi reanchor` to point it at the right unit; a unit \
+found only by similarity does not count as found. If the statement is \
 no longer true, fix the text or use `hibi retire`.
 
 The result gives, under \"accepted\", the state each claim was in before the \
@@ -219,15 +224,16 @@ Claims are never edited in place: a change of the statement, an anchor, the \
 recheck period or the note gives a new claim id. The new claim gets a mark, \
 so run this only after you checked the statement.
 
-Sides you do not replace are resolved again from their stored anchors, and \
-every stored selector is refreshed from the unit it resolves to. Without any \
-option this refreshes the selectors of a claim whose text moved or was \
-reworded slightly.
+Every side you do not replace must still resolve exactly from its stored \
+anchor; its stored selector is then refreshed. A side that is missing or \
+ambiguous has to be replaced with --subject or --evidence: `hibi status` \
+lists candidates with their anchors, and the anchor is yours to choose.
 
 The new claim's mark covers every side, also the ones you did not replace: \
 a kept side that changed since the last mark is marked as checked by this \
 command. The result lists those sides under \"accepted\", with the state the \
-old claim was in. When the new claim equals a claim that already exists, the \
+old claim was in. When the new claim is a claim that already exists (the \
+same statement, recheck period and note, and sides on the same units), the \
 old claim is merged into it and the result says \"merged\": true.
 
 Evidence numbers start at 1 and always refer to the old claim's list.")]
@@ -391,7 +397,7 @@ pub struct StatusArgs {
     pub loc: Vec<String>,
 
     /// List claims in this state. Repeat for several
-    /// [default: stale, expired, and fresh claims that drifted]
+    /// [default: stale and expired]
     #[arg(long, value_enum, value_name = "state")]
     pub state: Vec<StateArg>,
 

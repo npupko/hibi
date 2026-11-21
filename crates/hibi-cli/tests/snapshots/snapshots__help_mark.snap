@@ -7,7 +7,7 @@ exit status: 0
 ---- standard output ----
 Add a mark to each claim: a record that you checked the statement again against the current content and it still holds. The claims become fresh.
 
-Every side must resolve to one unit. If a side is missing or matches several units, use `hibi reanchor` to point it at the right unit. If the statement is no longer true, fix the text or use `hibi retire`.
+Every side must resolve to exactly one unit. If a side is missing or matches several units, use `hibi reanchor` to point it at the right unit; a unit found only by similarity does not count as found. If the statement is no longer true, fix the text or use `hibi retire`.
 
 The result gives, under "accepted", the state each claim was in before the mark and the sides that were not the same then.
 

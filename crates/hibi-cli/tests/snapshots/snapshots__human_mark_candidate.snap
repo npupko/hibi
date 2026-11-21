@@ -1,0 +1,49 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shots(&repo,\n&[&[\"status\"], &[\"mark\", &workers],\n&[\"reanchor\", &workers, \"--subject\",\n\"file:docs/ops.md::Workers are restarted every night.\"], &[\"status\"]])"
+---
+$ hibi status
+exit status: 0
+---- standard output ----
+2 claims: 1 fresh, 1 stale, 0 expired, 0 retired
+
+c1-dccp96583661kgfj4rex  stale  Workers restart every night.
+  marked 2026-11-20T12:00:00Z (m1-4bx4fmte0fvadk3a769w)
+  subject  file:docs/ops.md  missing (not_exact)
+    stored: quote "Workers are restarted nightly."
+    1 candidate, found by similarity; each is a guess, read it before you anchor to it:
+    - sentence "Workers are restarted every night.", line 3
+      | Workers are restarted every night.
+      anchor: {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted every night.","prefix":"# Operations\n\n","suffix":" The queue is drained on shutdown.\n","pos":14}}
+  next: hibi reanchor c1-dccp96583661kgfj4rex --subject <anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+---- standard error ----
+(empty)
+
+$ hibi mark c1-dccp96583661kgfj4rex
+exit status: 1
+---- standard output ----
+(empty)
+---- standard error ----
+error: side_missing: the subject (file:docs/ops.md) resolves to no unit (not_exact): the anchor matches no unit exactly; 1 unit was found by similarity, each a guess to check before use: sentence "Workers are restarted every night.", line 3: {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted every night.","prefix":"# Operations\n\n","suffix":" The queue is drained on shutdown.\n","pos":14}}
+  fix: hibi reanchor c1-dccp96583661kgfj4rex --subject <anchor>
+
+$ hibi reanchor c1-dccp96583661kgfj4rex --subject 'file:docs/ops.md::Workers are restarted every night.'
+exit status: 0
+---- standard output ----
+c1-dccp96583661kgfj4rex is retired and replaced by the new claim c1-11zmc8n2bb2vtbhncfgv
+  mark m1-yfba8rn1bgysen50hsk9, retirement r1-fgfkn5j4bhb35ndfztdm
+  was stale: subject file:docs/ops.md missing (not_exact); now marked
+  subject file:docs/ops.md (sentence "Workers are restarted every night.", line 3)
+    {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted every night.","prefix":"# Operations\n\n","suffix":" The queue is drained on shutdown.\n","pos":14}}
+---- standard error ----
+(empty)
+
+$ hibi status
+exit status: 0
+---- standard output ----
+3 claims: 2 fresh, 0 stale, 0 expired, 1 retired
+nothing stale
+---- standard error ----
+(empty)

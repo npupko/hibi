@@ -1,6 +1,6 @@
 //! The `next` table of spec section 15.2, row by row (R35, R37, R55).
 
-use hibi::engine::{self, ClaimState, MarkInput, RetireInput};
+use hibi::engine::{self, ClaimState, MarkInput};
 use hibi::model::ClaimId;
 use hibi::provider::{ProviderErrorCode as C, Providers, Unit};
 
@@ -108,20 +108,97 @@ fn unavailable_rows() {
         set_err(&f.worlds[2], "v:c", C::Failed);
         assert_eq!(f.next().1, Some("hibi providers".to_owned()));
     }
-    // scheme_not_declared, then provider_not_registered.
+    // provider_not_registered: `hibi providers` says what is wrong.
     let f = fixture(None);
     let mut p = Providers::new();
     p.register(&["t"], Box::new(Mem::new(&f.worlds[0])));
     p.register(&["u"], Box::new(Mem::new(&f.worlds[1])));
-    assert_eq!(
-        view(&f.store, &mut p, &f.id).next,
-        Some("hibi providers".to_owned())
-    );
     p.declare_unregistered("v");
     assert_eq!(
         view(&f.store, &mut p, &f.id).next,
         Some("hibi providers".to_owned())
     );
+}
+
+/// A stored claim on a scheme that the configuration no longer declares:
+/// no command fits, and the side says what to do.
+#[test]
+fn a_scheme_that_is_no_longer_declared_has_no_next() {
+    let f = fixture(None);
+    let mut p = Providers::new();
+    p.register(&["t"], Box::new(Mem::new(&f.worlds[0])));
+    p.register(&["u"], Box::new(Mem::new(&f.worlds[1])));
+    let v = view(&f.store, &mut p, &f.id);
+    assert_eq!((v.state, v.next), (ClaimState::Stale, None));
+    let side = &v.sides[2];
+    assert_eq!(side.reason, Some(engine::Reason::SchemeNotDeclared));
+    assert_eq!(
+        side.remediation.as_deref(),
+        Some("Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.")
+    );
+    assert!(side.detail.as_deref().unwrap().contains('v'), "{side:?}");
+}
+
+/// What a provider said when it failed is on the side, cut to a bounded
+/// length; a resource that cannot be read now has its own reason, no
+/// `next`, and a remediation that quotes the provider.
+#[test]
+fn a_side_that_cannot_be_evaluated_says_what_the_provider_said() {
+    let mut f = fixture(None);
+    let long = format!("the helper exited with status 3: {}", "x".repeat(2000));
+    set_err_message(&f.worlds[1], "u:b", C::Failed, &long);
+    let v = view(&f.store, &mut f.p, &f.id);
+    let side = &v.sides[1];
+    assert_eq!(side.reason, Some(engine::Reason::ProviderFailed));
+    let said = side.detail.as_deref().unwrap();
+    assert!(said.contains("the helper exited with status 3"), "{said}");
+    assert!(
+        said.chars().count() <= engine::DETAIL_CHARS + 1,
+        "{}",
+        said.len()
+    );
+    assert!(v.sides[0].detail.is_none());
+
+    let mut f = fixture(None);
+    set_err_message(
+        &f.worlds[1],
+        "u:b",
+        C::Unavailable,
+        "src/a.rs does not parse as Rust: line 3.",
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    assert_eq!((v.state, v.next.clone()), (ClaimState::Stale, None));
+    let side = &v.sides[1];
+    assert_eq!(
+        (side.state, side.reason),
+        (
+            engine::SideState::Unavailable,
+            Some(engine::Reason::ResourceUnavailable)
+        )
+    );
+    assert_eq!(
+        side.remediation.as_deref(),
+        Some("src/a.rs does not parse as Rust: line 3. Run the command again once that is fixed.")
+    );
+    // `mark` fails with the same remediation and writes nothing.
+    let before = f.store.counts();
+    let errors = engine::mark(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &[MarkInput::new(f.id.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SideUnavailable);
+    assert!(
+        errors[0].message.contains("resource_unavailable"),
+        "{}",
+        errors[0]
+    );
+    assert_eq!(errors[0].remediation, side.remediation);
+    assert_eq!(f.store.counts(), before);
 }
 
 #[test]
@@ -149,21 +226,48 @@ fn changed_expired_and_profile_mismatch_give_mark() {
     );
 }
 
-/// R55: a fresh claim with an approximate side gets `hibi reanchor <id>`;
-/// a stale or expired one gets `hibi mark <id>`, and the output of that
-/// mark then suggests the reanchor. (R37 names `reanchor` for the stale
-/// case; section 15.2 and R55 are followed.)
+/// Similarity proposes and never resolves: a unit the provider returns
+/// with `approx: true` is a candidate under a `missing` side, whatever its
+/// content, and the only way forward is an anchor the caller chooses.
 #[test]
-fn r55_approx_side_rows() {
+fn a_unit_found_by_similarity_never_resolves_a_side() {
     let mut f = fixture(None);
+    // The marked unit under another key: the same content, moved or
+    // renamed. The provider can only guess that it is the one.
     f.worlds[1].borrow_mut().overrides.insert(
         anchor("u:b", key_sel("k")),
-        Ok(vec![approx(unit("k", "note", "first"))]),
+        Ok(vec![approx(unit("moved", "note", "first"))]),
     );
     let v = view(&f.store, &mut f.p, &f.id);
-    assert_eq!(v.state, ClaimState::Fresh);
-    assert!(v.sides[1].approx && !v.sides[0].approx);
-    // A drifted fresh claim is in the default selection and is counted.
+    assert_eq!(v.state, ClaimState::Stale);
+    assert_eq!(
+        v.next,
+        Some(format!("hibi reanchor {} --evidence 1=<anchor>", f.id))
+    );
+    let side = &v.sides[1];
+    assert_eq!(
+        (side.state, side.reason),
+        (engine::SideState::Missing, Some(engine::Reason::NotExact))
+    );
+    assert!(side.unit.is_none() && side.fp.is_none());
+    let candidates = side.candidates.as_ref().unwrap();
+    assert_eq!(side.candidates_total, Some(1));
+    assert_eq!(candidates.len(), 1);
+    let c = &candidates[0];
+    assert_eq!((c.key.as_str(), c.kind.as_str()), ("moved", "note"));
+    assert_eq!(c.text.as_deref(), Some("first"));
+    assert_eq!(c.anchor, r#"{"loc":"u:b","sel":{"key":"moved"}}"#);
+    assert!(c.same_fingerprint, "the content is the marked content");
+    // The other sides are untouched.
+    assert_eq!(v.sides[0].state, engine::SideState::Same);
+    assert!(v.sides[0].candidates.is_none());
+    let json = serde_json::to_value(side).unwrap();
+    assert!(json.get("approx").is_none());
+    assert_eq!(json["candidates"][0]["sameFingerprint"], true);
+    assert_eq!(json["candidatesTotal"], 1);
+
+    // Default status lists the claim as stale; no summary key counts
+    // drifted claims.
     let out = engine::status(
         &f.store,
         &mut f.p,
@@ -173,37 +277,19 @@ fn r55_approx_side_rows() {
         now(),
     )
     .unwrap();
-    assert_eq!(
-        out.claims
-            .iter()
-            .map(|c| (c.id.clone(), c.state))
-            .collect::<Vec<_>>(),
-        [(v.id.clone(), engine::ClaimState::Fresh)]
+    assert_eq!(out.claims.len(), 1);
+    assert_eq!((out.summary.fresh, out.summary.stale), (0, 1));
+    assert!(
+        serde_json::to_value(out.summary)
+            .unwrap()
+            .get("drifted")
+            .is_none()
     );
-    assert_eq!(out.claims[0].next, v.next);
-    assert_eq!((out.summary.fresh, out.summary.drifted), (1, 1));
-    assert!(out.next_note.contains("drifted"));
-    assert_eq!(v.next, Some(format!("hibi reanchor {}", f.id)));
+    assert!(!out.next_note.contains("drifted"));
 
-    // Stale with an approximate, changed side (R37's rename): `hibi mark`.
-    f.worlds[1].borrow_mut().overrides.insert(
-        anchor("u:b", key_sel("k")),
-        Ok(vec![approx(unit("renamed", "note", "first, renamed"))]),
-    );
-    let v = view(&f.store, &mut f.p, &f.id);
-    assert_eq!(v.state, ClaimState::Stale);
-    assert_eq!(v.sides[1].state, engine::SideState::Changed);
-    assert!(v.sides[1].approx);
-    assert_eq!(v.next, Some(format!("hibi mark {}", f.id)));
-
-    // The mark succeeds, keeps the id, shows the unit and text, and its
-    // view suggests the reanchor.
-    let long = "é".repeat(300);
-    f.worlds[1].borrow_mut().overrides.insert(
-        anchor("u:b", key_sel("k")),
-        Ok(vec![approx(unit("renamed", "note", &long))]),
-    );
-    let out = engine::mark(
+    // `mark` does not take the guess: the claim stays as it is.
+    let before = f.store.counts();
+    let errors = engine::mark(
         &f.store,
         &mut f.p,
         &no_git(),
@@ -211,21 +297,111 @@ fn r55_approx_side_rows() {
         false,
         now(),
     )
-    .unwrap();
-    let mv = &out.marks[0].claim_view;
-    assert_eq!(out.marks[0].claim, f.id);
-    assert_eq!(mv.id, f.id);
-    assert_eq!(mv.state, ClaimState::Fresh);
-    assert_eq!(mv.next, Some(format!("hibi reanchor {}", f.id)));
-    let side = &mv.sides[1];
-    assert!(side.approx);
-    assert_eq!(side.state, engine::SideState::Same);
-    assert_eq!(side.unit.as_ref().unwrap().key, "renamed");
-    assert_eq!(side.text.as_deref(), Some("é".repeat(240).as_str()));
-    // An exact side carries no text.
-    assert!(mv.sides[0].text.is_none());
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SideMissing);
+    assert!(errors[0].message.contains("not_exact"), "{}", errors[0]);
+    assert_eq!(errors[0].remediation, v.next);
+    assert_eq!(f.store.counts(), before);
 
-    // Expired with an approximate side: `hibi mark`.
+    // `reanchor` that keeps the side fails the same way.
+    let e = engine::reanchor(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &engine::ReanchorInput {
+            claim: f.id.to_string(),
+            statement: Some("S2".into()),
+            ..engine::ReanchorInput::default()
+        },
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(e.code, hibi::Code::SideMissing);
+    assert_eq!(f.store.counts(), before);
+
+    // A different content under the guess: not the same fingerprint.
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok(vec![
+            approx(unit("renamed", "note", "first, reworded")),
+            approx(unit("other", "note", "something else")),
+        ]),
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    let side = &v.sides[1];
+    assert_eq!(side.reason, Some(engine::Reason::NotExact));
+    let cs = side.candidates.as_ref().unwrap();
+    assert_eq!(cs.len(), 2);
+    assert!(cs.iter().all(|c| !c.same_fingerprint));
+
+    // The caller chooses: `reanchor` with the candidate's anchor works,
+    // and the new claim resolves exactly.
+    set(
+        &f.worlds[1],
+        "u:b",
+        vec![unit("renamed", "note", "first, reworded")],
+    );
+    let chosen: hibi::model::Anchor =
+        serde_json::from_str(r#"{"loc":"u:b","sel":{"key":"renamed"}}"#).unwrap();
+    let out = engine::reanchor(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &engine::ReanchorInput {
+            claim: f.id.to_string(),
+            evidence: vec![(1, chosen.into())],
+            ..engine::ReanchorInput::default()
+        },
+        now(),
+    )
+    .unwrap();
+    assert_eq!(out.claim.state, ClaimState::Fresh);
+    assert_eq!(out.claim.next, None);
+    assert_eq!(out.accepted.was, ClaimState::Stale);
+    assert_eq!(out.accepted.sides[0].reason, Some(engine::Reason::NotExact));
+}
+
+/// A stored side that matches very many units shows twenty candidates
+/// and the count of all of them.
+#[test]
+fn a_side_shows_at_most_twenty_candidates_and_the_total() {
+    let mut f = fixture(None);
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok((0..25)
+            .map(|n| unit(&format!("k{n}"), "note", "first"))
+            .collect()),
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    let side = &v.sides[1];
+    assert_eq!(
+        (side.state, side.reason),
+        (
+            engine::SideState::Ambiguous,
+            Some(engine::Reason::SeveralUnits)
+        )
+    );
+    let shown = side.candidates.as_ref().unwrap();
+    assert_eq!(shown.len(), engine::MAX_CANDIDATES);
+    assert_eq!(side.candidates_total, Some(25));
+    assert_eq!(shown[19].key, "k19");
+    let errors = engine::mark(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &[MarkInput::new(f.id.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SideAmbiguous);
+    assert!(errors[0].message.ends_with("; and 5 more"), "{}", errors[0]);
+}
+
+/// An expired claim whose side is found only by similarity is stale: no
+/// mark matches, because the side has no unit.
+#[test]
+fn a_guess_does_not_keep_a_claim_expired_or_fresh() {
     let mut f = fixture(Some("P1D"));
     f.worlds[1].borrow_mut().overrides.insert(
         anchor("u:b", key_sel("k")),
@@ -233,55 +409,11 @@ fn r55_approx_side_rows() {
     );
     assert_eq!(
         f.next(),
-        (ClaimState::Expired, Some(format!("hibi mark {}", f.id)))
+        (
+            ClaimState::Stale,
+            Some(format!("hibi reanchor {} --evidence 1=<anchor>", f.id))
+        )
     );
-}
-
-/// The fresh-and-approx row when the claim rebuilt from the completed
-/// selectors is a retired claim: `--note <text>`.
-#[test]
-fn approx_reanchor_that_would_land_on_a_retired_claim() {
-    let w = key_world();
-    set(&w, "t:a", vec![unit("old", "note", "text")]);
-    let mut p = providers(&w, &["t"]);
-    let store = MemStore::new();
-    let a = claim_at(
-        &store,
-        &mut p,
-        engine::ClaimInput {
-            subject: json_anchor("t:a", key_sel("old")),
-            ..claim_input("S", "t:a", &[])
-        },
-        NOW,
-    );
-    // The unit is renamed; the same statement was claimed on the new key
-    // and retired.
-    set(&w, "t:a", vec![unit("new", "note", "text")]);
-    let b = claim_at(
-        &store,
-        &mut p,
-        engine::ClaimInput {
-            subject: json_anchor("t:a", key_sel("new")),
-            ..claim_input("S", "t:a", &[])
-        },
-        NOW,
-    );
-    engine::retire(
-        &store,
-        &RetireInput {
-            claims: vec![b.to_string()],
-            ..RetireInput::default()
-        },
-        now(),
-    )
-    .unwrap();
-    w.borrow_mut().overrides.insert(
-        anchor("t:a", key_sel("old")),
-        Ok(vec![approx(unit("new", "note", "text"))]),
-    );
-    let v = view(&store, &mut p, &a);
-    assert_eq!(v.state, ClaimState::Fresh);
-    assert_eq!(v.next, Some(format!("hibi reanchor {a} --note <text>")));
 }
 
 /// R35: every stale or expired claim in `status` output has a `next` that

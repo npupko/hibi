@@ -120,7 +120,7 @@ fn branch(commit_the_edit: bool) -> Branch {
     assert_eq!(ids(&status), vec![second_stale_at_base.clone()]);
     assert_eq!(
         status["summary"],
-        json!({"claims": 5, "fresh": 4, "drifted": 0, "stale": 1, "expired": 0, "retired": 0})
+        json!({"claims": 5, "fresh": 4, "stale": 1, "expired": 0, "retired": 0})
     );
 
     let base = repo.commit("base");
@@ -162,7 +162,7 @@ fn assert_lists_the_first_function_claims(b: &Branch, v: &Value, range: &str, ba
     // The summary counts every claim in the store, before filtering.
     assert_eq!(
         v["summary"],
-        json!({"claims": 5, "fresh": 2, "drifted": 0, "stale": 3, "expired": 0, "retired": 0}),
+        json!({"claims": 5, "fresh": 2, "stale": 3, "expired": 0, "retired": 0}),
         "{range}"
     );
     for claim in v["claims"].as_array().unwrap() {

@@ -857,6 +857,53 @@ fn key_leak_an_echoed_authorization_header_is_redacted_from_errors() {
     }
 }
 
+/// A key with `/`, which JSON may write as `\/`.
+const SLASH_SECRET: &str = "sk-FAKE/CANARY/9f3k2m7q";
+
+#[test]
+fn key_leak_an_echoed_header_with_escaped_slashes_is_redacted_from_errors() {
+    let fx = fixture(&[]);
+    // The body is JSON in which every `/` is written as `\/`.
+    let mock = Mock::start(Arc::new(|r, _| Reply {
+        body: echo(r).replace('/', "\\/"),
+        ..Reply::status(401)
+    }));
+    let escaped = SLASH_SECRET.replace('/', "\\/");
+    let e = fx
+        .triage(&judge_with_key(&fx, &mock, SLASH_SECRET), false)
+        .unwrap_err();
+    let recorded = mock.recorded();
+    let sent = recorded.last().unwrap();
+    assert_eq!(
+        sent.header("authorization"),
+        Some(format!("Bearer {SLASH_SECRET}").as_str()),
+        "the server did receive the key"
+    );
+    let body = echo(sent).replace('/', "\\/");
+    assert!(body.contains(&escaped), "the body holds the key: {body}");
+    assert!(!body.contains(SLASH_SECRET), "only with `\\/`: {body}");
+    assert_eq!(e.code, Code::JudgeFailed);
+    assert!(e.message.contains("401"), "{}", e.message);
+    assert_eq!(e.remediation.as_deref(), Some(CHECK_KEY));
+    let json = serde_json::to_string(&e).unwrap();
+    let remediation = e.remediation.clone().unwrap_or_default();
+    // The parts between the slashes are looked for as well: the JSON form
+    // of the error writes the `\` of an escaped slash as `\\`.
+    let mut parts = vec![SLASH_SECRET, escaped.as_str(), &SLASH_SECRET[..10]];
+    parts.extend(SLASH_SECRET.split('/'));
+    for text in [&e.message, &remediation, &e.to_string(), &json] {
+        for part in &parts {
+            assert!(!text.contains(part), "{part:?} of the key is in {text:?}");
+        }
+        assert!(
+            !text.to_ascii_lowercase().contains("bearer"),
+            "the header value is in {text:?}"
+        );
+    }
+    assert!(e.message.contains("[redacted]"), "{}", e.message);
+    assert!(e.message.contains("refused"), "{}", e.message);
+}
+
 #[test]
 fn key_leak_a_cut_body_leaves_no_part_of_the_key() {
     let fx = fixture(&[]);
@@ -1143,7 +1190,7 @@ fn r27_no_judge_command_changes_hibi() {
     let fx = fixture(&[]);
     fx.claim(
         "Retries.",
-        "file:docs/guide.md::The client retries a request three times.",
+        "file:docs/guide.md::The client retries a request",
     );
     fx.write("docs/guide.md", &GUIDE.replace("three", "four"));
     let before = fx.hibi_files();
@@ -1162,9 +1209,13 @@ fn r27_no_judge_command_changes_hibi() {
 #[test]
 fn r23_without_the_key_nothing_is_contacted() {
     let mock = ok_mock();
-    for key in [None, Some("")] {
+    for (key, what) in [(None, "is not set"), (Some(""), "is empty")] {
         let e = Judge::new(key, Some(&mock.url)).unwrap_err();
         assert_eq!(e.code, Code::JudgeUnavailable);
+        assert_eq!(
+            e.message,
+            format!("TYPESAFE_API_KEY {what}; the judge commands need it")
+        );
         assert!(e.remediation.is_some());
     }
     assert_eq!(
@@ -1281,7 +1332,7 @@ fn r61_ignored_text_is_never_sent() {
     fx.write("notes.md", "The token is hunter2 now.\n");
     let open = fx.claim(
         "Retries.",
-        "file:docs/guide.md::The client retries a request three times.",
+        "file:docs/guide.md::The client retries a request",
     );
     fx.write("docs/guide.md", &GUIDE.replace("three", "four"));
 
@@ -1330,7 +1381,7 @@ fn judge_order_ranks_stale_claims_most_likely_broken_first() {
             w,
             fx.claim(
                 &format!("{w} is true."),
-                &format!("file:docs/order.md::{w} holds."),
+                &format!("file:docs/order.md::{w} holds"),
             ),
         );
     }

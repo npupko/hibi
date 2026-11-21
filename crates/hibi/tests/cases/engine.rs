@@ -46,11 +46,12 @@ fn resolution(v: &Value) -> Resolved {
     if let Some(n) = v.get("units").and_then(Value::as_u64) {
         return match n {
             0 => Resolved::NotFound,
-            n => Resolved::Several(
-                (0..n)
+            n => Resolved::Several(hibi::engine::Candidates {
+                units: (0..n)
                     .map(|i| unit(&format!("u{i}"), "k", None, prose_v1(&i.to_string())))
                     .collect(),
-            ),
+                anchors: Vec::new(),
+            }),
         };
     }
     if let Some(code) = v.get("error").and_then(Value::as_str) {

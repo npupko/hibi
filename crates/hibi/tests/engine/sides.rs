@@ -41,7 +41,7 @@ fn one_unit_with_the_marked_fingerprint_is_same() {
     assert_eq!((s.state, s.reason), (SideState::Same, None));
     assert_eq!(s.fp, s.marked_fp);
     assert_eq!(s.unit.as_ref().unwrap().key, "k1");
-    assert!(s.candidates.is_none() && s.text.is_none() && !s.approx);
+    assert!(s.candidates.is_none() && s.text.is_none() && s.detail.is_none());
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn every_provider_error_code_maps_by_the_table() {
         (C::InvalidLocator, S::Unavailable, R::ProviderError),
         (C::InvalidSelector, S::Unavailable, R::ProviderError),
         (C::UnknownUnit, S::Unavailable, R::ProviderError),
-        (C::Unavailable, S::Unavailable, R::ProviderError),
+        (C::Unavailable, S::Unavailable, R::ResourceUnavailable),
         (C::Internal, S::Unavailable, R::ProviderError),
         // Section 13.4: the provider is unusable.
         (C::UnsupportedProtocol, S::Unavailable, R::ProviderFailed),

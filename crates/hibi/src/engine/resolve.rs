@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use crate::model::{Anchor, SelectorKey};
+use crate::model::{Anchor, Locator, SelectorKey};
 use crate::provider::{
     NoProvider, Provider, ProviderError, ProviderErrorCode, ProviderInfo, Providers, Unit,
     check_units,
@@ -14,13 +14,68 @@ use crate::provider::{
 
 use super::types::{Reason, SideState};
 
+/// At most this many candidates are shown for a side, in an error message
+/// and in a claim view. The count of all of them is always given.
+pub const MAX_CANDIDATES: usize = 20;
+
+/// The units an anchor could mean, when it does not resolve to exactly one.
+/// A candidate is never used as the side's unit: the caller chooses.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Candidates {
+    /// Every unit the provider returned.
+    pub units: Vec<Unit>,
+    /// For the first [`MAX_CANDIDATES`] units: an anchor string that selects
+    /// that unit and no other unit of the resource. It is `<loc>#<symbol>`
+    /// when the unit's symbol is unique in the whole resource, and the
+    /// unit's completed anchor as JSON otherwise.
+    pub anchors: Vec<String>,
+}
+
+impl Candidates {
+    /// The shown candidates with their anchor strings.
+    pub fn shown(&self) -> impl Iterator<Item = (&Unit, &str)> {
+        self.units
+            .iter()
+            .zip(self.anchors.iter().map(String::as_str))
+    }
+
+    /// One line per shown candidate: kind, label, line and the anchor that
+    /// selects it; then how many more there are.
+    pub fn describe(&self) -> String {
+        let mut lines: Vec<String> = self
+            .shown()
+            .map(|(u, anchor)| {
+                let label = u.label.as_deref().unwrap_or(&u.key);
+                let line = u
+                    .range
+                    .map_or_else(String::new, |r| format!(", line {}", r.line));
+                format!(
+                    "{} {:?}{line}: {anchor}",
+                    u.kind,
+                    super::types::excerpt(label, 80)
+                )
+            })
+            .collect();
+        let more = self.units.len() - self.anchors.len();
+        if more > 0 {
+            lines.push(format!("and {more} more"));
+        }
+        lines.join("; ")
+    }
+}
+
 /// The current resolution of one anchor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Resolved {
-    /// Exactly one unit, validated by section 2.5.
+    /// Exactly one unit, found exactly, validated by section 2.5.
     One(Box<Unit>),
     /// Several units: the selector is ambiguous.
-    Several(Vec<Unit>),
+    Several(Candidates),
+    /// The provider found nothing exactly and returned what it found by
+    /// similarity (units with `approx: true`). Similarity proposes and
+    /// never resolves: the side is `missing` with reason `not_exact`, and
+    /// the units are candidates for the caller to check.
+    NotExact(Candidates),
     /// The resource exists and the selector found nothing.
     NotFound,
     /// The selector has a key the provider does not allow. Nothing was
@@ -36,6 +91,15 @@ pub enum Resolved {
 }
 
 impl Resolved {
+    /// The candidates of an anchor that is ambiguous or was found only by
+    /// similarity.
+    pub fn candidates(&self) -> Option<&Candidates> {
+        match self {
+            Resolved::Several(c) | Resolved::NotExact(c) => Some(c),
+            _ => None,
+        }
+    }
+
     /// The unit, when the anchor resolved to exactly one.
     pub fn unit(&self) -> Option<&Unit> {
         match self {
@@ -50,6 +114,7 @@ impl Resolved {
         match self {
             Resolved::One(_) => None,
             Resolved::Several(_) => Some((SideState::Ambiguous, Reason::SeveralUnits)),
+            Resolved::NotExact(_) => Some((SideState::Missing, Reason::NotExact)),
             Resolved::NotFound => Some((SideState::Missing, Reason::SelectorNotFound)),
             Resolved::KeyNotAllowed { .. } => Some((SideState::Unavailable, Reason::ProviderError)),
             Resolved::Failed { state, reason, .. } => Some((*state, *reason)),
@@ -60,14 +125,19 @@ impl Resolved {
     pub fn failure_message(&self) -> Option<String> {
         match self {
             Resolved::One(_) => None,
-            Resolved::Several(units) => Some(format!(
-                "the selector matches {} units: {}",
-                units.len(),
-                units
-                    .iter()
-                    .map(describe_unit)
-                    .collect::<Vec<_>>()
-                    .join("; ")
+            Resolved::Several(c) => Some(format!(
+                "the anchor matches {} units; use one of these anchors: {}",
+                c.units.len(),
+                c.describe()
+            )),
+            Resolved::NotExact(c) => Some(format!(
+                "the anchor matches no unit exactly; {} found by similarity, each a guess to check before use: {}",
+                if c.units.len() == 1 {
+                    "1 unit was".to_owned()
+                } else {
+                    format!("{} units were", c.units.len())
+                },
+                c.describe()
             )),
             Resolved::NotFound => Some("the selector matches no unit".to_owned()),
             Resolved::KeyNotAllowed { key } => Some(format!(
@@ -110,12 +180,13 @@ pub fn side_of_error(code: ProviderErrorCode) -> (SideState, Reason) {
         C::TooLarge => (SideState::Unavailable, Reason::TooLarge),
         C::RepoNotFound => (SideState::Unavailable, Reason::RepoNotFound),
         C::RepoNotAllowed => (SideState::Unavailable, Reason::RepoNotAllowed),
+        // The resource exists but cannot be read now.
+        C::Unavailable => (SideState::Unavailable, Reason::ResourceUnavailable),
         C::InvalidRequest
         | C::UnknownMethod
         | C::InvalidLocator
         | C::InvalidSelector
         | C::UnknownUnit
-        | C::Unavailable
         | C::Internal => (SideState::Unavailable, Reason::ProviderError),
     }
 }
@@ -130,7 +201,62 @@ pub fn reason_of_no_provider(np: NoProvider) -> Reason {
 
 pub(crate) fn failed_from_error(e: &ProviderError) -> Resolved {
     let (state, reason) = side_of_error(e.code);
-    Resolved::failed(state, reason, e.to_string())
+    // For a resource that cannot be read now the message is the provider's
+    // own sentence, which the side's remediation quotes.
+    let message = if reason == Reason::ResourceUnavailable {
+        e.message.clone()
+    } else {
+        e.to_string()
+    };
+    Resolved::failed(state, reason, message)
+}
+
+/// The anchor strings of the first [`MAX_CANDIDATES`] of `units`, all of
+/// resource `loc`. A symbol is used alone only when the provider's unit
+/// list of the resource holds it once; `listing` caches that list per
+/// resource for one resolve pass.
+fn candidates_of(
+    provider: &mut dyn Provider,
+    info: &ProviderInfo,
+    listing: &mut HashMap<Locator, Option<Vec<Unit>>>,
+    loc: &Locator,
+    units: Vec<Unit>,
+) -> Candidates {
+    let all = listing.entry(loc.clone()).or_insert_with(|| {
+        if info.capabilities.units {
+            provider.units(loc, None).ok()
+        } else {
+            None
+        }
+    });
+    let compact = loc.is_file_or_repo() && !loc.as_str().contains('#') && {
+        // After the scheme, `::` would end the locator in compact syntax.
+        let path = loc.as_str().split_once(':').map_or("", |(_, rest)| rest);
+        !path.replacen("//", "", 1).contains("::")
+    };
+    let anchors = units
+        .iter()
+        .take(MAX_CANDIDATES)
+        .map(|u| {
+            let unique = u.sel.symbol.as_deref().filter(|symbol| {
+                compact
+                    && !symbol.contains('#')
+                    && !symbol.contains("::")
+                    && all.as_ref().is_some_and(|all| {
+                        all.iter()
+                            .filter(|x| x.sel.symbol.as_deref() == Some(symbol))
+                            .count()
+                            == 1
+                    })
+            });
+            match unique {
+                Some(symbol) => format!("{loc}#{symbol}"),
+                None => serde_json::to_string(&Anchor::new(loc.clone(), u.sel.clone()))
+                    .unwrap_or_default(),
+            }
+        })
+        .collect();
+    Candidates { units, anchors }
 }
 
 /// `info()` of a provider, cloned; any failure is `provider_failed`.
@@ -191,8 +317,10 @@ pub fn resolve_with(provider: &mut dyn Provider, anchors: &[&Anchor]) -> Vec<Res
                 .map(|_| Resolved::failed(SideState::Unavailable, Reason::ProviderError, &message))
                 .collect()
         } else {
-            raw.into_iter()
-                .map(|r| match r {
+            let mut listing: HashMap<Locator, Option<Vec<Unit>>> = HashMap::new();
+            let mut out = Vec::with_capacity(raw.len());
+            for (r, anchor) in raw.into_iter().zip(&unique) {
+                out.push(match r {
                     Err(e) => failed_from_error(&e),
                     Ok(units) => match validate_units(&info, &units) {
                         Err(m) => {
@@ -200,15 +328,32 @@ pub fn resolve_with(provider: &mut dyn Provider, anchors: &[&Anchor]) -> Vec<Res
                         }
                         Ok(()) => {
                             let mut units = units;
-                            match units.len() {
-                                0 => Resolved::NotFound,
-                                1 => Resolved::One(Box::new(units.remove(0))),
-                                _ => Resolved::Several(units),
+                            // A unit found by similarity is a guess: with
+                            // one in the answer nothing resolves.
+                            let guessed = units.iter().any(|u| u.approx);
+                            match (units.len(), guessed) {
+                                (0, _) => Resolved::NotFound,
+                                (1, false) => Resolved::One(Box::new(units.remove(0))),
+                                (_, false) => Resolved::Several(candidates_of(
+                                    provider,
+                                    &info,
+                                    &mut listing,
+                                    &anchor.loc,
+                                    units,
+                                )),
+                                (_, true) => Resolved::NotExact(candidates_of(
+                                    provider,
+                                    &info,
+                                    &mut listing,
+                                    &anchor.loc,
+                                    units,
+                                )),
                             }
                         }
                     },
-                })
-                .collect()
+                });
+            }
+            out
         }
     };
     slots

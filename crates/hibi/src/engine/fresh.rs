@@ -10,13 +10,13 @@ use std::collections::{HashMap, HashSet};
 use crate::duration;
 use crate::error::Error;
 use crate::fingerprint::{Comparison, compare};
-use crate::model::{Anchor, Claim, ClaimId, Mark, Timestamp};
+use crate::model::{Claim, Mark, Timestamp};
 use crate::store::Ledger;
 
 use super::resolve::Resolved;
 use super::types::{
-    Accepted, AcceptedSide, ClaimState, ClaimView, Reason, Role, Side, SideState,
-    TEXT_EXCERPT_CHARS, UnitRef, excerpt, unavailable_remediation,
+    Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Reason, Role, Side,
+    SideState, TEXT_EXCERPT_CHARS, UnitRef, excerpt, side_remediation,
 };
 
 /// A ledger with its marks grouped by claim and its retired claims as a
@@ -226,45 +226,16 @@ pub fn accepted(claim: &Claim, eval: &Evaluation<'_>) -> Accepted {
 pub struct ViewOptions {
     /// `--detail`: every resolved side carries its full unit text.
     pub detail: bool,
-    /// `mark` output: every approximate side carries its unit text cut to
-    /// 240 characters.
-    pub approx_excerpt: bool,
-}
-
-/// The id of the claim rebuilt from the completed selectors of its
-/// resolved sides, when every side resolves to one unit.
-fn rebuilt_id(claim: &Claim, resolved: &[Resolved]) -> Option<ClaimId> {
-    let mut anchors = Vec::with_capacity(resolved.len());
-    for (a, r) in claim.sides().zip(resolved) {
-        anchors.push(Anchor::new(a.loc.clone(), r.unit()?.sel.clone()));
-    }
-    let subject = anchors.remove(0);
-    Claim::new(
-        &claim.statement,
-        subject,
-        anchors,
-        claim.recheck.clone(),
-        claim.note.clone(),
-    )
-    .ok()
-    .map(|c| c.id)
 }
 
 /// The `next` suggestion for a claim: the first row of the table in
-/// section 15.2 that applies. `is_retired` answers whether a claim id is
-/// that of a retired claim in the store.
-pub fn next_command(
-    claim: &Claim,
-    eval: &Evaluation<'_>,
-    resolved: &[Resolved],
-    is_retired: &dyn Fn(&str) -> bool,
-) -> Option<String> {
+/// section 15.2 that applies. It is a command for the caller to complete
+/// and run after a check, never one that contains a candidate: where a
+/// side has to be anchored again, the anchor is written as `<anchor>`.
+pub fn next_command(claim: &Claim, eval: &Evaluation<'_>) -> Option<String> {
     let id = &claim.id;
-    let approx = resolved.iter().any(|r| r.unit().is_some_and(|u| u.approx));
-    match eval.state {
-        ClaimState::Retired => return None,
-        ClaimState::Fresh if !approx => return None,
-        _ => {}
+    if matches!(eval.state, ClaimState::Retired | ClaimState::Fresh) {
+        return None;
     }
     let mut reanchor = String::new();
     for (i, (state, _)) in eval.sides.iter().enumerate() {
@@ -285,31 +256,22 @@ pub fn next_command(
         })
     };
     if unavailable(&[
-        Reason::SchemeNotDeclared,
         Reason::ProviderNotRegistered,
         Reason::ProviderFailed,
         Reason::RepoNotAllowed,
     ]) {
         return Some("hibi providers".to_owned());
     }
+    // No command fits these: the side's `remediation` says what to do.
     if unavailable(&[
+        Reason::SchemeNotDeclared,
         Reason::RepoNotFound,
         Reason::NotText,
         Reason::TooLarge,
         Reason::ProviderError,
+        Reason::ResourceUnavailable,
     ]) {
         return None;
-    }
-    if eval.state == ClaimState::Fresh {
-        // `approx` holds here. The plain command would fail with
-        // `claim_retired` when the rebuilt claim is a retired one.
-        let lands_on_retired =
-            rebuilt_id(claim, resolved).is_some_and(|new| is_retired(new.as_str()));
-        return Some(if lands_on_retired {
-            format!("hibi reanchor {id} --note <text>")
-        } else {
-            format!("hibi reanchor {id}")
-        });
     }
     Some(format!("hibi mark {id}"))
 }
@@ -320,7 +282,6 @@ pub fn claim_view(
     eval: &Evaluation<'_>,
     resolved: &[Resolved],
     options: ViewOptions,
-    is_retired: &dyn Fn(&str) -> bool,
 ) -> ClaimView {
     let sides = eval
         .sides
@@ -329,15 +290,30 @@ pub fn claim_view(
         .zip(claim.sides().zip(resolved))
         .map(|((index, (state, reason)), (anchor, r))| {
             let unit = r.unit();
-            let approx = unit.is_some_and(|u| u.approx);
-            let text = unit.and_then(|u| u.text.as_deref()).and_then(|t| {
-                if options.detail {
-                    Some(t.to_owned())
-                } else if options.approx_excerpt && approx {
-                    Some(excerpt(t, TEXT_EXCERPT_CHARS))
-                } else {
-                    None
+            let text = unit
+                .and_then(|u| u.text.as_deref())
+                .filter(|_| options.detail)
+                .map(str::to_owned);
+            let marked_fp = eval.reference.map(|m| m.sides[index].fp.clone());
+            let said = match r {
+                Resolved::Failed { message, .. } if *state == SideState::Unavailable => {
+                    Some(message.as_str())
                 }
+                _ => None,
+            };
+            let candidates = r.candidates().map(|c| {
+                c.shown()
+                    .map(|(u, select)| Candidate {
+                        key: u.key.clone(),
+                        kind: u.kind.clone(),
+                        label: u.label.clone(),
+                        line: u.range.map(|r| r.line),
+                        end_line: u.range.map(|r| r.end_line),
+                        text: u.text.as_deref().map(|t| excerpt(t, TEXT_EXCERPT_CHARS)),
+                        anchor: select.to_owned(),
+                        same_fingerprint: marked_fp.as_ref() == Some(&u.fp),
+                    })
+                    .collect::<Vec<_>>()
             });
             Side {
                 index,
@@ -345,20 +321,16 @@ pub fn claim_view(
                 anchor: anchor.clone(),
                 state: *state,
                 reason: *reason,
-                approx,
                 unit: unit.map(UnitRef::from),
                 fp: unit.map(|u| u.fp.clone()),
-                marked_fp: eval.reference.map(|m| m.sides[index].fp.clone()),
+                marked_fp,
                 remediation: match (state, reason) {
-                    (SideState::Unavailable, Some(reason)) => {
-                        unavailable_remediation(*reason).map(str::to_owned)
-                    }
+                    (SideState::Unavailable, Some(reason)) => side_remediation(*reason, said),
                     _ => None,
                 },
-                candidates: match r {
-                    Resolved::Several(units) => Some(units.iter().map(UnitRef::from).collect()),
-                    _ => None,
-                },
+                detail: said.map(|m| excerpt(m, DETAIL_CHARS)),
+                candidates_total: r.candidates().map(|c| c.units.len()),
+                candidates,
                 text,
             }
         })
@@ -373,6 +345,6 @@ pub fn claim_view(
         marked_at: eval.reference.map(|m| m.at),
         expires_at: eval.expires_at,
         sides,
-        next: next_command(claim, eval, resolved, is_retired),
+        next: next_command(claim, eval),
     }
 }

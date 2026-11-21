@@ -382,15 +382,15 @@ fn same() -> (String, Value) {
     ("same".to_owned(), Value::Null)
 }
 
-/// Asserts that the claim is fresh with both sides `same`, not approximate,
-/// and nothing to do next.
+/// Asserts that the claim is fresh with both sides `same` and nothing to
+/// do next.
 fn assert_fresh(repo: &Repo, id: &str, what: &str) {
     let view = repo.view(id);
     assert_eq!(view["id"], id, "{what}: {view}");
     assert_eq!(view["state"], "fresh", "{what}: {view}");
     assert_eq!(sides(&view), [same(), same()], "{what}: {view}");
     for side in view["sides"].as_array().unwrap() {
-        assert_eq!(side["approx"], false, "{what}: {view}");
+        assert!(side.get("candidates").is_none(), "{what}: {view}");
         assert_eq!(side["fp"], side["markedFp"], "{what}: {view}");
     }
     assert_eq!(view["next"], Value::Null, "{what}: {view}");
@@ -428,10 +428,8 @@ fn check_class(lang: &Lang) {
     let marks = marks_of(&repo, &id);
     assert_eq!(marks.len(), 1);
     assert_eq!(marks[0]["id"], view["mark"]);
-    let all_fresh =
-        json!({"claims": 1, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 0});
-    let one_stale =
-        json!({"claims": 1, "fresh": 0, "drifted": 0, "stale": 1, "expired": 0, "retired": 0});
+    let all_fresh = json!({"claims": 1, "fresh": 1, "stale": 0, "expired": 0, "retired": 0});
+    let one_stale = json!({"claims": 1, "fresh": 0, "stale": 1, "expired": 0, "retired": 0});
     assert_eq!(summary(&repo), all_fresh);
 
     // R12: whitespace, line breaks, comments, commas before a closing
@@ -457,7 +455,7 @@ fn check_class(lang: &Lang) {
         [same(), ("changed".to_owned(), json!("fingerprint_differs"))],
         "{view}"
     );
-    assert_eq!(view["sides"][1]["approx"], false, "{view}");
+    assert!(view["sides"][1]["unit"].is_object(), "{view}");
     assert_eq!(view["sides"][1]["markedFp"], marked_fp.as_str(), "{view}");
     assert_ne!(view["sides"][1]["fp"], marked_fp.as_str(), "{view}");
     assert!(
@@ -620,9 +618,9 @@ The client retries a failed call five times. Each retry waits thrice as long as 
     assert_eq!(fresh_view(&second, "reflowed")["sides"][0]["fp"], second_fp);
     assert_eq!(
         summary(&repo),
-        // Both stay fresh and neither drifted: a quote that differs from
+        // Both stay fresh: a quote that differs from
         // the text only in whitespace is an exact match.
-        json!({"claims": 2, "fresh": 2, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 2, "fresh": 2, "stale": 0, "expired": 0, "retired": 0})
     );
 
     // One word of the second sentence.
@@ -631,16 +629,26 @@ The client retries a failed call five times. Each retry waits thrice as long as 
     let listed = repo.json(&["status"]);
     assert_eq!(
         listed["summary"],
-        json!({"claims": 2, "fresh": 1, "drifted": 0, "stale": 1, "expired": 0, "retired": 0})
+        json!({"claims": 2, "fresh": 1, "stale": 1, "expired": 0, "retired": 0})
     );
     assert_eq!(listed["claims"].as_array().unwrap().len(), 1, "{listed}");
     let view = &listed["claims"][0];
     assert_eq!(view["id"], second.as_str(), "{view}");
     assert_eq!(view["state"], "stale", "{view}");
     assert_eq!(view["sides"].as_array().unwrap().len(), 1, "{view}");
-    assert_eq!(view["sides"][0]["state"], "changed", "{view}");
+    // The reworded sentence is not the marked one: it is a candidate.
+    assert_eq!(view["sides"][0]["state"], "missing", "{view}");
+    assert_eq!(view["sides"][0]["reason"], "not_exact", "{view}");
+    assert_eq!(
+        view["sides"][0]["candidates"][0]["sameFingerprint"], false,
+        "{view}"
+    );
     assert_eq!(view["sides"][0]["markedFp"], second_fp, "{view}");
-    assert_eq!(view["next"], format!("hibi mark {second}"), "{view}");
+    assert_eq!(
+        view["next"],
+        format!("hibi reanchor {second} --subject <anchor>"),
+        "{view}"
+    );
     // Asked for by id, the two claims come back in id order with these
     // states.
     let both = repo.json(&["status", &first, &second]);
@@ -728,7 +736,7 @@ fn r18_recheck_boundary_under_now() {
     assert_eq!(envelope["now"], "2026-03-31T23:59:59Z");
     assert_eq!(
         envelope["summary"],
-        json!({"claims": 1, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 1, "fresh": 1, "stale": 0, "expired": 0, "retired": 0})
     );
     assert_eq!(view["id"], id.as_str());
     assert_eq!(view["state"], "fresh", "{view}");
@@ -743,7 +751,7 @@ fn r18_recheck_boundary_under_now() {
     assert_eq!(envelope["now"], expires);
     assert_eq!(
         envelope["summary"],
-        json!({"claims": 1, "fresh": 0, "drifted": 0, "stale": 0, "expired": 1, "retired": 0})
+        json!({"claims": 1, "fresh": 0, "stale": 0, "expired": 1, "retired": 0})
     );
     assert_eq!(view["id"], id.as_str());
     assert_eq!(view["state"], "expired", "{view}");

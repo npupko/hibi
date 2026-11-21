@@ -8,7 +8,7 @@ exit status: 1
 ---- standard output ----
 (empty)
 ---- standard error ----
-error: element 1: selector_not_exact: the subject (file:docs/ops.md) resolved only approximately; found sentence:c8c83203a2ae (sentence) at line 3: Workers are restarted nightly., text "Workers are restarted nightly."
+error: element 1: selector_not_exact: the subject (file:docs/ops.md): the anchor matches no unit exactly; 1 unit was found by similarity, each a guess to check before use: sentence "Workers are restarted nightly.", line 3: {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted nightly.","prefix":"# Operations\n\n","suffix":" The queue is drained on shutdown.\n","pos":14}}
   fix: Give a quote that occurs exactly in the unit you mean.
 error: element 2: invalid_duration: "90 days" is not a duration: it must start with P
   fix: Write the duration as P[nY][nM][nW][nD][T[nH][nM][nS]] with whole numbers, for example P90D.

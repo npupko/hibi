@@ -18,6 +18,6 @@ c1-vpsqdwgd6c7f2x3zmfe6  stale  Workers restart every night.
     stored: quote "Workers are restarted nightly."
   next: hibi reanchor c1-vpsqdwgd6c7f2x3zmfe6 --subject <anchor>
 
-Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ---- standard error ----
 (empty)

@@ -546,7 +546,7 @@ pub fn unit_texts(providers: &mut Providers, units: &[&UncoveredUnit]) -> Vec<Op
         .map(|(r, u)| {
             let found = match &r {
                 Resolved::One(x) if x.key == u.unit.key => Some(&**x),
-                Resolved::Several(xs) => xs.iter().find(|x| x.key == u.unit.key),
+                Resolved::Several(xs) => xs.units.iter().find(|x| x.key == u.unit.key),
                 _ => None,
             };
             found.and_then(|x| x.text.clone())

@@ -304,17 +304,27 @@ fn human_mark() {
         )
     );
 
-    // The sentence is reworded slightly: the mark is accepted and the
-    // output shows what was marked.
+    // The sentence is reworded slightly: the new wording is a candidate,
+    // the mark is refused, and the caller anchors the claim to it.
     repo.write(
         "docs/ops.md",
         &OPS.replace("restarted nightly", "restarted every night"),
     );
     insta::assert_snapshot!(
-        "human_mark_approx",
+        "human_mark_candidate",
         shots(
             &repo,
-            &[&["status"], &["mark", &workers], &["status", &workers]]
+            &[
+                &["status"],
+                &["mark", &workers],
+                &[
+                    "reanchor",
+                    &workers,
+                    "--subject",
+                    "file:docs/ops.md::Workers are restarted every night."
+                ],
+                &["status"]
+            ]
         )
     );
 }

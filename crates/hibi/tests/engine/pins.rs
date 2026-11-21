@@ -5,20 +5,15 @@
 
 use hibi::config::{RepoConfig, UserConfig};
 use hibi::engine::{
-    self, ClaimState, CoverEnv, CoverQuery, MarkInput, Reason, RetireInput, SideState, Since,
-    SinceRun, Skipped, StatusQuery, changed_since,
+    self, ClaimState, CoverEnv, CoverQuery, MarkInput, Reason, SideState, Since, SinceRun, Skipped,
+    StatusQuery, changed_since,
 };
 use hibi::fingerprint::prose_v1;
 use hibi::model::{Claim, ClaimId, Mark, MarkSide};
-use hibi::provider::{Providers, Unit};
+use hibi::provider::Providers;
 use hibi::store::Batch;
 
 use crate::support::*;
-
-fn approx(mut u: Unit) -> Unit {
-    u.approx = true;
-    u
-}
 
 // ---------------------------------------------------------------------------
 // Section 9.3: a mark that does not fit
@@ -121,65 +116,6 @@ fn a_mark_with_a_wrong_side_locator_is_ignored() {
         (v.sides[1].state, v.sides[1].reason),
         (SideState::Changed, Some(Reason::FingerprintDiffers))
     );
-}
-
-// ---------------------------------------------------------------------------
-// Section 15.2: the rebuilt claim id covers the note
-// ---------------------------------------------------------------------------
-
-/// A fresh claim with note `a_note` on key `old`, found approximately at
-/// key `new`, where a claim with the same statement on key `new` and note
-/// `retired_note` was retired. Returns the live claim's id and its `next`.
-fn next_with_notes(a_note: Option<&str>, retired_note: Option<&str>) -> (ClaimId, Option<String>) {
-    let w = key_world();
-    set(&w, "t:a", vec![unit("old", "note", "text")]);
-    let mut p = providers(&w, &["t"]);
-    let store = MemStore::new();
-    let input = |key: &str, note: Option<&str>| engine::ClaimInput {
-        subject: json_anchor("t:a", key_sel(key)),
-        note: note.map(str::to_owned),
-        ..claim_input("S", "t:a", &[])
-    };
-    let a = claim_at(&store, &mut p, input("old", a_note), NOW);
-    set(&w, "t:a", vec![unit("new", "note", "text")]);
-    let b = claim_at(&store, &mut p, input("new", retired_note), NOW);
-    assert_ne!(a, b);
-    engine::retire(
-        &store,
-        &RetireInput {
-            claims: vec![b.to_string()],
-            ..RetireInput::default()
-        },
-        now(),
-    )
-    .unwrap();
-    w.borrow_mut().overrides.insert(
-        anchor("t:a", key_sel("old")),
-        Ok(vec![approx(unit("new", "note", "text"))]),
-    );
-    let v = view(&store, &mut p, &a);
-    assert_eq!(v.state, ClaimState::Fresh);
-    assert!(v.sides[0].approx);
-    (a, v.next)
-}
-
-/// The claim rebuilt from the completed anchors keeps the note, so it is
-/// the retired claim only when the notes are equal too.
-#[test]
-fn the_rebuilt_claim_of_an_approx_reanchor_keeps_the_note() {
-    // Same statement, same completed anchors, same note: the plain command
-    // would land on the retired claim.
-    let (a, next) = next_with_notes(Some("why"), Some("why"));
-    assert_eq!(next, Some(format!("hibi reanchor {a} --note <text>")));
-
-    // The retired claim differs only in its note: the plain command makes a
-    // new claim.
-    let (a, next) = next_with_notes(Some("why"), None);
-    assert_eq!(next, Some(format!("hibi reanchor {a}")));
-    let (a, next) = next_with_notes(Some("why"), Some("another reason"));
-    assert_eq!(next, Some(format!("hibi reanchor {a}")));
-    let (a, next) = next_with_notes(None, Some("why"));
-    assert_eq!(next, Some(format!("hibi reanchor {a}")));
 }
 
 // ---------------------------------------------------------------------------

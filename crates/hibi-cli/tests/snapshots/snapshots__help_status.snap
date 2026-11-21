@@ -7,9 +7,11 @@ exit status: 0
 ---- standard output ----
 Compare every claim with the current content. A claim is fresh when some mark matches the current fingerprint of every side, stale when none does, expired when a mark matches but the recheck period has passed, and retired when it was retired.
 
-Without arguments every claim that needs attention is listed: the stale and expired ones, and fresh claims that drifted. A claim drifted when one of its anchors was found only approximately, because the text it quotes was reworded or its symbol was renamed: the claim still holds, and `hibi reanchor` brings the stored anchor up to date.
+Without arguments the stale and expired claims are listed. Each listed claim shows the sides that are not the same as at its mark, and the next command to run. Re-check the statement before you run that command.
 
-Each listed claim shows the sides that are not the same as at its mark, and the next command to run. Re-check a stale or expired statement before you run that command. The summary always counts every claim in the store.
+A side is missing when its stored anchor finds no unit exactly. If the unit moved, was renamed or was reworded, hibi lists what it found by similarity as candidates under that side, each with an anchor. A candidate is a guess: hibi never uses one by itself. Read the candidate, and if it is the unit the statement is about, give its anchor to `hibi reanchor`. A candidate marked as having the same content as at the last mark is the marked unit, moved or renamed.
+
+The summary always counts every claim in the store.
 
 Usage: hibi status [OPTIONS] [claim-id]...
 
@@ -25,7 +27,7 @@ Options:
           Keep a claim only when the locator of one of its sides matches this glob, for example 'file:src/**'. Repeat for several
 
       --state <state>
-          List claims in this state. Repeat for several [default: stale, expired, and fresh claims that drifted]
+          List claims in this state. Repeat for several [default: stale and expired]
 
           Possible values:
           - fresh:   Some mark matches the current content and is recent enough

@@ -123,21 +123,25 @@ fn side_place(side: &Side) -> String {
     out
 }
 
-/// The lines for one side that is not `same`, or that is approximate.
+/// The lines for one side that is not `same`.
 fn side_lines(out: &mut String, side: &Side) {
     let mut line = format!("  {}  {}  {}", role_name(side), side.anchor.loc, side.state);
     if let Some(reason) = side.reason {
         let _ = write!(line, " ({reason})");
     }
-    if side.approx {
-        line.push_str(", found approximately");
-    }
     if let Some(unit) = &side.unit {
         let _ = write!(line, "  {}", unit_name(unit));
     }
     let _ = writeln!(out, "{line}");
-    // A side that cannot be evaluated and has no command to run next: the
-    // cause and what the author can do.
+    // A side that cannot be evaluated: what the provider or the registry
+    // said, then the cause and what the author can do. (The remediation of
+    // a resource that cannot be read now already holds what was said.)
+    let quoted = side.reason == Some(hibi::engine::Reason::ResourceUnavailable);
+    if let Some(said) = &side.detail
+        && !quoted
+    {
+        let _ = writeln!(out, "    {}", one_line(said, 300));
+    }
     if let Some(fix) = &side.remediation
         && fix != "hibi providers"
     {
@@ -162,8 +166,39 @@ fn side_lines(out: &mut String, side: &Side) {
         }
     }
     if let Some(candidates) = &side.candidates {
+        let guessed = side.reason == Some(hibi::engine::Reason::NotExact);
+        let total = side.candidates_total.unwrap_or(candidates.len());
+        let _ = writeln!(
+            out,
+            "    {}{}:",
+            plural(total, "candidate", "candidates"),
+            if guessed {
+                ", found by similarity; each is a guess, read it before you anchor to it"
+            } else {
+                "; the stored anchor matches each of them"
+            }
+        );
         for c in candidates {
-            let _ = writeln!(out, "    candidate: {}", unit_name(c));
+            let label = c.label.as_deref().unwrap_or(&c.key);
+            let line = c.line.map_or_else(String::new, |l| format!(", line {l}"));
+            let same = if c.same_fingerprint {
+                "; same content as at the last mark"
+            } else {
+                ""
+            };
+            let _ = writeln!(
+                out,
+                "    - {} \"{}\"{line}{same}",
+                c.kind,
+                one_line(label, 60)
+            );
+            if let Some(text) = &c.text {
+                let _ = writeln!(out, "      | {}", one_line(text, LINE_TEXT_CHARS));
+            }
+            let _ = writeln!(out, "      anchor: {}", c.anchor);
+        }
+        if total > candidates.len() {
+            let _ = writeln!(out, "    and {} more", total - candidates.len());
         }
     }
     if let Some(text) = &side.text {
@@ -183,7 +218,7 @@ fn claim_block(out: &mut String, view: &ClaimView) {
     );
     marked_line(out, view);
     for side in &view.sides {
-        if side.state != SideState::Same || side.approx || side.text.is_some() {
+        if side.state != SideState::Same || side.text.is_some() {
             side_lines(out, side);
         }
     }
@@ -242,16 +277,6 @@ fn accepted_line(out: &mut String, accepted: &Accepted) {
     let _ = writeln!(out, "  was {}{what}; now marked", accepted.was);
 }
 
-/// The note that goes with a `next` after a write.
-fn note_after_write(out: &mut String, views: &[&ClaimView]) {
-    if views.iter().any(|v| writes_a_mark(v)) {
-        let _ = writeln!(
-            out,
-            "\nA next command here only brings a stored anchor up to date. Look at what the anchor points to now, then run it."
-        );
-    }
-}
-
 /// True when a `next` writes a mark, so the statement must be re-checked
 /// first (section 15.2).
 fn writes_a_mark(view: &ClaimView) -> bool {
@@ -268,13 +293,8 @@ fn writes_a_mark(view: &ClaimView) -> bool {
 /// `--loc` or `--since`: only then an empty list means nothing is stale.
 pub fn status(o: &StatusOutput, default_selection: bool) -> String {
     let s = &o.summary;
-    let drifted = if s.drifted > 0 {
-        format!(" ({} drifted)", s.drifted)
-    } else {
-        String::new()
-    };
     let mut out = format!(
-        "{}: {} fresh{drifted}, {} stale, {} expired, {} retired\n",
+        "{}: {} fresh, {} stale, {} expired, {} retired\n",
         plural(s.claims, "claim", "claims"),
         s.fresh,
         s.stale,
@@ -296,18 +316,10 @@ pub fn status(o: &StatusOutput, default_selection: bool) -> String {
         out.push('\n');
         claim_block(&mut out, view);
     }
-    // One sentence per kind of listed claim, so that neither misleads.
-    let fresh = |v: &&ClaimView| v.state == ClaimState::Fresh;
-    if o.claims.iter().filter(|v| !fresh(v)).any(writes_a_mark) {
+    if o.claims.iter().any(writes_a_mark) {
         let _ = writeln!(
             out,
-            "\nRe-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire."
-        );
-    }
-    if o.claims.iter().filter(fresh).any(writes_a_mark) {
-        let _ = writeln!(
-            out,
-            "\nA fresh claim is listed because its anchor drifted. The statement still holds: look at what the anchor points to now, then run its reanchor command."
+            "\nRe-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire."
         );
     }
     out
@@ -330,8 +342,6 @@ pub fn claim(o: &ClaimOutput) -> String {
             let _ = writeln!(out, "  next: {next}");
         }
     }
-    let views: Vec<&ClaimView> = o.claims.iter().map(|c| &c.claim).collect();
-    note_after_write(&mut out, &views);
     out
 }
 
@@ -340,15 +350,10 @@ pub fn mark(o: &MarkOutput) -> String {
     for m in &o.marks {
         let _ = writeln!(out, "{}  marked  {}", m.claim, m.mark);
         accepted_line(&mut out, &m.accepted);
-        for side in m.claim_view.sides.iter().filter(|s| s.approx) {
-            side_lines(&mut out, side);
-        }
         if let Some(next) = &m.claim_view.next {
             let _ = writeln!(out, "  next: {next}");
         }
     }
-    let views: Vec<&ClaimView> = o.marks.iter().map(|m| &m.claim_view).collect();
-    note_after_write(&mut out, &views);
     out
 }
 
@@ -372,7 +377,6 @@ pub fn reanchor(o: &ReanchorOutput) -> String {
     if let Some(next) = &o.claim.next {
         let _ = writeln!(out, "  next: {next}");
     }
-    note_after_write(&mut out, &[&o.claim]);
     out
 }
 

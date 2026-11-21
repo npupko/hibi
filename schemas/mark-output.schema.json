@@ -116,6 +116,66 @@
         "sel"
       ]
     },
+    "Candidate": {
+      "description": "One unit a side's anchor could mean (section 15.2).",
+      "type": "object",
+      "properties": {
+        "anchor": {
+          "description": "An anchor that selects this unit and no other unit of the resource,\nto give to `reanchor`: `<loc>#<symbol>`, or a JSON anchor.",
+          "type": "string"
+        },
+        "endLine": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "sameFingerprint": {
+          "description": "True when the unit's fingerprint equals the side's fingerprint in\nthe reference mark: the unit is the one that was marked, and it\nmoved or was renamed. `false` also when the claim has no mark.",
+          "type": "boolean"
+        },
+        "text": {
+          "description": "The unit text cut to 240 characters, or `null` when the provider\ngave none.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "kind",
+        "label",
+        "line",
+        "endLine",
+        "text",
+        "anchor",
+        "sameFingerprint"
+      ]
+    },
     "ClaimId": {
       "type": "string",
       "pattern": "^c1-[0-9a-hjkmnp-tv-z]{20}$"
@@ -267,7 +327,9 @@
         "repo_not_found",
         "repo_not_allowed",
         "provider_error",
+        "resource_unavailable",
         "selector_not_found",
+        "not_exact",
         "several_units",
         "no_mark",
         "fingerprint_differs",
@@ -341,18 +403,31 @@
           "description": "The anchor as stored.",
           "$ref": "#/$defs/Anchor"
         },
-        "approx": {
-          "type": "boolean"
-        },
         "candidates": {
-          "description": "Present only when `state` is `ambiguous`.",
+          "description": "Present when the side is `ambiguous`, or `missing` with reason\n`not_exact`: the units the stored anchor could mean, at most\n[`MAX_CANDIDATES`](super::MAX_CANDIDATES). A candidate is a guess to\ncheck, never the side's unit.",
           "type": [
             "array",
             "null"
           ],
           "items": {
-            "$ref": "#/$defs/UnitRef"
+            "$ref": "#/$defs/Candidate"
           }
+        },
+        "candidatesTotal": {
+          "description": "Present with `candidates`: how many there are in all.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "detail": {
+          "description": "For a side that cannot be evaluated: what the provider or the\nregistry said, cut to [`DETAIL_CHARS`] characters. `null` otherwise.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "fp": {
           "description": "The current fingerprint.",
@@ -393,7 +468,7 @@
           ]
         },
         "remediation": {
-          "description": "For a side that cannot be evaluated: what the limit or the cause is\nand what the author can do ([`unavailable_remediation`]). `null` for\nevery other side; a side that changed, is missing or is ambiguous\nis answered by the claim's `next`.",
+          "description": "For a side that cannot be evaluated: what the limit or the cause is\nand what the author can do ([`unavailable_remediation`]). For\n`resource_unavailable` it is the provider's own message and what to\ndo after it. `null` for every other side; a side that changed, is\nmissing or is ambiguous is answered by the claim's `next`.",
           "type": [
             "string",
             "null"
@@ -406,13 +481,14 @@
           "$ref": "#/$defs/SideState"
         },
         "text": {
-          "description": "The current unit text. Present only with `--detail`, and for an\napproximate side in the output of `mark` (cut to 240 characters).",
+          "description": "The current unit text. Present only with `--detail`.",
           "type": [
             "string",
             "null"
           ]
         },
         "unit": {
+          "description": "The unit the side resolves to exactly, or `null`.",
           "anyOf": [
             {
               "$ref": "#/$defs/UnitRef"
@@ -430,11 +506,11 @@
         "anchor",
         "state",
         "reason",
-        "approx",
         "unit",
         "fp",
         "markedFp",
-        "remediation"
+        "remediation",
+        "detail"
       ]
     },
     "SideState": {
