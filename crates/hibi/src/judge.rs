@@ -159,17 +159,23 @@ impl Judge {
     /// (the value of `HIBI_JEV_URL`; `None` or empty means
     /// [`DEFAULT_ENDPOINT`]), with the default [`Policy`].
     ///
-    /// An unset or empty key is `judge_unavailable` (section 14.1). An
+    /// An unset or empty key is `judge_unavailable` (section 14.1); the
+    /// message says which of the two. A key of white space only is not
+    /// empty: it is taken as a key. An
     /// endpoint that is not `https://...`, or `http://` to a loopback host
     /// (`127.0.0.1`, `[::1]`, `localhost`), is `invalid_argument`, so the key
     /// never travels in clear text over a network. Nothing is contacted.
     pub fn new(key: Option<&str>, endpoint: Option<&str>) -> Result<Judge, Error> {
         let key = match key {
             Some(k) if !k.is_empty() => k.to_owned(),
-            _ => {
+            missing => {
+                let what = match missing {
+                    Some(_) => "is empty",
+                    None => "is not set",
+                };
                 return Err(Error::new(
                     Code::JudgeUnavailable,
-                    format!("{KEY_VAR} is not set; the judge commands need it"),
+                    format!("{KEY_VAR} {what}; the judge commands need it"),
                 ));
             }
         };
@@ -269,10 +275,22 @@ mod tests {
 
     #[test]
     fn key_must_be_present() {
-        for key in [None, Some("")] {
+        for (key, message) in [
+            (
+                None,
+                "TYPESAFE_API_KEY is not set; the judge commands need it",
+            ),
+            (
+                Some(""),
+                "TYPESAFE_API_KEY is empty; the judge commands need it",
+            ),
+        ] {
             let e = Judge::new(key, None).unwrap_err();
             assert_eq!(e.code, Code::JudgeUnavailable);
+            assert_eq!(e.message, message);
         }
+        // White space only is not empty: it is taken as a key.
+        assert!(Judge::new(Some(" "), None).is_ok());
         let j = Judge::new(Some("k"), None).unwrap();
         assert_eq!(j.endpoint(), DEFAULT_ENDPOINT);
         assert!(!format!("{j:?}").contains("\"k\""));

@@ -105,17 +105,37 @@ enum Attempt {
     Fatal(Failure),
 }
 
-/// `text` without the key: every occurrence of the key (as it is, trimmed,
-/// and as a JSON string writes it) is replaced with [`REDACTED`], and a
-/// `Bearer` scheme in front of a replaced key is removed with it, so that
-/// the whole `Authorization` header value is gone.
+/// `text` without the key: every occurrence of the key is replaced with
+/// [`REDACTED`], and a `Bearer` scheme (ASCII case-insensitive) and the
+/// white space in front of a replaced key are removed with it, so that the
+/// whole `Authorization` header value is gone.
+///
+/// The forms of the key that are replaced, each for the key as given and
+/// for the key trimmed:
+///
+/// - the key itself;
+/// - the key as a JSON string writes it (`"` and `\` behind a backslash,
+///   control characters as escapes);
+/// - that JSON form with every `/` written as `\/`, which JSON allows and
+///   some servers write.
+///
+/// Limit: no other encoding of the key is looked for. A response that holds
+/// the key percent-encoded, in base64, with `\uXXXX` escapes for characters
+/// that need none, or in any other form is not redacted.
 fn redact(text: &str, key: &str) -> String {
-    let mut secrets = vec![key.to_owned(), key.trim().to_owned()];
-    if let Ok(quoted) = serde_json::to_string(key) {
-        secrets.push(quoted[1..quoted.len() - 1].to_owned());
+    let mut secrets = Vec::new();
+    for plain in [key, key.trim()] {
+        secrets.push(plain.to_owned());
+        if let Ok(quoted) = serde_json::to_string(plain) {
+            let written = &quoted[1..quoted.len() - 1];
+            secrets.push(written.to_owned());
+            secrets.push(written.replace('/', "\\/"));
+        }
     }
     secrets.retain(|s| !s.is_empty());
-    secrets.sort_by_key(|s| std::cmp::Reverse(s.len()));
+    // Longest first, so that a form is replaced whole before a shorter form
+    // inside it.
+    secrets.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
     secrets.dedup();
     if !secrets.iter().any(|s| text.contains(s.as_str())) {
         return text.to_owned();
@@ -470,6 +490,33 @@ mod tests {
         let body = serde_json::json!({ "authorization": format!("Bearer {key}") }).to_string();
         assert_eq!(redact(&body, key), r#"{"authorization":"[redacted]"}"#);
         assert_eq!(redact(key, key), "[redacted]");
+    }
+
+    #[test]
+    fn redact_knows_the_json_written_key_with_escaped_slashes() {
+        let key = "sk-FAKE/CANARY/9f3k2m7q";
+        // The two characters `\` and `/` stand for each `/` of the key.
+        let body = r#"{"authorization":"Bearer sk-FAKE\/CANARY\/9f3k2m7q","key":"sk-FAKE\/CANARY\/9f3k2m7q"}"#;
+        assert_eq!(
+            redact(body, key),
+            r#"{"authorization":"[redacted]","key":"[redacted]"}"#
+        );
+        // The same body with the slashes as they are.
+        assert_eq!(
+            redact(&body.replace("\\/", "/"), key),
+            r#"{"authorization":"[redacted]","key":"[redacted]"}"#
+        );
+        // With the other JSON escapes of the key, and trimmed.
+        let key = r#" a"b/c\d "#;
+        assert_eq!(
+            redact(r#"{"authorization":"bearer a\"b\/c\\d"}"#, key),
+            r#"{"authorization":"[redacted]"}"#
+        );
+        // A limit that is stated: no other encoding is looked for.
+        assert_eq!(
+            redact("sk-FAKE%2FCANARY", "sk-FAKE/CANARY"),
+            "sk-FAKE%2FCANARY"
+        );
     }
 
     #[test]
