@@ -387,3 +387,102 @@ fn a_zero_recheck_and_a_repeated_evidence_anchor_are_refused() {
     let e = repo.fail(&["reanchor", &id, "--recheck", "P0D"]);
     assert_eq!(e["code"], "invalid_duration");
 }
+
+/// A completed selector is a fixed point: `reanchor` without arguments on
+/// unchanged files produces the same claim, for an anchor given by symbol,
+/// by quote, and by symbol with a quote that occurs several times in the
+/// declaration and in comments around it.
+#[test]
+fn reanchor_on_unchanged_files_is_no_change_for_every_anchor_form() {
+    let repo = Repo::new();
+    repo.write(
+        "m.rs",
+        "fn g() {\n    run(alpha); // run(alpha);\n}\n\n// run(alpha);\nfn f() {\n    run(alpha);\n    // run(alpha);\n    /* run(alpha); */\n    run(alpha); // run(alpha);\n}\n",
+    );
+    repo.write("docs/a.md", "The function f runs alpha twice.\n");
+    let subject = "file:docs/a.md::runs alpha twice";
+    for evidence in ["file:m.rs#f", "file:m.rs#f::(a", "file:m.rs#g"] {
+        let v = repo.json(&["claim", evidence, "--subject", subject, "--evidence", evidence]);
+        let id = text(&v["claims"][0]["id"]).to_owned();
+        let stored = v["claims"][0]["claim"]["sides"][1]["anchor"].clone();
+        for round in 0..2 {
+            let e = repo.fail(&["reanchor", &id]);
+            assert_eq!(e["code"], "no_change", "{evidence}, round {round}: {e}");
+        }
+        // The stored anchor, given back as it is, selects the same unit
+        // and completes to itself.
+        let again = repo.json(&[
+            "claim",
+            evidence,
+            "--subject",
+            subject,
+            "--evidence",
+            &stored.to_string(),
+        ]);
+        assert_eq!(again["claims"][0]["id"], id.as_str(), "{evidence}");
+        assert_eq!(again["claims"][0]["created"], false, "{evidence}");
+        assert_eq!(repo.state(&id), "fresh");
+    }
+    // A quote anchor on the document, and the whole file.
+    for anchor in [subject, "file:docs/a.md"] {
+        let v = repo.json(&["claim", "about the document", "--subject", anchor]);
+        let id = text(&v["claims"][0]["id"]).to_owned();
+        let e = repo.fail(&["reanchor", &id]);
+        assert_eq!(e["code"], "no_change", "{anchor}: {e}");
+    }
+    assert_eq!(repo.records("claims").len(), 5);
+}
+
+/// A stored claim names a file that git now ignores: the side reads as
+/// missing, and no command prints what the file holds now.
+#[test]
+fn the_content_of_an_ignored_file_is_never_printed() {
+    let repo = Repo::new();
+    repo.config(
+        "[[scope]]\nname = \"all\"\nresource = \"file:**/*.md\"\nkinds = [\"sentence\"]\n",
+    );
+    repo.write("notes.md", "The launch code is set.\n");
+    repo.write("docs/a.md", "A public sentence.\n");
+    repo.commit("base");
+    let id = repo.claim(
+        "The launch code is set.",
+        "file:notes.md::The launch code is set.",
+        &[],
+    );
+
+    repo.git(&["rm", "-q", "--cached", "notes.md"]);
+    repo.write(".gitignore", "notes.md\n");
+    repo.write("notes.md", "The launch code is tangerine.\n");
+
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "stale");
+    assert_eq!(view["sides"][0]["state"], "missing");
+    assert_eq!(view["sides"][0]["reason"], "resource_not_found");
+    assert_eq!(view["sides"][0]["unit"], Value::Null);
+
+    let runs: [&[&str]; 7] = [
+        &["status"],
+        &["status", "--detail"],
+        &["status", "--detail", &id],
+        &["cover", "--limit", "0"],
+        &["list"],
+        &["list", &id],
+        &["mark", &id],
+    ];
+    for args in runs {
+        for format in ["json", "human"] {
+            let out = repo.hibi().args(["--format", format]).args(args).run();
+            assert!(
+                !out.stdout.contains("tangerine") && !out.stderr.contains("tangerine"),
+                "{args:?} in {format} printed the ignored file: {out:?}"
+            );
+        }
+    }
+    // A new claim on the ignored file is refused.
+    let e = repo.fail(&["claim", "s", "--subject", "file:notes.md::tangerine"]);
+    assert_eq!(e["code"], "side_missing");
+    assert!(!e.to_string().contains("launch code is tangerine"), "{e}");
+    // The listed file is still read.
+    let cover = repo.json(&["cover"]);
+    assert_eq!(cover["scopes"][0]["items"][0]["text"], "A public sentence.");
+}
