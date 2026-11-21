@@ -252,6 +252,8 @@ fn status_cause(status: u16) -> Option<Cause> {
     match status {
         408 | 429 | 500..=599 => None,
         401 | 403 => Some(Cause::Auth),
+        // No such path: the endpoint is not the service's.
+        404 => Some(Cause::Endpoint),
         400..=499 => Some(Cause::Rejected(status)),
         _ => Some(Cause::Endpoint),
     }
@@ -477,10 +479,10 @@ mod tests {
         }
         assert_eq!(status_cause(401), Some(Cause::Auth));
         assert_eq!(status_cause(403), Some(Cause::Auth));
-        for status in [400, 404, 405, 413, 415, 422, 499] {
+        for status in [400, 405, 413, 415, 422, 499] {
             assert_eq!(status_cause(status), Some(Cause::Rejected(status)));
         }
-        for status in [100, 199, 300, 301, 307, 308, 399, 600, 999] {
+        for status in [100, 199, 300, 301, 307, 308, 399, 404, 600, 999] {
             assert_eq!(status_cause(status), Some(Cause::Endpoint), "{status}");
         }
     }

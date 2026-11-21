@@ -1003,7 +1003,7 @@ fn remediation_authentication_names_the_key_variable() {
 
 #[test]
 fn remediation_a_rejected_request_is_a_bug_to_report_with_the_status() {
-    remediation_for_statuses(&[400, 404, 413, 415, 422], 1, &report_bug);
+    remediation_for_statuses(&[400, 413, 415, 422], 1, &report_bug);
 }
 
 #[test]
@@ -1012,8 +1012,8 @@ fn remediation_rate_limit_and_server_errors_say_run_again_later() {
 }
 
 #[test]
-fn remediation_a_redirect_names_the_endpoint_variable() {
-    remediation_for_statuses(&[301, 302, 307, 308], 1, &|_| CHECK_URL.to_owned());
+fn remediation_a_redirect_or_a_missing_path_names_the_endpoint_variable() {
+    remediation_for_statuses(&[301, 302, 307, 308, 404], 1, &|_| CHECK_URL.to_owned());
 }
 
 #[test]
