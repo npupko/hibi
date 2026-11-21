@@ -44,19 +44,27 @@ pub fn prose_v1(text: &str) -> Fingerprint {
 /// `java`); `stream` is the semantic stream that `code::semantic_stream`
 /// builds.
 pub fn ast_v1<S: AsRef<str>>(class: &str, stream: &[S]) -> Fingerprint {
-    let mut input = Vec::new();
-    input.extend_from_slice(b"hibi:ast-v1\n");
-    input.extend_from_slice(class.as_bytes());
-    input.push(b'\n');
+    ast_v1_tokens(class, stream.iter().map(AsRef::as_ref))
+}
+
+/// [`ast_v1`] over tokens given one at a time. The hash is fed as they
+/// come, so the joined stream is never held in memory; the digest is the
+/// same.
+pub fn ast_v1_tokens<'a>(class: &str, stream: impl IntoIterator<Item = &'a str>) -> Fingerprint {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(b"hibi:ast-v1\n");
+    hasher.update(class.as_bytes());
+    hasher.update(b"\n");
     let mut sep = [0u8; 4];
     let sep = STREAM_SEPARATOR.encode_utf8(&mut sep).as_bytes();
-    for (i, token) in stream.iter().enumerate() {
+    for (i, token) in stream.into_iter().enumerate() {
         if i > 0 {
-            input.extend_from_slice(sep);
+            hasher.update(sep);
         }
-        input.extend_from_slice(token.as_ref().as_bytes());
+        hasher.update(token.as_bytes());
     }
-    fingerprint(AST_V1, &input)
+    Fingerprint::from_digest(AST_V1, &hasher.finalize().as_bytes()[..DIGEST_BYTES])
+        .expect("a profile constant and 16 digest bytes form a valid fingerprint")
 }
 
 /// The outcome of comparing a recorded fingerprint with a current one

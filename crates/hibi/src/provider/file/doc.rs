@@ -810,7 +810,7 @@ impl Doc {
         Err(ProviderError::new(
             ProviderErrorCode::Unavailable,
             format!(
-                "{loc} does not parse as {}{at}, so its declarations cannot be found; fix the syntax error and run the command again",
+                "{loc} does not parse as {}{at}, so its declarations cannot be found; fix the syntax error",
                 self.class.name()
             ),
         ))

@@ -21,7 +21,9 @@ use hibi::cache::Cache;
 use hibi::config::{RepoConfig, RepoEntry, UserConfig};
 use hibi::git::{GitStatus, ObjectId};
 use hibi::model::{Anchor, Locator, Selector};
-use hibi::provider::file::{FileOptions, FileProvider, MAX_FILE_BYTES, UnitCache};
+use hibi::provider::file::{
+    FileOptions, FileProvider, MAX_CODE_FILE_BYTES, MAX_FILE_BYTES, UnitCache,
+};
 use hibi::provider::{Provider, ProviderError, ProviderErrorCode, Unit};
 use serde_json::{Value, json};
 
@@ -115,6 +117,14 @@ fn one(p: &mut dyn Provider, l: &str, s: Value) -> Unit {
     let units = resolve(p, l, s.clone()).unwrap_or_else(|e| panic!("{l} {s}: {e}"));
     assert_eq!(units.len(), 1, "{l} {s}: {units:#?}");
     units.into_iter().next().unwrap()
+}
+
+/// An `unavailable` error whose message ends at the fix: the engine adds
+/// that the command can be run again (ruling on section 9.2).
+fn assert_unavailable_ending(e: &ProviderError, fix: &str) {
+    assert_eq!(e.code, ProviderErrorCode::Unavailable, "{}", e.message);
+    assert!(e.message.ends_with(fix), "{}", e.message);
+    assert!(!e.message.contains("again"), "{}", e.message);
 }
 
 fn code_of(r: Result<Vec<Unit>, ProviderError>) -> ProviderErrorCode {
@@ -1102,6 +1112,76 @@ fn revision_reads_the_base_commit_and_applies_the_path_rule() {
     );
 }
 
+/// A TypeScript file of exactly `len` bytes that parses into one
+/// declaration: a single array literal.
+fn array_file(len: usize) -> String {
+    let (head, tail) = ("const a = [", "0];\n");
+    let fill = len - head.len() - tail.len();
+    let mut text = String::with_capacity(len);
+    text.push_str(head);
+    text.push_str(&"1,".repeat(fill / 2));
+    text.push_str(&" ".repeat(fill % 2));
+    text.push_str(tail);
+    assert_eq!(text.len(), len);
+    text
+}
+
+#[test]
+fn code_files_have_a_lower_size_cap() {
+    // Ruling on section 6.1: a file of a code class longer than
+    // MAX_CODE_FILE_BYTES is too_large, in both sources, before it is
+    // parsed; markdown, prose and text keep MAX_FILE_BYTES.
+    assert_eq!(
+        MAX_CODE_FILE_BYTES, 2_097_152,
+        "the code cap of section 6.1"
+    );
+    let cap = MAX_CODE_FILE_BYTES as usize;
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("repo");
+    fs::create_dir(&root).unwrap();
+    write(&root, "at.ts", array_file(cap));
+    write(&root, "over.ts", array_file(cap + 1));
+    write(&root, "over.md", "word ".repeat(cap / 5 + 1));
+    sh_git(&root, &["init", "-q"]);
+    sh_git(&root, &["add", "-A"]);
+    sh_git(&root, &["commit", "-qm", "base"]);
+    let base = head(&root);
+    let git = isolated_git(tmp.path());
+    let mut sources = [
+        ("working tree", wt(&root)),
+        (
+            "revision",
+            FileProvider::revision(&root, base, options(git)).unwrap(),
+        ),
+    ];
+    for (what, p) in &mut sources {
+        let u = one(p, "file:at.ts", json!({"symbol": "a"}));
+        assert_eq!(u.key, "variable:a", "{what}");
+        let e = resolve(p, "file:over.ts", json!({})).unwrap_err();
+        assert_eq!(e.code, ProviderErrorCode::TooLarge, "{what}");
+        assert!(
+            e.message.contains("2097153 bytes")
+                && e.message.contains("2097152 bytes for a code file"),
+            "{what}: {}",
+            e.message
+        );
+        assert_eq!(
+            p.units(&loc("file:over.ts"), None).unwrap_err().code,
+            ProviderErrorCode::TooLarge,
+            "{what}"
+        );
+        assert!(
+            fs::metadata(root.join("over.md")).unwrap().len() > MAX_CODE_FILE_BYTES,
+            "the markdown file is over the code cap"
+        );
+        assert_eq!(
+            one(p, "file:over.md", json!({})).key,
+            "file",
+            "{what}: markdown keeps the 8 MiB cap"
+        );
+    }
+}
+
 #[test]
 fn revision_size_cap_and_git_requirements() {
     let tmp = tempfile::tempdir().unwrap();
@@ -1369,9 +1449,9 @@ fn r45_refused_siblings_open_nothing() {
         vec![entry(&s.root, "api", &s.api)],
         git,
     );
-    assert_eq!(
-        code_of(resolve(&mut p, l, json!({}))),
-        ProviderErrorCode::Unavailable
+    assert_unavailable_ending(
+        &resolve(&mut p, l, json!({})).unwrap_err(),
+        "; make it readable by this user",
     );
     fs::set_permissions(
         s.api.join("docs/listed.md"),
@@ -1599,7 +1679,10 @@ fn a_failing_file_list_is_unavailable() {
     fs::write(root.join(".git/index"), b"not an index").unwrap();
     let mut p = FileProvider::working_tree(&root, options(git.clone()));
     let e = resolve(&mut p, "file:README.md", json!({})).unwrap_err();
-    assert_eq!(e.code, ProviderErrorCode::Unavailable, "{}", e.message);
+    assert_unavailable_ending(
+        &e,
+        "; check that the root is a git repository that git can read",
+    );
 
     let s = siblings();
     fs::set_permissions(s.api.join("secret.md"), fs::Permissions::from_mode(0o644)).unwrap();
@@ -1611,7 +1694,12 @@ fn a_failing_file_list_is_unavailable() {
         isolated_git(&s.tmp),
     );
     let e = resolve(&mut p, "repo:api//docs/listed.md", json!({})).unwrap_err();
-    assert_eq!(e.code, ProviderErrorCode::Unavailable, "{}", e.message);
+    assert_unavailable_ending(&e, " is a git repository that git can read");
+    assert!(
+        e.message.contains(&s.api.display().to_string()),
+        "{}",
+        e.message
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -1794,11 +1882,9 @@ fn a_symbol_anchor_on_a_code_file_that_does_not_parse_is_unavailable() {
             &mut cached(root, &rows),
         ] {
             let e = resolve(p, "file:src/limiter.rs", s.clone()).unwrap_err();
-            assert_eq!(e.code, ProviderErrorCode::Unavailable, "{what}");
+            assert_unavailable_ending(&e, "; fix the syntax error");
             assert!(
-                e.message.contains("does not parse")
-                    && e.message.contains("line 5")
-                    && e.message.contains("fix the syntax error"),
+                e.message.contains("does not parse") && e.message.contains("line 5"),
                 "{what}: {}",
                 e.message
             );

@@ -31,6 +31,22 @@ use doc::Doc;
 /// file is `too_large` and is not read.
 pub const MAX_FILE_BYTES: u64 = 8_388_608;
 
+/// The largest file of a code class the provider reads, in bytes (ruling
+/// on section 6.1). Parsing costs far more memory per byte than the other
+/// classes, so a longer code file is `too_large` and is neither read nor
+/// parsed.
+pub const MAX_CODE_FILE_BYTES: u64 = 2_097_152;
+
+/// The size cap for a path: [`MAX_CODE_FILE_BYTES`] for a code class,
+/// [`MAX_FILE_BYTES`] for markdown, prose and text.
+fn byte_limit(path: &str) -> u64 {
+    if Class::from_path(path).is_code() {
+        MAX_CODE_FILE_BYTES
+    } else {
+        MAX_FILE_BYTES
+    }
+}
+
 /// The largest cache row the provider writes, in bytes (ruling on 11.3).
 pub const MAX_CACHE_ROW_BYTES: usize = 8_388_608;
 
@@ -268,8 +284,9 @@ impl FileProvider {
                 err(
                     ProviderErrorCode::Unavailable,
                     format!(
-                        "the file list of repo:{alias} cannot be read: {}",
-                        e.message
+                        "the file list of repo:{alias} cannot be read ({}); check that {} is a git repository that git can read",
+                        detail(&e.message),
+                        dir.display()
                     ),
                 )
             })?;
@@ -296,13 +313,10 @@ impl FileProvider {
         if missing.is_empty() {
             return Ok(());
         }
-        let git = self
-            .git
-            .git()
-            .ok_or_else(|| err(ProviderErrorCode::Unavailable, "git is not usable"))?;
+        let git = self.git.git().ok_or_else(git_not_usable)?;
         let found: BTreeMap<String, TreeEntry> = git
             .tree_entries(&self.root, base, &missing)
-            .map_err(|e| err(ProviderErrorCode::Unavailable, e.message))?;
+            .map_err(|e| git_cannot_read(base, &e.message))?;
         for p in missing {
             let e = found.get(&p).cloned();
             entries.insert(p, e);
@@ -374,7 +388,10 @@ impl FileProvider {
                 .map_err(|e| {
                     err(
                         ProviderErrorCode::Unavailable,
-                        format!("the root's file list cannot be read: {}", e.message),
+                        format!(
+                            "the root's file list cannot be read ({}); check that the root is a git repository that git can read",
+                            detail(&e.message)
+                        ),
                     )
                 }),
             _ => Ok(None),
@@ -394,20 +411,21 @@ impl FileProvider {
             Some(Some(e)) if e.mode.is_regular_file() => e.clone(),
             _ => return Err(not_found()),
         };
-        let git = self
-            .git
-            .git()
-            .ok_or_else(|| err(ProviderErrorCode::Unavailable, "git is not usable"))?;
+        let git = self.git.git().ok_or_else(git_not_usable)?;
+        let limit = byte_limit(path);
         let blobs = git
-            .read_blobs(&self.root, std::slice::from_ref(&entry.id), MAX_FILE_BYTES)
-            .map_err(|e| err(ProviderErrorCode::Unavailable, e.message))?;
+            .read_blobs(&self.root, std::slice::from_ref(&entry.id), limit)
+            .map_err(|e| git_cannot_read(base, &e.message))?;
         match blobs.into_iter().next() {
             Some(Blob::Content(bytes)) => Ok(bytes),
-            Some(Blob::TooLarge { size }) => Err(too_large(&format!("file:{path}"), size)),
+            Some(Blob::TooLarge { size }) => Err(too_large(&format!("file:{path}"), size, limit)),
             Some(Blob::NotBlob) => Err(not_found()),
             Some(Blob::Missing) | None => Err(err(
                 ProviderErrorCode::Unavailable,
-                format!("the object {} of file:{path} is not available", entry.id),
+                format!(
+                    "the object {} of file:{path} at {base} is not in the repository; fetch it, for example with git fetch when the clone is shallow or partial",
+                    entry.id
+                ),
             )),
         }
     }
@@ -470,10 +488,49 @@ fn is_private_path(path: &str) -> bool {
     is(first, ".git") || is(first, ".hibi") || segments.any(|s| is(s, ".git"))
 }
 
-fn too_large(what: &str, size: u64) -> ProviderError {
+/// Characters of a git or system message quoted in an `unavailable`
+/// message. The engine cuts the whole message to 500 characters before it
+/// adds what to do after the fix, so the quoted part is cut here and the
+/// fix at the end is never lost.
+const DETAIL_CHARS: usize = 200;
+
+/// `message` cut to [`DETAIL_CHARS`] characters, without a final `.`.
+fn detail(message: &str) -> String {
+    let m = message.trim().trim_end_matches('.');
+    match m.char_indices().nth(DETAIL_CHARS) {
+        Some((i, _)) => format!("{}...", &m[..i]),
+        None => m.to_owned(),
+    }
+}
+
+/// `unavailable` messages state the cause and the fix and end there: the
+/// engine adds that the command can be run again (ruling on section 9.2).
+fn git_not_usable() -> ProviderError {
+    err(
+        ProviderErrorCode::Unavailable,
+        "git is needed to read the base commit and is not usable; install git or repair its installation",
+    )
+}
+
+fn git_cannot_read(base: &ObjectId, message: &str) -> ProviderError {
+    err(
+        ProviderErrorCode::Unavailable,
+        format!(
+            "git cannot read the base commit {base} ({}); check that the commit exists in this repository",
+            detail(message)
+        ),
+    )
+}
+
+fn too_large(what: &str, size: u64, limit: u64) -> ProviderError {
+    let of = if limit == MAX_CODE_FILE_BYTES {
+        " bytes for a code file"
+    } else {
+        " bytes"
+    };
     err(
         ProviderErrorCode::TooLarge,
-        format!("{what} has {size} bytes, more than the limit of {MAX_FILE_BYTES}"),
+        format!("{what} has {size} bytes, more than the limit of {limit}{of}"),
     )
 }
 
@@ -489,7 +546,10 @@ fn read_tree_file(base: &Path, path: &str, loc: &Locator) -> Result<Vec<u8>, Pro
         }
         _ => err(
             ProviderErrorCode::Unavailable,
-            format!("{loc} cannot be read: {e}"),
+            format!(
+                "{loc} cannot be read ({}); make it readable by this user",
+                detail(&e.to_string())
+            ),
         ),
     };
     let segments: Vec<&str> = path.split('/').collect();
@@ -518,8 +578,9 @@ fn read_tree_file(base: &Path, path: &str, loc: &Locator) -> Result<Vec<u8>, Pro
             return Err(not_found("a path component is not a directory"));
         }
     }
-    if size > MAX_FILE_BYTES {
-        return Err(too_large(loc.as_str(), size));
+    let limit = byte_limit(path);
+    if size > limit {
+        return Err(too_large(loc.as_str(), size, limit));
     }
     let mut opts = OpenOptions::new();
     opts.read(true);
@@ -536,11 +597,15 @@ fn read_tree_file(base: &Path, path: &str, loc: &Locator) -> Result<Vec<u8>, Pro
         return Err(not_found("not a regular file"));
     }
     let mut bytes = Vec::new();
-    file.take(MAX_FILE_BYTES + 1)
+    file.take(limit + 1)
         .read_to_end(&mut bytes)
         .map_err(|e| io_err(&e))?;
-    if bytes.len() as u64 > MAX_FILE_BYTES {
-        return Err(too_large(loc.as_str(), md.len().max(bytes.len() as u64)));
+    if bytes.len() as u64 > limit {
+        return Err(too_large(
+            loc.as_str(),
+            md.len().max(bytes.len() as u64),
+            limit,
+        ));
     }
     Ok(bytes)
 }
@@ -600,5 +665,24 @@ impl Provider for FileProvider {
 
     fn render(&mut self, loc: &Locator, unit: &str) -> Result<Rendered, ProviderError> {
         self.doc(loc)?.render(unit)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quoted_details_leave_room_for_the_fix() {
+        assert_eq!(detail("  fatal: bad index.\n"), "fatal: bad index");
+        let long = "é".repeat(1000);
+        let cut = detail(&long);
+        assert_eq!(cut.chars().count(), DETAIL_CHARS + 3);
+        assert!(cut.ends_with("..."));
+        // The longest message still ends with its fix within the 500
+        // characters the engine keeps.
+        let e = git_cannot_read(&ObjectId::new("a".repeat(40)).unwrap(), &long);
+        assert!(e.message.chars().count() <= 500, "{}", e.message);
+        assert!(e.message.ends_with("exists in this repository"));
     }
 }

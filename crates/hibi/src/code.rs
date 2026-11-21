@@ -194,7 +194,41 @@ fn node_text<'t>(node: Node<'_>, text: &'t str) -> &'t str {
 /// the only comma of a one-element tuple (see [`tuple_kinds`]). `text` is
 /// the source the tree was parsed from.
 pub fn semantic_stream(node: Node<'_>, text: &str) -> Vec<String> {
-    stream_walk(node, text, &HashSet::new(), None).0
+    stream_walk(node, text, &HashSet::new(), None)
+        .0
+        .to_strings()
+}
+
+/// A semantic stream held in one buffer: token `i` is
+/// `buf[ends[i - 1] .. ends[i]]`. One allocation for the whole stream,
+/// where a `Vec<String>` would make one per token.
+#[derive(Debug, Default)]
+struct Tokens {
+    buf: String,
+    ends: Vec<usize>,
+}
+
+impl Tokens {
+    fn len(&self) -> usize {
+        self.ends.len()
+    }
+
+    /// Close the token written to `buf` since the last one.
+    fn end(&mut self) {
+        self.ends.push(self.buf.len());
+    }
+
+    /// Tokens `[s, e)`.
+    fn range(&self, s: usize, e: usize) -> impl Iterator<Item = &str> {
+        (s..e).map(move |i| {
+            let from = if i == 0 { 0 } else { self.ends[i - 1] };
+            &self.buf[from..self.ends[i]]
+        })
+    }
+
+    fn to_strings(&self) -> Vec<String> {
+        self.range(0, self.len()).map(str::to_owned).collect()
+    }
 }
 
 #[cfg(test)]
@@ -236,13 +270,12 @@ fn stream_walk(
     text: &str,
     marks: &HashSet<usize>,
     omit: Option<&dyn Fn(Node<'_>) -> bool>,
-) -> (Vec<String>, HashMap<usize, (usize, usize)>) {
-    let mut out = Vec::new();
+) -> (Tokens, HashMap<usize, (usize, usize)>) {
+    let mut out = Tokens::default();
     let mut ranges = HashMap::new();
     let tuples = tuple_kinds(node.language().name());
     let mut cursor = node.walk();
     let mut stack = vec![Step::Enter(node)];
-    let mut kept = Vec::new();
     while let Some(step) = stack.pop() {
         let n = match step {
             Step::Enter(n) => {
@@ -265,39 +298,47 @@ fn stream_walk(
             stack.push(Step::Exit(n.id()));
         }
         let kind = n.kind();
+        out.buf.push_str(kind);
         if n.child_count() == 0 {
-            out.push(format!("{kind}:{}", node_text(n, text)));
-        } else {
-            out.push(kind.to_owned());
+            out.buf.push(':');
+            out.buf.push_str(node_text(n, text));
         }
+        out.end();
         if is_content_literal_kind(kind) {
-            out.push(format!("={}", text::normalize(node_text(n, text))));
+            out.buf.push('=');
+            out.buf.push_str(&text::normalize(node_text(n, text)));
+            out.end();
         }
-        // Children from last to first, so that the stack pops them in
-        // source order; comments and trailing commas are dropped here.
-        kept.clear();
-        let mut next: Option<Node<'_>> = None;
-        let children: Vec<Node<'_>> = n.children(&mut cursor).collect();
+        // The children, comments and trailing commas dropped, go on the
+        // stack in source order and are then reversed in place, so that the
+        // stack pops them in source order. A comma is trailing when the next
+        // child that is not skipped is a closing delimiter, so each child is
+        // pushed once the one after it is known. Nothing is collected per
+        // node: a node with a million children costs only its stack entries.
         let is_comma = |c: &Node<'_>| !c.is_named() && node_text(*c, text) == ",";
         // The only comma of a tuple-like node stays, even before the
         // closing delimiter: `(u8,)` is a tuple type, `(u8)` is `u8`.
         let tuple_comma =
-            tuples.contains(&kind) && children.iter().filter(|c| is_comma(c)).count() == 1;
-        for &c in children.iter().rev() {
+            tuples.contains(&kind) && n.children(&mut cursor).filter(is_comma).count() == 1;
+        let base = stack.len();
+        let mut pending: Option<Node<'_>> = None;
+        for c in n.children(&mut cursor) {
             if is_skipped(c) {
                 continue;
             }
-            let trailing_comma = !tuple_comma
-                && is_comma(&c)
-                && next.is_some_and(|x| {
-                    !x.is_named() && matches!(node_text(x, text), ")" | "]" | "}" | ">")
-                });
-            next = Some(c);
-            if !trailing_comma {
-                kept.push(c);
+            if let Some(p) = pending {
+                let trailing_comma = !tuple_comma
+                    && is_comma(&p)
+                    && !c.is_named()
+                    && matches!(node_text(c, text), ")" | "]" | "}" | ">");
+                if !trailing_comma {
+                    stack.push(Step::Enter(p));
+                }
             }
+            pending = Some(c);
         }
-        stack.extend(kept.iter().copied().map(Step::Enter));
+        stack.extend(pending.map(Step::Enter));
+        stack[base..].reverse();
     }
     (out, ranges)
 }
@@ -1050,12 +1091,11 @@ fn code_units(root: Node<'_>, text: &str, class: Class, max_units: usize) -> Opt
         };
         let fp = match pieces(node, lead, f) {
             Some(pieces) => {
-                let stream: Vec<&str> = pieces
-                    .iter()
-                    .flat_map(|&(s, e)| root_stream[s..e].iter().map(String::as_str))
-                    .collect();
-                count_work(stream.len());
-                fingerprint::ast_v1(class.name(), &stream)
+                count_work(pieces.iter().map(|&(s, e)| e - s).sum());
+                fingerprint::ast_v1_tokens(
+                    class.name(),
+                    pieces.iter().flat_map(|&(s, e)| root_stream.range(s, e)),
+                )
             }
             None => {
                 let mut stream = Vec::new();
@@ -1485,8 +1525,11 @@ mod tests {
         let before = |n: Node<'_>| first <= n.start_byte() && !around.contains(&n.id());
         let lead: Vec<String> = d.shared_lead.iter().flat_map(walk).collect();
         let none = HashSet::new();
-        let prefix = [lead.clone(), stream_walk(w, text, &none, Some(&before)).0].concat();
-        let whole = [lead, stream_walk(w, text, &none, Some(&middle)).0].concat();
+        let walk_omit = |omit: &dyn Fn(Node<'_>) -> bool| {
+            stream_walk(w, text, &none, Some(omit)).0.to_strings()
+        };
+        let prefix = [lead.clone(), walk_omit(&before)].concat();
+        let whole = [lead, walk_omit(&middle)].concat();
         let suffix = whole[prefix.len() + own.len()..].to_vec();
         assert_eq!(whole[prefix.len()..prefix.len() + own.len()], own[..]);
         if prefix.len() + suffix.len() > MAX_SHARED_TOKENS {
