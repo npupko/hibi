@@ -5247,7 +5247,11 @@ In `human` format every control character except U+000A and U+0009 is
 removed from what is written to standard output and standard error, for
 results, warnings and errors alike: text from a file, a provider or the
 store must not move the cursor, change colours or hide what follows. JSON
-output is not changed; a JSON string writes such a character as an escape.
+output holds no raw control character either: U+0000 to U+001F, U+007F and
+U+0080 to U+009F are written as `\u00XX` escapes inside its strings, so the
+values are unchanged. An anchor that hibi prints as JSON, in an `anchor:`
+line, an error message or the `anchor` of a candidate, is written the same
+way, so nothing is removed from it and it can be pasted back as it is.
 The raw output of `schema` and `completions` is not changed either.
 
 Human error and warning lines:
@@ -5347,7 +5351,7 @@ Side:
 | `detail` | string or `null` |
 | `candidates` | array of Candidate, present only when `state` is `ambiguous`, or `missing` with reason `not_exact` |
 | `candidatesTotal` | integer, present exactly when `candidates` is present |
-| `text` | current unit text, present only with `--detail` |
+| `text` | current unit text. Present with `--detail`, whole, for every resolved side; without it, for a `changed` side only, cut to 240 characters |
 
 The keys from `index` to `detail` are always present, in every ClaimView,
 so in the output of `status`, `claim`, `mark` and `reanchor`. A Side has no
@@ -5393,8 +5397,10 @@ Rules for the Side keys:
   provider returned with `contextChanged: true` (section 9.2) it is
   `the stored quote is no longer in this unit`. For a `missing` side with
   reason `not_exact` it says which of the two causes holds:
-  `the anchor matches no unit exactly` when the candidates were found by
-  similarity, and
+  `the anchor matches no unit exactly` when the provider returned the
+  candidates with `approx: true`, which it does for units found by
+  similarity and for a stored span that is found exactly but crosses
+  units, and
   `the quoted text was found, but not where it was stored, and the unit there is not the one that was marked`
   when the quote was found exactly without corroboration (section 9.2).
   The `side_missing` message of `mark`, `claim` and `reanchor` starts with
@@ -5563,7 +5569,8 @@ over: the state the claim had before the write and the sides that were not
 | `sides` | array of AcceptedSide, ordered by `index` |
 
 AcceptedSide, one entry for each side whose state before the write was not
-`same`:
+`same`. A side that was `changed` also has `text`: the unit's text as the
+write marked it, cut to 240 characters. Other sides have no `text` key.
 
 | Key | Type |
 |---|---|
@@ -5637,18 +5644,28 @@ The error object is the one of section 15.1; these rules fix its
 
   ```text
   <side> (<locator>): the anchor matches <n> units; use one of these anchors: <candidates>
-  <side> (<locator>): the anchor matches no unit exactly; <found> found by similarity, each a guess to check before use: <candidates>
-  <side> (<locator>) resolves to no unit (not_exact): the anchor matches no unit exactly; <found> found by similarity, each a guess to check before use: <candidates>
+  <side> (<locator>): the anchor matches no unit exactly; <count>, each a guess to check before use: <candidates>
+  <side> (<locator>) resolves to no unit (not_exact): <cause>; <count>, each a guess to check before use: <candidates>
+  <side> (<locator>) resolves to no unit (selector_not_found): the selector matches no unit; <count>, each a guess to check before use: <candidates>
   ```
+
+  `<count>` is `1 candidate` or `<n> candidates`. `<cause>` is one of the
+  two sentences of a `not_exact` side's `detail` (section 15.2):
+  `the anchor matches no unit exactly` when the provider returned the
+  candidates with `approx: true`, and
+  `the quoted text was found, but not where it was stored, and the unit there is not the one that was marked`
+  when an exact hit lacked corroboration (section 9.2). The fourth message
+  is that of a `selector_not_found` side for which units with the marked
+  content were found; without any it ends after `matches no unit`.
 
   The first message is that of `side_ambiguous`, for a new and for a stored
   anchor. The second is that of `selector_not_exact` for a new anchor that
   was found only by similarity. The third is that of `side_missing` for a
-  stored anchor that was found only by similarity. `<side>` is
+  stored anchor whose side is `not_exact`. `<side>` is
   `the subject` or `evidence <n>`. `<n>` is the number of units the
-  provider returned. `<found>` is `1 unit was`, or `<n> units were` for any
-  other number. `<candidates>` lists the first `MAX_CANDIDATES` (20) units
-  in the provider's order, joined with `; `. When the provider returned
+  provider returned. `<candidates>` lists the candidates of the side as
+  `status` shows them (section 15.2), at most `MAX_CANDIDATES` (20),
+  joined with `; `. When the provider returned
   more, `; and <m> more` follows, where `<m>` is the number of units that
   are not listed. Each candidate is `<kind> "<label>", line <line>: <anchor>`:
 
@@ -5671,14 +5688,18 @@ The error object is the one of section 15.1; these rules fix its
   side's locator accepts (`selectors` of its `info`, section 2.5), so that a
   provider is never told to use a key it does not accept.
   - `side_ambiguous`: the ways to narrow the anchor are, in this order,
-    `a symbol` when the provider accepts `symbol`, `a longer quote` when it
+    `a symbol` when the provider accepts `symbol` and at least one of the
+    units the anchor matched has a `symbol` in its completed selector (the
+    units of a markdown or text file have none), `a longer quote` when it
     accepts `quote`, and `the unit's key` when it accepts `key`. With one
     way the text is `Give <way>, so that the anchor matches one unit.` With
     several it is
     `Give <first>, or <rest>, so that the anchor matches one unit.`
-    where `<rest>` is the other ways joined with ` or `. For the file
-    provider that is
+    where `<rest>` is the other ways joined with ` or `. For a code file
+    of the file provider that is
     `Give a symbol, or a longer quote, so that the anchor matches one unit.`
+    and for a markdown file
+    `Give a longer quote, so that the anchor matches one unit.`
     With no way it is
     `This provider accepts no selector, so the anchor cannot be narrowed to one unit.`
   - `unsupported_selector`:
@@ -5692,7 +5713,14 @@ The error object is the one of section 15.1; these rules fix its
   When the provider's answer for a new anchor holds a unit with
   `approx: true`, nothing resolves and the write fails with
   `selector_not_exact`. The message is the second one above and lists what
-  was found. The `remediation` is the general one of the code:
+  was found. The `remediation` is
+  `Give <ways>; the candidates in the message have an anchor each.`, where
+  `<ways>` are, joined with `, or `, in this order and under the same
+  conditions as for `side_ambiguous`:
+  `a quote that occurs exactly in the unit you mean`,
+  `the symbol of the unit you mean` and `the key of the unit you mean`.
+  When the provider's `info` cannot be obtained, or it accepts no key, the
+  remediation is the general one of the code:
   `Give a quote that occurs exactly in the unit you mean.`
 - `selector_not_exact` for a quote that is not in the resolved unit. This
   is a write check on a new anchor that resolved exactly to one unit, made
@@ -6001,16 +6029,17 @@ replaced or added side in `reanchor`:
   `; and <m> more`.
 - `selector_not_exact` for an anchor found only by similarity. The message
   is
-  `the anchor matches no unit exactly; <found> found by similarity, each a guess to check before use: <candidate>; <candidate>`,
-  with `<found>` being `1 unit was` or `<n> units were`, and the candidates
-  written and limited as for `side_ambiguous`. The remediation is
-  `Give a quote that occurs exactly in the unit you mean.` The caller reads
+  `the anchor matches no unit exactly; <count>, each a guess to check before use: <candidate>; <candidate>`,
+  with `<count>` being `1 candidate` or `<n> candidates`, and the candidates
+  written and limited as for `side_ambiguous`. The remediation names what
+  the provider accepts, as given under `side_unavailable` above. The caller reads
   the candidates and, when one of them is the unit meant, gives its anchor.
 - The remediation of `side_ambiguous` and of `unsupported_selector` is built
   from the selector keys the provider of the locator accepts (section 2.5).
   For `side_ambiguous` it is `Give <ways>, so that the anchor matches one unit.`,
   where `<ways>` lists, in this order and for the keys the provider accepts,
-  `a symbol`, `a longer quote` and `the unit's key`, the first two joined by
+  `a symbol` (only when a matched unit has a symbol), `a longer quote` and
+  `the unit's key`, the first two joined by
   `, or ` and any further one by ` or `; for a provider that accepts no key
   it is
   `This provider accepts no selector, so the anchor cannot be narrowed to one unit.`
@@ -6072,8 +6101,14 @@ Human: one line per claim:
 - The `was` line is printed when `accepted` is not `null` and `was` is not
   `fresh`. It lists the sides of `accepted`, joined by `; `; ` (<reason>)` is
   omitted when the reason is `null`, and the part from `:` to the last side
-  is omitted when `sides` is empty. `mark` and `reanchor` print the same
-  line.
+  is omitted when `sides` is empty; `: make sure you re-checked it` (or
+  `them` for several sides) is printed only when `sides` is not empty.
+  After the line, each side of `accepted` that has `text` is printed as
+  `    <role> is now:` followed by one `    | <line>` for each line of the
+  text: the label of a unit can be the same before and after a change, so
+  the caller is shown what it accepted. `mark` and `reanchor` print the
+  same lines. In `status`, a `changed` side is followed by its `text` in
+  the same `|` form.
 - No `next` line follows: the `next` of the ClaimView
   is always `null` in the output of `claim`, `mark` and `reanchor`
   (section 15.2).
