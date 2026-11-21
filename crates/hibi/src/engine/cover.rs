@@ -531,27 +531,45 @@ pub fn coverage(
     })
 }
 
-/// The full text of each unit, read with one batched `resolve` of the
-/// unit's completed selector per scheme. `None` where that resolve does not
-/// return a unit with the same key, or returns it without text.
+/// The full text of each unit. A provider that can `render` is asked for
+/// the unit by its key, one call per unit: the answer is one text, whatever
+/// else the resource holds. Resolving the unit's completed selector instead
+/// returns every unit the selector matches, which for a resource of many
+/// identical units is all of them, once per listed unit. A provider without
+/// `render` is asked that way, in one batched `resolve` per scheme. `None`
+/// where the provider gives no text for the unit.
 pub fn unit_texts(providers: &mut Providers, units: &[&UncoveredUnit]) -> Vec<Option<String>> {
-    let anchors: Vec<Anchor> = units
+    let mut out: Vec<Option<String>> = vec![None; units.len()];
+    let mut by_selector: Vec<usize> = Vec::new();
+    for (i, u) in units.iter().enumerate() {
+        let Ok(provider) = providers.provider_for_scheme(u.loc.scheme()) else {
+            continue;
+        };
+        let can_render = provider.info().is_ok_and(|info| info.capabilities.render);
+        if can_render {
+            out[i] = provider.render(&u.loc, &u.unit.key).ok().map(|r| r.text);
+        } else {
+            by_selector.push(i);
+        }
+    }
+    let anchors: Vec<Anchor> = by_selector
         .iter()
-        .map(|u| Anchor::new(u.loc.clone(), u.unit.sel.clone()))
+        .map(|&i| Anchor::new(units[i].loc.clone(), units[i].unit.sel.clone()))
         .collect();
     let refs: Vec<&Anchor> = anchors.iter().collect();
-    resolve_anchors(providers, &refs)
+    for (i, r) in by_selector
         .into_iter()
-        .zip(units)
-        .map(|(r, u)| {
-            let found = match &r {
-                Resolved::One(x) if x.key == u.unit.key => Some(&**x),
-                Resolved::Several(xs) => xs.units.iter().find(|x| x.key == u.unit.key),
-                _ => None,
-            };
-            found.and_then(|x| x.text.clone())
-        })
-        .collect()
+        .zip(resolve_anchors(providers, &refs))
+    {
+        let key = &units[i].unit.key;
+        let found = match &r {
+            Resolved::One(x) if x.key == *key => Some(&**x),
+            Resolved::Several(xs) => xs.units.iter().find(|x| x.key == *key),
+            _ => None,
+        };
+        out[i] = found.and_then(|x| x.text.clone());
+    }
+    out
 }
 
 /// `hibi cover` (section 15.3): [`coverage`], with `items` cut to

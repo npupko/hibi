@@ -22,8 +22,12 @@ pub const MAX_CANDIDATES: usize = 20;
 /// A candidate is never used as the side's unit: the caller chooses.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Candidates {
-    /// Every unit the provider returned.
+    /// The first [`MAX_CANDIDATES`] units the provider returned. The rest
+    /// are not kept: an anchor that matches every one of many identical
+    /// units would otherwise hold all of them once per claim.
     pub units: Vec<Unit>,
+    /// How many units the provider returned.
+    pub total: usize,
     /// For the first [`MAX_CANDIDATES`] units: an anchor string that selects
     /// that unit and no other unit of the resource. It is `<loc>#<symbol>`
     /// when the unit's symbol is unique in the whole resource, and the
@@ -56,7 +60,7 @@ impl Candidates {
                 )
             })
             .collect();
-        let more = self.units.len() - self.anchors.len();
+        let more = self.total.saturating_sub(self.anchors.len());
         if more > 0 {
             lines.push(format!("and {more} more"));
         }
@@ -150,15 +154,15 @@ impl Resolved {
             Resolved::One(_) => None,
             Resolved::Several(c) => Some(format!(
                 "the anchor matches {} units; use one of these anchors: {}",
-                c.units.len(),
+                c.total,
                 c.describe()
             )),
             Resolved::NotExact(c) => Some(format!(
                 "the anchor matches no unit exactly; {} found by similarity, each a guess to check before use: {}",
-                if c.units.len() == 1 {
+                if c.total == 1 {
                     "1 unit was".to_owned()
                 } else {
-                    format!("{} units were", c.units.len())
+                    format!("{} units were", c.total)
                 },
                 c.describe()
             )),
@@ -276,7 +280,14 @@ fn candidates_of(
             }
         })
         .collect();
-    Candidates { units, anchors }
+    let total = units.len();
+    let mut units = units;
+    units.truncate(MAX_CANDIDATES);
+    Candidates {
+        units,
+        anchors,
+        total,
+    }
 }
 
 /// `info()` of a provider, cloned; any failure is `provider_failed`.

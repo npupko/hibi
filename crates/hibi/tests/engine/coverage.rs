@@ -265,11 +265,21 @@ fn items_are_ordered_capped_and_cut() {
     let s = &out.scopes[0];
     assert_eq!((s.items.len(), s.uncovered, s.truncated), (2, 6, true));
     assert_eq!(out.summary.uncovered, 6);
-    let resolves = log(&f.files)
-        .iter()
-        .filter(|l| l.starts_with("resolve"))
-        .count();
-    assert_eq!(resolves, 2);
+    let calls = |f: &Fixture, method: &str| {
+        log(&f.files)
+            .iter()
+            .filter(|l| l.starts_with(method))
+            .count()
+    };
+    // One `render` per listed item, and no `resolve`.
+    assert_eq!((calls(&f, "render"), calls(&f, "resolve")), (2, 0));
+
+    // A provider without `render` is asked with the item's selector.
+    f.files.borrow_mut().render = false;
+    f.files.borrow_mut().log.clear();
+    let out = f.cover(&["docs"], 2).unwrap();
+    assert!(out.scopes[0].items.iter().all(|i| i.text.is_some()));
+    assert_eq!((calls(&f, "render"), calls(&f, "resolve")), (0, 2));
 }
 
 /// R50 and section 10.2: the parent walk stops at a `null` parent, at a
@@ -467,6 +477,60 @@ fn hibi_paths_of_a_sibling_repository_are_never_listed() {
         ["repo:api//docs/x.md", "repo:api//sub/.hibi/kept.md"]
     );
     assert_eq!((scope.units, scope.uncovered), (2, 2));
+}
+
+/// The work of `cover` on a resource of many identical units is bounded by
+/// the number of listed items: the text of an item is read with one
+/// `render` of its key, never with a `resolve` of its selector, which
+/// matches every one of the identical units. A resolution keeps at most
+/// `MAX_CANDIDATES` of the units a selector matches.
+#[test]
+fn cover_reads_item_text_by_key_and_keeps_few_of_many_identical_units() {
+    const MANY: usize = 500;
+    let mut f = fixture();
+    let same = hibi::model::Selector::quote("function f(){}");
+    let twins: Vec<hibi::provider::Unit> = (0..MANY)
+        .map(|n| {
+            let mut u = at(
+                unit(&format!("f{n:04}"), "sentence", "function f(){}"),
+                n * 20,
+                n + 1,
+            );
+            u.sel = same.clone();
+            u
+        })
+        .collect();
+    set(&f.files, "file:docs/deep/c.md", twins);
+    f.files.borrow_mut().log.clear();
+
+    let out = f.cover(&["docs"], 3).unwrap();
+    let scope = &out.scopes[0];
+    assert!(scope.uncovered >= MANY, "{}", scope.uncovered);
+    assert_eq!(scope.items.len(), 3);
+    for item in &scope.items {
+        assert!(item.text.is_some(), "{item:?}");
+    }
+    let log = log(&f.files);
+    let renders = log.iter().filter(|l| l.starts_with("render ")).count();
+    assert_eq!(renders, 3, "{log:?}");
+    // No selector of a listed unit was resolved.
+    assert!(
+        !log.iter()
+            .any(|l| l.starts_with("resolve ") && l.contains("function f")),
+        "{log:?}"
+    );
+
+    // An anchor that matches all of them: the count is exact, and twenty
+    // units are kept.
+    let all = anchor("file:docs/deep/c.md", same);
+    match &engine::resolve_anchors(&mut f.p, &[&all])[0] {
+        engine::Resolved::Several(c) => {
+            assert_eq!(c.total, MANY);
+            assert_eq!(c.units.len(), engine::MAX_CANDIDATES);
+            assert_eq!(c.anchors.len(), engine::MAX_CANDIDATES);
+        }
+        other => panic!("{other:?}"),
+    }
 }
 
 /// For the judge: `coverage` gives every uncovered unit, and `unit_texts`

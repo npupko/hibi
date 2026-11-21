@@ -382,17 +382,24 @@ pub fn claim_view(
                     });
                 }
             }
-            // Every unit either source holds, counted once.
-            let mut keys: Vec<&str> = first
-                .into_iter()
-                .chain(r.candidates())
-                .flat_map(|c| c.units.iter().map(|u| u.key.as_str()))
-                .collect();
-            keys.sort_unstable();
-            keys.dedup();
+            // Every unit either source holds, counted once. Only the
+            // first units of each source are kept, so a unit with the
+            // marked content that the provider also returned beyond those
+            // is counted twice.
+            let total = match (first, r.candidates()) {
+                (Some(f), Some(p)) => {
+                    p.total + f.total
+                        - f.units
+                            .iter()
+                            .filter(|u| p.units.iter().any(|x| x.key == u.key))
+                            .count()
+                }
+                (Some(c), None) | (None, Some(c)) => c.total,
+                (None, None) => 0,
+            };
             let any = first.is_some() || r.candidates().is_some();
             let candidates = any.then_some(listed);
-            let total = any.then_some(keys.len());
+            let total = any.then_some(total);
             Side {
                 index,
                 role: Role::of(index),

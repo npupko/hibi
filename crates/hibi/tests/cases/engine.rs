@@ -51,6 +51,7 @@ fn resolution(v: &Value) -> Resolved {
                     .map(|i| unit(&format!("u{i}"), "k", None, prose_v1(&i.to_string())))
                     .collect(),
                 anchors: Vec::new(),
+                total: usize::try_from(n).unwrap(),
             }),
         };
     }
