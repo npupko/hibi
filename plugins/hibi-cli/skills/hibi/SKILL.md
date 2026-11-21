@@ -66,14 +66,17 @@ Ask the user before each of these steps; they change the repository.
    (`changed`, `missing`, `ambiguous`, `unavailable`) and a `reason`.
 
    A stored anchor identifies its unit by **name** (`#name`: the
-   declaration with that name, while the name has as many declarations as
-   when the claim was made) or by **place** (a quote: those words in their
-   section and paragraph, or in their enclosing declaration, with the text
-   right around them unchanged; when the section's heading path named
-   several sections at claim time, in all of them while it names that
-   many). Anything else is a candidate for you to choose. A copy in another
-   section is only a candidate, but a copy in the same section can take the
-   claim over without notice (last row). What an edit does to a side:
+   declarations with that name, while the name has as many as when the
+   claim was made) or by **place** (a quote: those words in their scope,
+   with the text right around them unchanged). The scope is every container
+   the stored path names: all sections with the same heading path, all
+   paragraphs with the same first sentence, all declarations sharing a
+   symbol (overloads, a Python function defined twice, Rust `Id.fmt` in two
+   `impl` blocks). Anything else is a candidate for you to choose. A copy in
+   another scope is only a candidate. A copy in the same scope can take the
+   claim over without notice, and so can a pasted copy once the original is
+   renamed (last rows). The full list of limits is at
+   https://hibi.mintlify.app/concepts/anchors#limits. What an edit does to a side:
 
    | Edit | Side | Then |
    |---|---|---|
@@ -83,17 +86,22 @@ Ask the user before each of these steps; they change the repository.
    | A sentence edited at its quoted words, or right around a quoted phrase | `missing` (`not_exact`) | Read the candidates and the file, re-check, `hibi reanchor` |
    | A long sentence edited away from its quote (not in the first 120 characters of a paragraph's first sentence) | `changed` | Read the change, re-check, `hibi mark` |
    | Another sentence edited, not the first of its paragraph or list item | nothing | |
-   | The first sentence of a paragraph or list item edited, deleted or inserted, the first cell of a row edited, a paragraph split, an ordered list renumbered, a blockquote reflowed | the claims on that paragraph, item or row are `missing` (`not_exact`); the unchanged sentence usually listed first | Read, `hibi reanchor` |
-   | A heading renamed, a section with the same heading path pasted or removed, a sentence moved to another paragraph, a function around a quote renamed | `missing` (`not_exact`) | Read, `hibi reanchor` |
+   | The first sentence of a paragraph or list item edited, deleted or inserted, the first cell of a row edited, a paragraph split or joined, a paragraph left with one sentence, an ordered list renumbered, a blockquote reflowed | the claims on that paragraph, item or row are `missing` (`not_exact`); the right sentence usually listed first | Read, `hibi reanchor` |
+   | A heading renamed, a section or paragraph pasted again under the same heading, a sentence moved to another paragraph, a function around a quote renamed | `missing` (`not_exact`), unless another container now has the name (next rows) | Read, `hibi reanchor` |
    | A declaration anchored `#name` renamed or deleted | `missing` (`selector_not_found`), usually with no candidate | Find it yourself, `hibi reanchor` |
    | A second declaration of the name added | `ambiguous` or `missing` (`not_exact`), the declarations listed | Read, `hibi reanchor`. In Python a later `def` of a name replaces an earlier one when the module runs, and the earlier, unused one is listed first: check which one the code uses. |
-   | A one-sentence paragraph, list item or table row copied in its section, the original then edited | nothing: the claim follows the copy and stays fresh | `hibi cover` lists the edited original as uncovered |
+   | Text copied within its scope (a sentence, list item, table row, or a line into another declaration of the same name), the original then edited | nothing: the claim follows the copy and stays fresh; with overloads only the line numbers differ | Read the line; `hibi cover` lists the edited original as uncovered |
+   | A paragraph or section pasted again, then the original's first sentence or heading edited | nothing: only the copy has the name now, and the claim is fresh on it | Same check |
+   | A step removed from one of two numbered lists in a section | a claimed item can now read the same as the other list's item, and the claim is fresh on that | Same check |
 2. **Read the change.** For a `changed` side, `status` prints the unit's text
    as it is now, and `hibi status --detail <id>` prints every side's text.
    That is the current text, not a diff: for the change itself, run
    `git diff -- <path>` for an edit that is not committed, or
    `git log -p -- <path>` for a committed one. `mark` and `reanchor` print
-   the text they accepted ("evidence 1 is now:"); read it.
+   the text they accepted ("evidence 1 is now:"); read it. `reanchor` marks
+   every changed side it keeps, not only the side it re-points, so before
+   any `reanchor` run `hibi status --detail <id>` and read every changed
+   side.
 3. **Re-check** the statement against what you read. Decide whether it still
    holds. Never run `next` without this step, and never mark claims in bulk
    without having read each change.
@@ -118,7 +126,8 @@ Ask the user before each of these steps; they change the repository.
 5. **Record what you found.**
    - Still holds: `hibi mark <id>`.
    - Holds, but the subject moved or matches several units:
-     `hibi reanchor <id> --subject <anchor>`.
+     `hibi reanchor <id> --subject <anchor>`. This also marks every other
+     changed side of the claim: re-check those first.
    - Holds, but evidence number n moved or matches several units:
      `hibi reanchor <id> --evidence <n>=<anchor>`.
    - The statement must change: fix the text first, then
@@ -150,7 +159,8 @@ Ask the user before each of these steps; they change the repository.
    scopes that no claim covers. Claim the checkable ones. To exclude one unit,
    with the user's agreement, add an entry to the scope's `exclude` list in
    `.hibi/hibi.toml`. The unit key is in the JSON output of `cover`
-   (`scopes[].items[].unit.key`); the text output prints no keys:
+   (`scopes[].items[].unit.key`); the text output prints a key only in the
+   hint under a unit that cannot be anchored alone:
    `{ resource = "file:docs/retry.md", unit = "sentence:0863e2920c1f", reason = "a pointer, not a statement" }`.
    A prose unit's key comes from its content, so the exclusion stops
    matching when that sentence is reworded, and `cover` lists it again.
@@ -161,10 +171,9 @@ Ask the user before each of these steps; they change the repository.
    not parse, too large, not text).
    An item printed with "cannot be anchored alone" (`anchor: null` in JSON)
    is identical, where it stands, to another unit. A claim on the unit that
-   contains it records a statement about them, but `cover` keeps listing
-   the items, because a claim covers its unit and the units around it, not
-   the units inside it. To stop `cover` listing them, ask the user to
-   exclude each by the key the line names.
+   contains it records a statement about them, but does not cover them. To
+   stop `cover` listing them, ask the user to exclude each one by the key
+   the hint names.
    `hibi cover --since <range>` lists only units whose key and content are new since
    the base, so a sentence copied within its file, with the original then
    edited, is not listed even when no claim covers it. After copying text,
@@ -242,15 +251,16 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
 - A `#symbol` that several declarations share (overloads, a function
   defined twice) is `side_ambiguous`, and the error lists each one with a
   JSON anchor that selects it alone, by a line only it holds. Such an anchor
-  follows its declaration while the name has that many declarations.
+  resolves while the name has that many declarations, and its scope is all
+  of them: a copy of its line in another of them, the original then edited,
+  takes the claim. Read the line the side shows.
 - Units that are identical, with identical text around them, in one
-  section, paragraph or function cannot be anchored one by one
-  (`side_ambiguous`, "cannot be told apart"): anchor the unit that contains
-  them (the enclosing `#name`, or the whole file), or ask the user to
-  exclude one from the scope by its key. A quote whose text and
-  surroundings repeat elsewhere in the same scope is
-  `quote_not_distinguishable`: quote a longer passage, or in code anchor
-  `#<symbol>::<line>`.
+  scope cannot be anchored one by one: `claim` answers `side_ambiguous`
+  with each unit marked "cannot be told apart". Anchor the unit that
+  contains them (the enclosing `#name`, or the whole file). In `cover`, ask
+  the user to exclude each one by its key; a claim on the containing unit
+  does not cover them. (`quote_not_distinguishable` is a guard behind this
+  that the file provider does not produce in practice.)
 - Two evidence anchors that resolve to the same unit are refused
   (`invalid_argument`), however they are written.
 - A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is

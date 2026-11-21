@@ -52,7 +52,7 @@ hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 ```text output
-c1-xwck2bdefbx39g56m7dn  marked  m1-y2ee3s37ecy2hz8bmz74
+c1-xwck2bdefbx39g56m7dn  marked  m1-bwvb1rxm5s60j1etfmda
   was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked it
     evidence 1 is now:
     | pub fn delay_ms(n: u32) -> u64 {
@@ -80,7 +80,7 @@ hibi retire c1-2kfx --note "The docs no longer state the attempt limit."
 ```
 
 ```text output
-c1-2kfx78rwbb7wyxwst92f  retired  r1-wnfabn972kgqjgrfj15r
+c1-2kfx78rwbb7wyxwst92f  retired  r1-1qnyxrwwkar54z86et3q
 ```
 
 `--replaced-by <claim-id>` names the claim that takes the place of the
@@ -163,7 +163,7 @@ changed:
 
 ```text output
 $ hibi claim "Old entries are evicted first." --subject "file:docs/cache.md::evicted first" --evidence "file:src/cache.rs#evict"
-c1-msg51e29yny7wkpesxnw  marked  m1-knabgp8wstxrcnzm88vt  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
+c1-msg51e29yny7wkpesxnw  marked  m1-eq6wn8k2b9w5d25myt8k  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
   was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it
     evidence 1 is now:
     | pub fn evict() { drop_oldest(); }
@@ -179,7 +179,7 @@ claimed again with the whole sentence:
 
 ```text output
 $ hibi claim "The client gives up after 3 attempts." --subject "file:docs/retry.md::It gives up after 3 attempts." --evidence "file:src/retry.rs#MAX_ATTEMPTS"
-c1-2kfx78rwbb7wyxwst92f  marked  m1-thvdjsfd5zsh02eam5zq  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-2kfx78rwbb7wyxwst92f  marked  m1-6nrcapzxqtx7700tp7fx  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 In JSON the entry has `"created": false`. A side of the existing claim must
@@ -208,8 +208,8 @@ The second reports the first one's id and the same mark:
 
 ```text output
 $ echo '[{"statement": "The queue is bounded.", "subject": "file:docs/limits.md::The queue holds 100 jobs."}, {"statement": "The queue is bounded.", "subject": "file:docs/limits.md::holds 100 jobs"}]' | hibi claim --stdin
-c1-mp1mzh0jpgbwpb0997rg  created  m1-e1mzgjwa2dp4s34sq450  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
-c1-mp1mzh0jpgbwpb0997rg  marked  m1-e1mzgjwa2dp4s34sq450  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
+c1-mp1mzh0jpgbwpb0997rg  created  m1-wmgvnxprpg7vvs7r39ts  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
+c1-mp1mzh0jpgbwpb0997rg  marked  m1-wmgvnxprpg7vvs7r39ts  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
 ```
 
 
@@ -227,11 +227,11 @@ hibi list --retired
 ```
 
 ```text output
-c1-2axv59jx0ztvfjd1adn9  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-21T11:30:38Z
-c1-2kfx78rwbb7wyxwst92f  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-21T11:30:37Z  retired
-c1-c5dm2jvhr8hb36rx5rgm  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-21T11:30:36Z  retired
+c1-2axv59jx0ztvfjd1adn9  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-21T12:18:12Z
+c1-2kfx78rwbb7wyxwst92f  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-21T12:18:12Z  retired
+c1-c5dm2jvhr8hb36rx5rgm  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-21T12:18:10Z  retired
 c1-xqhbms40kkesq10rxjen  Each attempt times out after 10 seconds.  file:docs/retry.md  1 mark  last 2026-08-01T09:00:00Z
-c1-xwck2bdefbx39g56m7dn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-21T11:30:37Z  retired
+c1-xwck2bdefbx39g56m7dn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-21T12:18:11Z  retired
 ```
 
 With an id, `list` prints the stored claim, its marks in time order and its
@@ -247,10 +247,10 @@ c1-c5dm2jvhr8hb36rx5rgm
   subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
   evidence 1: {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
 1 mark:
-  m1-dm4tc6p6kkq82jdct105  2026-11-21T11:30:36Z
+  m1-f66h6k6dz6eqzg032h3c  2026-11-21T12:18:10Z
     file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
     file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
-retired: r1-wdhxwms1n8k93s0ffqq2  2026-11-21T11:30:36Z  replaced by c1-2kfx78rwbb7wyxwst92f
+retired: r1-5zkb535hkz5nf4r6t3hn  2026-11-21T12:18:10Z  replaced by c1-2kfx78rwbb7wyxwst92f
 ```
 
 `--loc <glob>` keeps claims with a side whose locator matches, and
