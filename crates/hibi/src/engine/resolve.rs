@@ -122,6 +122,14 @@ pub fn quoted(label: &str) -> String {
     out
 }
 
+/// A `not_exact` side whose candidates the provider found by similarity.
+pub const BY_SIMILARITY: &str = "the anchor matches no unit exactly";
+
+/// A `not_exact` side whose stored quote was found exactly, without
+/// corroboration (section 9.2). The quoted words are in the candidate, so
+/// saying that nothing matches would read as false.
+pub const FOUND_ELSEWHERE: &str = "the quoted text was found, but not where it was stored, and the unit there is not the one that was marked";
+
 /// The current resolution of one anchor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Resolved {
@@ -134,6 +142,13 @@ pub enum Resolved {
     /// never resolves: the side is `missing` with reason `not_exact`, and
     /// the units are candidates for the caller to check.
     NotExact(Candidates),
+    /// The stored quote was found exactly, at a place that does not
+    /// reproduce the stored context, in a unit that no mark of the claim
+    /// holds, and no symbol names the unit (section 9.2, "An exact hit
+    /// needs corroboration"). The side is `missing` with reason
+    /// `not_exact`, as for [`Resolved::NotExact`], and the unit is its
+    /// candidate; only the words that say what happened differ.
+    Uncorroborated(Candidates),
     /// The resource exists and the selector found nothing.
     NotFound,
     /// The selector has a key the provider does not allow. Nothing was
@@ -149,11 +164,22 @@ pub enum Resolved {
 }
 
 impl Resolved {
+    /// Why a side is `missing` with reason `not_exact`: one sentence for
+    /// each of the two causes, used in the side's `detail`, in the text
+    /// output and in error messages. `None` for every other resolution.
+    pub fn not_exact_cause(&self) -> Option<&'static str> {
+        match self {
+            Resolved::NotExact(_) => Some(BY_SIMILARITY),
+            Resolved::Uncorroborated(_) => Some(FOUND_ELSEWHERE),
+            _ => None,
+        }
+    }
+
     /// The candidates of an anchor that is ambiguous or was found only by
     /// similarity.
     pub fn candidates(&self) -> Option<&Candidates> {
         match self {
-            Resolved::Several(c) | Resolved::NotExact(c) => Some(c),
+            Resolved::Several(c) | Resolved::NotExact(c) | Resolved::Uncorroborated(c) => Some(c),
             _ => None,
         }
     }
@@ -172,7 +198,9 @@ impl Resolved {
         match self {
             Resolved::One(_) => None,
             Resolved::Several(_) => Some((SideState::Ambiguous, Reason::SeveralUnits)),
-            Resolved::NotExact(_) => Some((SideState::Missing, Reason::NotExact)),
+            Resolved::NotExact(_) | Resolved::Uncorroborated(_) => {
+                Some((SideState::Missing, Reason::NotExact))
+            }
             Resolved::NotFound => Some((SideState::Missing, Reason::SelectorNotFound)),
             Resolved::KeyNotAllowed { .. } => Some((SideState::Unavailable, Reason::ProviderError)),
             Resolved::Failed { state, reason, .. } => Some((*state, *reason)),
@@ -202,10 +230,11 @@ impl Resolved {
                 c.total,
                 c.describe()
             )),
-            Resolved::NotExact(c) => {
+            Resolved::NotExact(c) | Resolved::Uncorroborated(c) => {
                 let all = Candidates::merged(by_content, Some(c)).unwrap_or_else(|| c.clone());
                 Some(format!(
-                    "the anchor matches no unit exactly; {}, each a guess to check before use: {}",
+                    "{}; {}, each a guess to check before use: {}",
+                    self.not_exact_cause().unwrap_or_default(),
                     units(all.total),
                     all.describe()
                 ))

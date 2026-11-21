@@ -10,6 +10,7 @@ exit status: 0
 c1-dccp96583661kgfj4rex  stale  Workers restart every night.
   marked 2026-11-20T12:00:00Z (m1-4bx4fmte0fvadk3a769w)
   subject  file:docs/ops.md  missing (not_exact)
+    the anchor matches no unit exactly
     stored: quote "Workers are restarted nightly."
     1 candidate; each is a guess, read it before you anchor to it:
     - sentence "Workers are restarted every night.", line 3

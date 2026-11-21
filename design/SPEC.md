@@ -5391,7 +5391,14 @@ Rules for the Side keys:
   `invalid_selector` or `invalid_locator`, without the error code. For a
   `changed` side whose stored selector has a symbol and whose unit the
   provider returned with `contextChanged: true` (section 9.2) it is
-  `the stored quote is no longer in this unit`. It is `null` for `unavailable` with `profile_mismatch`, for `unavailable` with
+  `the stored quote is no longer in this unit`. For a `missing` side with
+  reason `not_exact` it says which of the two causes holds:
+  `the anchor matches no unit exactly` when the candidates were found by
+  similarity, and
+  `the quoted text was found, but not where it was stored, and the unit there is not the one that was marked`
+  when the quote was found exactly without corroboration (section 9.2).
+  The `side_missing` message of `mark`, `claim` and `reanchor` starts with
+  the same sentence. It is `null` for `unavailable` with `profile_mismatch`, for `unavailable` with
   `provider_error` when the cause is a stored selector key the provider
   does not allow (the anchor is not sent, section 9.2), and for every other
   state.

@@ -154,7 +154,7 @@ pub fn corroborate(claim: &Claim, marks: &[&Mark], resolved: &mut [Resolved]) {
         } else if anchor.sel.symbol.is_none() {
             let select = serde_json::to_string(&Anchor::new(anchor.loc.clone(), unit.sel.clone()))
                 .unwrap_or_default();
-            *r = Resolved::NotExact(Candidates {
+            *r = Resolved::Uncorroborated(Candidates {
                 units: vec![(**unit).clone()],
                 anchors: vec![select],
                 total: 1,
@@ -406,7 +406,8 @@ pub fn claim_view(
                 Resolved::One(u) if u.context_changed && *state == SideState::Changed => {
                     Some(QUOTE_GONE)
                 }
-                _ => None,
+                // Which of the two causes of `not_exact` it is.
+                other => other.not_exact_cause(),
             };
             let first = by_content.get(index).and_then(Option::as_ref);
             let all = Candidates::merged(first, r.candidates());

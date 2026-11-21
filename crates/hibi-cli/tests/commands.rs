@@ -2038,6 +2038,23 @@ fn r55_a_reworded_sentence_is_a_candidate_and_mark_is_refused() {
     assert_eq!(e["code"], "side_missing");
     assert_eq!(s(&e["remediation"]), next);
     assert_eq!(repo.records("marks").len(), 1);
+    // The cause: found by similarity only.
+    assert_eq!(
+        view["sides"][0]["detail"],
+        "the anchor matches no unit exactly"
+    );
+    assert!(
+        s(&e["message"]).contains("(not_exact): the anchor matches no unit exactly; "),
+        "{e}"
+    );
+    let human = repo.human(&["--now", NOW, "status"]);
+    assert!(
+        human
+            .stdout
+            .contains("missing (not_exact)\n    the anchor matches no unit exactly\n"),
+        "{}",
+        human.stdout
+    );
 
     let v = at(
         &repo,
@@ -2488,6 +2505,19 @@ fn an_exact_quote_in_another_sentence_is_a_candidate_and_never_the_side() {
     assert!(s(&e["message"]).contains("up to 30 s"), "{e}");
     assert_eq!(s(&e["remediation"]), next);
     assert_eq!(repo.records("marks").len(), 1);
+    // The words say what happened: the quote was found, elsewhere.
+    let cause = "the quoted text was found, but not where it was stored, and the unit there is not the one that was marked";
+    assert_eq!(side["detail"], cause);
+    assert!(s(&e["message"]).contains(cause), "{e}");
+    assert!(!s(&e["message"]).contains("matches no unit exactly"), "{e}");
+    let human = repo.human(&["--now", NOW, "status"]);
+    assert!(
+        human
+            .stdout
+            .contains(&format!("missing (not_exact)\n    {cause}\n")),
+        "{}",
+        human.stdout
+    );
 
     // The statement is about the timeout sentence.
     let v = at(

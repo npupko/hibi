@@ -407,6 +407,17 @@ fn a_unit_found_by_similarity_never_resolves_a_side() {
     assert_eq!(errors[0].code, hibi::Code::SideMissing);
     assert!(errors[0].message.contains("not_exact"), "{}", errors[0]);
     assert_eq!(errors[0].remediation, v.next);
+    // The cause is said, in the side and in the error: found by
+    // similarity, not the other cause of `not_exact`.
+    assert_eq!(side.detail.as_deref(), Some(engine::BY_SIMILARITY));
+    assert!(
+        errors[0]
+            .message
+            .contains("(not_exact): the anchor matches no unit exactly; 1 candidate,"),
+        "{}",
+        errors[0]
+    );
+    assert!(!errors[0].message.contains("quoted text was found"));
     assert_eq!(f.store.counts(), before);
 
     // `reanchor` that keeps the side fails the same way.
@@ -643,8 +654,28 @@ fn an_exact_hit_with_another_context_needs_a_mark_or_a_symbol() {
     )
     .unwrap_err();
     assert_eq!(errors[0].code, hibi::Code::SideMissing);
-    assert_eq!(errors[0].remediation, Some(next));
+    assert_eq!(errors[0].remediation, Some(next.clone()));
     assert_eq!(f.store.counts(), before);
+    // The cause is said: the quote is there, so "matches no unit exactly"
+    // would read as false.
+    assert_eq!(side.detail.as_deref(), Some(engine::FOUND_ELSEWHERE));
+    let wanted = "(not_exact): the quoted text was found, but not where it was stored, and the unit there is not the one that was marked; 1 candidate, each a guess to check before use: ";
+    assert!(errors[0].message.contains(wanted), "{}", errors[0]);
+    assert!(!errors[0].message.contains("matches no unit exactly"));
+    let e = engine::reanchor(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &engine::ReanchorInput {
+            claim: f.id.to_string(),
+            statement: Some("S2".into()),
+            ..engine::ReanchorInput::default()
+        },
+        now(),
+    )
+    .unwrap_err();
+    assert!(e.message.contains(wanted), "{e}");
+    assert_eq!(e.remediation, Some(next));
 
     // An older mark holds that content: it is a unit that was marked.
     f.worlds[1].borrow_mut().overrides.clear();
