@@ -391,8 +391,9 @@ pub struct QuoteSelector {
     pub pos: usize,
 }
 
-/// The errors of [`quote_selector`]. The CLI reports both as
-/// `invalid_anchor`.
+/// The errors of [`quote_selector`]. Its only caller, the file provider,
+/// builds the span from a unit it has just located, and reports either
+/// error as the provider error `internal` (section 6.7).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum SpanError {
     /// The span is empty after trimming WS.

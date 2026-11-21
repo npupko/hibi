@@ -4845,7 +4845,7 @@ Side:
 | `markedFp` | fingerprint in the reference mark or `null` |
 | `candidates` | array of UnitRef, present only when `state` is `ambiguous` |
 | `text` | current unit text, present only with `--detail` |
-| `remediation` | string or `null`. For a side whose state is not `same`, the sentence the human output prints for that side: what is wrong with it and what the caller can do. `null` for a `same` side. Present in every ClaimView, so in the output of `status`, `claim`, `mark` and `reanchor`. |
+| `remediation` | string or `null`. Set only for a side whose state is `unavailable`, by its reason: for `too_large`, `not_text` and `provider_error` one sentence that states the limit or the cause and what the caller can do (the human output prints the same sentence under the side); for `scheme_not_declared`, `provider_not_registered`, `provider_failed`, `repo_not_allowed` and `repo_not_found` the command `hibi providers`. `null` for `unavailable` with `profile_mismatch` and for every other state (`same`, `changed`, `missing`, `ambiguous`), where the claim's `next` says what to do. Present in every ClaimView, so in the output of `status`, `claim`, `mark` and `reanchor`. |
 
 Rules for the Side keys:
 
@@ -6881,4 +6881,9 @@ Each of these has a test, named in parentheses.
   `the_schemas_carry_the_limits_that_validation_enforces`.)
 - R116. The plugin manifest's version equals the workspace version.
   (`plugin_manifest_version_equals_the_workspace_version`.)
+- R117. A side that is `unavailable` carries a `remediation` by its reason,
+  in the errors of `claim`, `mark` and `reanchor` and in every ClaimView;
+  a side in any other state has `null`.
+  (`an_unavailable_side_says_the_cause_and_the_way_out`,
+  `a_too_large_or_binary_file_says_the_limit_and_the_way_out`.)
 

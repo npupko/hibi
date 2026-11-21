@@ -4,8 +4,9 @@ Conformance data for the pure algorithms of hibi v5. Section 16 of
 `design/SPEC.md` binds each file to a function. The values were recorded from
 hibi v4 at tag `v0.7.0` (commit `04dafae`). The cases where v5 deliberately
 differs from v4, listed in SPEC section 16.2, are already updated to the v5
-value and are marked `v5-adjusted`. Every case is binding for v5, except the
-points listed under "Open points".
+value and are marked `v5-adjusted`. Every case is binding for v5. Two points
+that were open when the cases were extracted are settled; "Settled points"
+below says how.
 
 ## Case shape and origin
 
@@ -150,7 +151,7 @@ The `error` values are labels, not v4's messages.
 |---|---|---|
 | `PatternTooLong` | SPEC section 7.3 | `matchMain` throws `Bitap pattern too long` |
 | `invalid_duration` | SPEC section 9.4 | `addDuration` throws `not an ISO 8601 duration: …` |
-| `empty span` | SPEC section 7.4, error `EmptySpan` of `quote_selector`: "If `quote` is empty after trimming WS, the result is the error `EmptySpan`." The CLI reports it as `invalid_anchor` (section 16.1). | `buildSelectorBundle` throws `refusing to anchor an empty span` |
+| `empty span` | SPEC section 7.4, error `EmptySpan` of `quote_selector`: "If `quote` is empty after trimming WS, the result is the error `EmptySpan`." The file provider, its only caller, reports it as the provider error `internal` (sections 6.7 and 16.1). | `buildSelectorBundle` throws `refusing to anchor an empty span` |
 | `span longer than 2048 characters` | SPEC section 7.4, error `TooLong` of `quote_selector`: a span longer than `MAX_QUOTE_CHARS` (2,048) characters. The empty check runs first. | none: v4 had no length limit |
 
 ## Cases changed for v5 (SPEC section 16.2)
@@ -192,18 +193,24 @@ Renamed cases, because the old name stated something false for v5:
 | regions.json | `frontmatter with CRLF in .md` | `frontmatter in .md (former CRLF case, fed as LF)` |
 | regions.json | `CRLF line endings keep \r inside multi-line units` | `multi-line units (former CRLF case, fed as LF)` |
 
-## Open points
+## Settled points
 
-These were not decided here. The affected cases still hold v4's form.
+Both were open when the cases were extracted. The affected cases keep the
+form they were recorded in, and are binding in that form.
 
-1. **Timestamps.** SPEC section 3.1 allows second precision and `Z` only.
-   - Every expected instant and many input instants in `duration.json` and
-     `recheck-boundary.json` are written with milliseconds, such as `.000Z`.
-   - Three inputs have nonzero milliseconds: two duration starts and one
-     boundary `now`.
-   - One duration start has a `+02:00` offset.
+1. **Timestamps.** SPEC section 3.1 allows second precision and `Z` only
+   for stored `at` fields and for `now`. The duration functions are not
+   bound by that: SPEC section 9.4 says `duration::parse` and
+   `duration::add` accept any instant, including one with a fraction of a
+   second or an offset, and keep the fraction. So the instants of
+   `duration.json` and `recheck-boundary.json` that are written with
+   milliseconds (such as `.000Z`, three of them nonzero) and the one
+   duration start with a `+02:00` offset are valid inputs, and the tests
+   bind them as written.
 2. **Rust grammar version.** The Rust streams were recorded with
-   tree-sitter-rust 0.24.0. SPEC section 2.6 pins 0.24.2.
+   tree-sitter-rust 0.24.0. SPEC section 2.6 pins 0.24.2, and every Rust
+   case passes with 0.24.2, so the recorded streams are binding as they
+   are.
 
 ## Left out, and why
 

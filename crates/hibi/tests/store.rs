@@ -627,7 +627,9 @@ fn set_shard_len(root: &Path, rel: &str, len: u64) {
 ///
 /// The size is checked when a shard is read, by one comparison that
 /// `load`, `append` (its read under the lock) and `snapshot_id` share. The
-/// write path of `append` has no size check of its own.
+/// write path of `append` has its own check before it writes anything:
+/// a write that would take a shard or the store over its limit is refused
+/// with `store_full` (tested next to the store, with small limits).
 ///
 /// The shard at the cap is a sparse file of zero bytes. `load` and `append`
 /// read it and fail on its content, with an error that is not the size
