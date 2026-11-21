@@ -507,7 +507,8 @@ impl RepoConfig {
     ///
     /// `.hibi` or `hibi.toml` being a symbolic link is `store_corrupt`
     /// (section 12.3); the file is opened without following a link. A
-    /// missing file is `not_initialized`. A `hibi.toml` that exists and is
+    /// missing file is `not_initialized`. A `.hibi` that exists and is not a
+    /// directory is `store_corrupt`. A `hibi.toml` that exists and is
     /// not a regular file (a directory, FIFO, socket or device) is
     /// `store_corrupt` (section 12.3) and is not opened. A file larger than
     /// [`MAX_CONFIG_BYTES`] is `invalid_config`.
@@ -526,6 +527,14 @@ impl RepoConfig {
                     return Err(Error::new(
                         Code::StoreCorrupt,
                         format!("{rel} is a symbolic link"),
+                    ));
+                }
+                // A `.hibi` that is a file, FIFO, socket or device is not a
+                // store directory (section 12.3).
+                Ok(m) if rel == ".hibi" && !m.is_dir() => {
+                    return Err(Error::new(
+                        Code::StoreCorrupt,
+                        ".hibi is not a directory".to_owned(),
                     ));
                 }
                 // Checked before the file is opened: opening a FIFO for

@@ -355,7 +355,7 @@ impl JsonSchema for Response {
         schemars::json_schema!({
             "type": "object",
             "oneOf": [
-                {"required": ["id", "result"], "properties": {"id": {"type": "integer", "minimum": 1}, "result": {"type": "object"}}, "not": {"required": ["error"]}},
+                {"required": ["id", "result"], "properties": {"id": {"type": "integer", "minimum": 1}, "result": true}, "not": {"required": ["error"]}},
                 {"required": ["id", "error"], "properties": {"id": {"type": ["integer", "null"], "minimum": 1}, "error": error}, "not": {"required": ["result"]}}
             ]
         })
@@ -386,7 +386,7 @@ impl JsonSchema for InnerResponse {
         schemars::json_schema!({
             "type": "object",
             "oneOf": [
-                {"required": ["result"], "properties": {"result": {"type": "object"}}, "not": {"required": ["error"]}},
+                {"required": ["result"], "properties": {"result": true}, "not": {"required": ["error"]}},
                 {"required": ["error"], "properties": {"error": error}, "not": {"required": ["result"]}}
             ]
         })

@@ -9,9 +9,7 @@
           "type": "integer",
           "minimum": 1
         },
-        "result": {
-          "type": "object"
-        }
+        "result": true
       },
       "not": {
         "required": [

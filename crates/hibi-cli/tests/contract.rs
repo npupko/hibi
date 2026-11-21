@@ -598,3 +598,47 @@ fn a_kind_the_external_provider_does_not_list_is_a_warning_of_cover() {
         "{out:?}"
     );
 }
+
+/// A `.hibi` that is a file is not a store. Root discovery looks for
+/// `.hibi/hibi.toml` (section 12.5) and finds none, so the command line
+/// answers `not_initialized`, with and without `--root`. (The library's
+/// `RepoConfig::load`, called on such a root directly, answers
+/// `store_corrupt` by section 12.3.)
+#[test]
+fn a_hibi_that_is_a_file_is_not_initialized_on_the_command_line() {
+    let repo = Repo::bare();
+    repo.write(".hibi", "not a directory\n");
+    for args in [vec!["status"], vec!["list"], vec!["cover"]] {
+        let e = repo.fail(&args);
+        assert_eq!(e["code"], "not_initialized", "{args:?}");
+        assert_eq!(e["remediation"], "hibi init", "{args:?}");
+    }
+    let root = repo.root.to_str().unwrap().to_owned();
+    let e = repo.fail(&["--root", &root, "status"]);
+    assert_eq!(e["code"], "not_initialized");
+    // `init` refuses to write through it.
+    let e = repo.fail(&["init"]);
+    assert_eq!(e["code"], "store_corrupt", "{e}");
+    assert_eq!(repo.read(".hibi"), "not a directory\n");
+}
+
+/// The provider response schema accepts any JSON value as `result`, as the
+/// reader does (section 13.2): `batch` and a provider's own methods are not
+/// bound to an object.
+#[test]
+fn the_provider_response_schema_accepts_any_result() {
+    let schema = hibi_cli::schema::schema("provider-response").unwrap();
+    let v = serde_json::to_value(schema).unwrap();
+    assert_eq!(v["oneOf"][0]["properties"]["result"], json!(true), "{v}");
+    assert_eq!(v["oneOf"][0]["required"], json!(["id", "result"]));
+    for line in [
+        r#"{"id":1,"result":{}}"#,
+        r#"{"id":1,"result":[1,2]}"#,
+        r#"{"id":1,"result":"text"}"#,
+        r#"{"id":1,"result":7}"#,
+        r#"{"id":1,"result":null}"#,
+    ] {
+        let parsed: Result<hibi::provider::Response, _> = serde_json::from_str(line);
+        assert!(parsed.is_ok(), "{line}: {:?}", parsed.err());
+    }
+}

@@ -515,3 +515,21 @@ fn sibling_paths_are_compared_canonicalized() {
     .unwrap_err();
     assert_eq!(r.reason(), "repo_not_allowed");
 }
+
+/// Section 12.3: a `.hibi` that exists and is not a directory is
+/// `store_corrupt`, not an error of the operating system.
+#[test]
+fn a_hibi_that_is_not_a_directory_is_store_corrupt() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join(".hibi"), "not a directory\n").unwrap();
+    let e = RepoConfig::load(dir.path()).unwrap_err();
+    assert_eq!(e.code, Code::StoreCorrupt, "{e}");
+    assert_eq!(e.message, ".hibi is not a directory");
+    assert!(e.remediation.is_some());
+    // No `.hibi` at all is a store that was never made.
+    let empty = tempfile::tempdir().unwrap();
+    assert_eq!(
+        RepoConfig::load(empty.path()).unwrap_err().code,
+        Code::NotInitialized
+    );
+}
