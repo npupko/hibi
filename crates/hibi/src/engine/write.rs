@@ -15,7 +15,7 @@ use crate::model::{Locator, SelectorKey, Timestamp, parse_compact, same_quote};
 use crate::provider::{Providers, Unit};
 use crate::store::{Batch, Ledger, Store};
 
-use super::fresh::{Evaluation, content_wanted};
+use super::fresh::{Evaluation, content_wanted, corroborate};
 use super::fresh::{Index, ViewOptions, accepted, claim_view, evaluate, next_command};
 use super::input::{AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput};
 use super::resolve::{
@@ -391,6 +391,7 @@ fn as_stored(r: &Resolved) -> Resolved {
         Resolved::One(u) => {
             let mut u = u.clone();
             u.refuse = None;
+            u.context_changed = false;
             Resolved::One(u)
         }
         other => other.clone(),
@@ -727,7 +728,8 @@ fn claim_elements(
     let candidates: Vec<(&Claim, Vec<Resolved>)> = candidates
         .into_iter()
         .map(|c| {
-            let rs = candidate_resolved.by_ref().take(c.side_count()).collect();
+            let mut rs: Vec<Resolved> = candidate_resolved.by_ref().take(c.side_count()).collect();
+            corroborate(c, index.marks_of(c.id.as_str()), &mut rs);
             (c, rs)
         })
         .collect();
@@ -964,7 +966,8 @@ fn mark_elements(
         let (Ok(input), Some(claim)) = (input, *target) else {
             continue;
         };
-        let rs: Vec<Resolved> = resolved.by_ref().take(claim.side_count()).collect();
+        let mut rs: Vec<Resolved> = resolved.by_ref().take(claim.side_count()).collect();
+        corroborate(claim, index.marks_of(claim.id.as_str()), &mut rs);
         let failure = if rs.iter().any(|r| r.failure().is_some()) {
             let eval = evaluate(claim, index.marks_of(claim.id.as_str()), false, &rs, now)
                 .map_err(|e| vec![e])?;
@@ -1157,7 +1160,8 @@ pub fn reanchor(
     // own stored anchors. A kept side that changed is marked by this write.
     let mut once = Once::default();
     let old_anchors: Vec<&Anchor> = old.sides().collect();
-    let old_resolved = once.resolve(providers, &old_anchors);
+    let mut old_resolved = once.resolve(providers, &old_anchors);
+    corroborate(old, index.marks_of(old.id.as_str()), &mut old_resolved);
     let old_eval = evaluate(
         old,
         index.marks_of(old.id.as_str()),
@@ -1172,7 +1176,12 @@ pub fn reanchor(
     // resolution that `before` was read from, so this write never marks a
     // kept side that it reports as not resolved.
     let anchors: Vec<&Anchor> = plan.iter().map(|(a, _)| a).collect();
-    let resolved = once.resolve(providers, &anchors);
+    let mut resolved = once.resolve(providers, &anchors);
+    for (((_, new), r), n) in plan.iter().zip(resolved.iter_mut()).zip(&numbers) {
+        if !*new {
+            *r = old_resolved[*n].clone();
+        }
+    }
     let warnings = run_warnings(&ledger, git, anchors.iter().copied())?;
     let mut units: Vec<&Unit> = Vec::with_capacity(plan.len());
     for (((anchor, new), r), n) in plan.iter().zip(&resolved).zip(numbers.iter().copied()) {
@@ -1243,7 +1252,8 @@ pub fn reanchor(
         // The live claim with the new id. It is the target only when its
         // own stored anchors resolve exactly in this run.
         let same_anchors: Vec<&Anchor> = same.sides().collect();
-        let rs = once.resolve(providers, &same_anchors);
+        let mut rs = once.resolve(providers, &same_anchors);
+        corroborate(same, index.marks_of(same.id.as_str()), &mut rs);
         let eval = evaluate(same, index.marks_of(same.id.as_str()), false, &rs, now)?;
         if let Some(e) = stored_failure(providers, same, &eval, &rs) {
             let e = Error::new(
@@ -1274,7 +1284,8 @@ pub fn reanchor(
         others
             .into_iter()
             .map(|c| {
-                let rs: Vec<Resolved> = other_resolved.by_ref().take(c.side_count()).collect();
+                let mut rs: Vec<Resolved> = other_resolved.by_ref().take(c.side_count()).collect();
+                corroborate(c, index.marks_of(c.id.as_str()), &mut rs);
                 (c, rs)
             })
             .filter(|(c, rs)| same_claim(c, rs, &new, &keys, &asked))

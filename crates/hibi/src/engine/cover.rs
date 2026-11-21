@@ -386,7 +386,16 @@ pub fn coverage(
     let mut warnings = Warning::from_store_all(&ledger.warnings)?;
     let index = Index::new(&ledger);
     let anchors: Vec<&Anchor> = index.live().flat_map(|c| c.sides()).collect();
-    let resolved = resolve_anchors(providers, &anchors);
+    let mut resolved = resolve_anchors(providers, &anchors);
+    // Only a side that resolves with corroboration covers (section 9.2).
+    {
+        let mut rest = resolved.as_mut_slice();
+        for claim in index.live() {
+            let (mine, others) = rest.split_at_mut(claim.side_count());
+            super::fresh::corroborate(claim, index.marks_of(claim.id.as_str()), mine);
+            rest = others;
+        }
+    }
     // Locator to the keys that sides resolve to.
     let mut direct: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
     for (a, r) in anchors.iter().zip(&resolved) {

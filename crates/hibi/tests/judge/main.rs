@@ -1188,11 +1188,8 @@ fn a_key_with_a_line_break_is_not_sent_and_not_retried() {
 #[test]
 fn r27_no_judge_command_changes_hibi() {
     let fx = fixture(&[]);
-    fx.claim(
-        "Retries.",
-        "file:docs/guide.md::The client retries a request",
-    );
-    fx.write("docs/guide.md", &GUIDE.replace("three", "four"));
+    fx.claim("Retries.", "file:src/lib.rs#retries");
+    fx.write("src/lib.rs", &LIB.replace("    3\n", "    4\n"));
     let before = fx.hibi_files();
     let mock = ok_mock();
     let judge = fx.judge(&mock);
@@ -1330,11 +1327,8 @@ fn r61_ignored_text_is_never_sent() {
         "secret.md\nsrc/secret.rs\ndocs/ignored.md\nnotes.md\n",
     );
     fx.write("notes.md", "The token is hunter2 now.\n");
-    let open = fx.claim(
-        "Retries.",
-        "file:docs/guide.md::The client retries a request",
-    );
-    fx.write("docs/guide.md", &GUIDE.replace("three", "four"));
+    let open = fx.claim("Retries.", "file:src/lib.rs#retries");
+    fx.write("src/lib.rs", &LIB.replace("    3\n", "    4\n"));
 
     let mock = ok_mock();
     let judge = fx.judge(&mock);
@@ -1357,7 +1351,7 @@ fn r61_ignored_text_is_never_sent() {
     assert_eq!(mock.count(), 3);
     assert!(!mock.all_bodies().contains("hunter2"), "R61");
     // For contrast: the text of the claim on a listed file was sent.
-    assert!(mock.all_bodies().contains("retries a request four times"));
+    assert!(mock.all_bodies().contains("pub fn retries() -> u32"));
     // The stored claim on the ignored file reads as missing, and no view
     // of it carries the file's text.
     let listed = o.claims.iter().find(|c| c.id.as_str() == secret).unwrap();
@@ -1371,25 +1365,30 @@ fn r61_ignored_text_is_never_sent() {
 
 #[test]
 fn judge_order_ranks_stale_claims_most_likely_broken_first() {
-    let fx = fixture(&[(
-        "docs/order.md",
-        "Alpha holds. Beta holds. Gamma holds. Delta holds.\n",
-    )]);
+    // Sides that are `changed` have text to send. A function anchored by
+    // its symbol is `changed` when its body is edited; an edited sentence
+    // is a missing side (section 9.2) and is not sent.
+    let source = |changed: u32| -> String {
+        ["alpha", "beta", "gamma"]
+            .iter()
+            .map(|f| format!("pub fn {f}() -> u32 {{\n    {changed}\n}}\n\n"))
+            .chain(["pub fn delta() -> u32 {\n    1\n}\n".to_owned()])
+            .collect()
+    };
+    let before = source(1);
+    let fx = fixture(&[("src/order.rs", before.as_str())]);
     let mut ids = BTreeMap::new();
     for w in ["Alpha", "Beta", "Gamma", "Delta"] {
         ids.insert(
             w,
             fx.claim(
                 &format!("{w} is true."),
-                &format!("file:docs/order.md::{w} holds"),
+                &format!("file:src/order.rs#{}", w.to_lowercase()),
             ),
         );
     }
     // Alpha, Beta and Gamma go stale; Delta stays fresh.
-    fx.write(
-        "docs/order.md",
-        "Alpha holds now. Beta holds now. Gamma holds now. Delta holds.\n",
-    );
+    fx.write("src/order.rs", &source(2));
     let p_of = |statement: &str| match statement {
         s if s.starts_with("Alpha") => 0.6,
         s if s.starts_with("Beta") => 0.2,
@@ -1428,7 +1427,10 @@ fn judge_order_ranks_stale_claims_most_likely_broken_first() {
             .unwrap();
         assert_eq!(
             q["instructions"]["content"],
-            json!([format!("{w} holds now.")])
+            json!([format!(
+                "pub fn {}() -> u32 {{\n    2\n}}",
+                w.to_lowercase()
+            )])
         );
     }
     // The answer is not printed: the output equals plain status, reordered.

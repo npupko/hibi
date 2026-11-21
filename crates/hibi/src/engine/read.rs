@@ -225,8 +225,16 @@ pub fn status(
 
     let live: Vec<&Claim> = index.live().collect();
     let anchors: Vec<&Anchor> = live.iter().flat_map(|c| c.sides()).collect();
-    let all_resolved = resolve_anchors(providers, &anchors);
+    let mut all_resolved = resolve_anchors(providers, &anchors);
     let warnings = run_warnings(&ledger, git, anchors.iter().copied())?;
+    {
+        let mut rest = all_resolved.as_mut_slice();
+        for claim in &live {
+            let (mine, others) = rest.split_at_mut(claim.side_count());
+            super::fresh::corroborate(claim, index.marks_of(claim.id.as_str()), mine);
+            rest = others;
+        }
+    }
 
     // Per claim in id order: its resolutions (empty when retired).
     let mut offset = 0;

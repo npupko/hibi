@@ -2599,7 +2599,8 @@ and every engine-side check appears once.
 | Provider | No unit | `missing` | `selector_not_found` |
 | Provider | One or more units, at least one of them with `approx: true` (section 2.5) | `missing` | `not_exact` |
 | Provider | Two or more units, none of them with `approx: true` | `ambiguous` | `several_units` |
-| Provider | One unit, with `approx` false | by the next table | |
+| Provider | One unit, with `approx` false and `contextChanged` true, that the rule "An exact hit needs corroboration" below turns away | `missing` | `not_exact` |
+| Provider | One unit, with `approx` false, otherwise | by the next table | |
 
 `unsupported_protocol` means the provider is unusable (section 13.4), so it
 maps to `provider_failed`, the same as `failed`. The other error codes of
@@ -2613,6 +2614,36 @@ anchor for this resource: the anchor is wrong, the provider did not fail.
 For a stored anchor they map to `selector_refused`, with the provider's
 message in `detail`; for a new anchor the command fails with
 `invalid_anchor` and that message (section 15.4).
+
+An exact hit needs corroboration. A stored anchor can be found exactly at
+a place that is not the unit the claim is about: a short quote such as
+`30 s` leaves the sentence that was marked and appears in another one. The
+provider reports this with `contextChanged: true` on the unit it returns
+(section 13.3): the stored quote was found exactly, but the stored `prefix`
+and `suffix` are not reproduced there; or, for a symbol that names one
+declaration, the stored quote is no longer in that declaration. For the
+stored anchor of a side that resolves to exactly one unit with `approx`
+false and `contextChanged` true, hibi decides, before anything else reads
+the resolution:
+
+1. The unit's fingerprint equals this side's fingerprint in any mark of the
+   claim that fits the claim (section 9.3): the unit is one that was marked,
+   and only its surroundings changed. The side resolves to the unit, as if
+   `contextChanged` were false.
+2. Otherwise, and the stored selector has no `symbol`: nothing says that
+   this is the unit. The side is `missing` with reason `not_exact`, it has
+   no unit and no fingerprint, and the unit is its one candidate, with
+   `sameFingerprint: false` and its completed anchor as JSON. The caller
+   has to reanchor the side with an anchor it chose; `mark` fails.
+3. Otherwise the stored selector has a `symbol`, and the symbol identifies
+   the unit. The side resolves to the unit, so it is `changed`, and its
+   `detail` (section 15.2) is `the stored quote is no longer in this unit`
+   while it is `changed`.
+
+A unit without `contextChanged`, or with it false, resolves as before. The
+rule is applied wherever a stored anchor is resolved: for `status`, `mark`,
+`reanchor`, the same-claim rule and `cover`. It does not apply to a new
+anchor of `claim` or `reanchor`, which has no mark to be compared with.
 
 Similarity proposes, it never resolves. A unit that a provider returns with
 `approx: true` was found by similarity, and it never resolves a side:
@@ -2721,7 +2752,8 @@ For a retired claim no mark can match, because no side is resolved. Its
 reference mark is the mark with the latest `at` (ties to the greater id), or
 none when it has no mark.
 
-Sides found by similarity. A live claim with a side that is `missing` with
+Sides found by similarity, or exactly without corroboration (section 9.2).
+A live claim with a side that is `missing` with
 reason `not_exact` is `stale`, whatever the fingerprints of the candidates.
 This holds also when a candidate has the marked fingerprint, and also when
 the time of the `recheck` has passed: the claim is `stale`, not `expired`.
@@ -5353,8 +5385,10 @@ Rules for the Side keys:
   `provider_not_registered` it is
   `the user config has no provider command for scheme <scheme>`. For
   `selector_refused` it is the message of the provider's error
-  `invalid_selector` or `invalid_locator`, without the error code. It is
-  `null` for `unavailable` with `profile_mismatch`, for `unavailable` with
+  `invalid_selector` or `invalid_locator`, without the error code. For a
+  `changed` side whose stored selector has a symbol and whose unit the
+  provider returned with `contextChanged: true` (section 9.2) it is
+  `the stored quote is no longer in this unit`. It is `null` for `unavailable` with `profile_mismatch`, for `unavailable` with
   `provider_error` when the cause is a stored selector key the provider
   does not allow (the anchor is not sent, section 9.2), and for every other
   state.
@@ -7097,6 +7131,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 138 | A stored selector reports `contextChanged` when its quote is found exactly but the stored context around it is not; a stored span that crosses units is `approx`. The missed-symbol branch compares hits through each hit's own unit windows, like with like. | An exact quote can land on another unit when the quoted words move ("30 s" now in the retry sentence), or cross units when a blank line splits a sentence; the side showed `changed` or resolved to the first unit, and after a mark the original sentence could change unseen. Scoring a scope-cut context against whole-text windows offered only one of two identical methods after a class rename. |
 | 139 | Twins are decided by the selector, not by the scope text, and a whole-text match ranks above a scope match. | Two `def run():` whose bodies shared their first 48 characters got equal scope selectors, and both printed anchors came back ambiguous when pasted. The rank keeps a twin at the start of the file a fixed point; an inserted copy with the same first 48 characters can take a unique-era anchor, and its differing fingerprint makes that visible. |
 | 140 | The file provider keeps up to four analysed documents between calls, keyed by the exact bytes and the class; resolution compares contexts without allocating and computes similarity scores only when no declaration reproduces the stored context. | `cover` rendering 100 items of an 80,000-unit file took 34 s and analysed the file 100 times; resolving one of 4,000 identical functions scored every copy with Levenshtein and took twice as long as before the duplicated-symbol rules. |
+| 141 | An exact hit identifies its unit only with corroboration: the stored context is reproduced, or the unit's fingerprint is in a mark of the claim, or a symbol names the unit. Otherwise the side is `missing`, `not_exact`, with the unit as a candidate. A symbol-named unit whose stored quote is gone is `changed` and says so in `detail`. | A short quote found in another sentence was marked as the claim's unit, and later changes to the real sentence were never reported. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -7954,4 +7989,18 @@ Each of these has a test, named in parentheses.
 - R141. A provider analyses a resource once while its bytes are unchanged
   and again as soon as they change.
   (`an_analysed_document_is_reused_between_calls_until_its_bytes_change`.)
+- R142. An exact hit needs corroboration. A stored quote found exactly in
+  another sentence is a candidate under a `missing`, `not_exact` side;
+  `mark` is refused; after an explicit `reanchor` a later change is
+  reported. An edit next to a quoted sentence leaves the claim fresh. A
+  quoted phrase in a sentence edited elsewhere is a candidate. A unit its
+  symbol names is `changed` with the `detail`
+  `the stored quote is no longer in this unit`, and `same` without it after
+  the mark. A unit whose fingerprint is in an older mark resolves.
+  (`an_exact_hit_with_another_context_needs_a_mark_or_a_symbol`,
+  `a_symbol_keeps_its_unit_when_the_stored_quote_is_gone`,
+  `an_exact_quote_in_another_sentence_is_a_candidate_and_never_the_side`,
+  `an_edit_next_to_a_quoted_sentence_leaves_the_claim_fresh`,
+  `a_quoted_phrase_in_an_edited_sentence_is_a_candidate`,
+  `r55_editing_the_quoted_line_under_a_symbol_keeps_the_side`.)
 

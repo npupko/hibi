@@ -585,6 +585,154 @@ fn units_with_the_marked_content_are_the_first_candidates() {
     assert!(first < second, "{message}");
 }
 
+fn moved_context(mut u: Unit) -> Unit {
+    u.context_changed = true;
+    u
+}
+
+/// Section 9.2: an exact hit identifies its unit only with corroboration.
+/// A unit the provider flags `contextChanged` resolves the side when its
+/// fingerprint is in some mark of the claim; otherwise an anchor without a
+/// symbol is `missing` with the unit as a candidate, and an anchor with a
+/// symbol is `changed` and says that the stored quote is gone.
+#[test]
+fn an_exact_hit_with_another_context_needs_a_mark_or_a_symbol() {
+    // The marked content at a place with another context: resolved.
+    let mut f = fixture(None);
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok(vec![moved_context(unit("k", "note", "first"))]),
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    assert_eq!((v.state, v.next.clone()), (ClaimState::Fresh, None));
+    assert!(v.sides[1].detail.is_none() && v.sides[1].candidates.is_none());
+
+    // Another content there, and no symbol to say it is the unit: the
+    // quote may stand in a different unit now.
+    set(
+        &f.worlds[1],
+        "u:b",
+        vec![unit("k2", "note", "another sentence")],
+    );
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok(vec![moved_context(unit("k2", "note", "another sentence"))]),
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    assert_eq!(v.state, ClaimState::Stale);
+    let side = &v.sides[1];
+    assert_eq!(
+        (side.state, side.reason),
+        (engine::SideState::Missing, Some(engine::Reason::NotExact))
+    );
+    assert!(side.unit.is_none());
+    let cs = side.candidates.as_ref().unwrap();
+    assert_eq!(cs.len(), 1);
+    assert_eq!((cs[0].key.as_str(), cs[0].same_fingerprint), ("k2", false));
+    assert_eq!(cs[0].anchor, r#"{"loc":"u:b","sel":{"key":"k2"}}"#);
+    let next = format!("hibi reanchor {} --evidence 1=<anchor>", f.id);
+    assert_eq!(v.next, Some(next.clone()));
+    let before = f.store.counts();
+    let errors = engine::mark(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &[MarkInput::new(f.id.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SideMissing);
+    assert_eq!(errors[0].remediation, Some(next));
+    assert_eq!(f.store.counts(), before);
+
+    // An older mark holds that content: it is a unit that was marked.
+    f.worlds[1].borrow_mut().overrides.clear();
+    set(
+        &f.worlds[1],
+        "u:b",
+        vec![unit("k", "note", "another sentence")],
+    );
+    engine::mark(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &[MarkInput::new(f.id.as_str())],
+        false,
+        ts("2026-11-02T00:00:00Z"),
+    )
+    .unwrap();
+    edit(&f.worlds[1], "u:b", "k", "first");
+    engine::mark(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &[MarkInput::new(f.id.as_str())],
+        false,
+        ts("2026-11-03T00:00:00Z"),
+    )
+    .unwrap();
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok(vec![moved_context(unit("k", "note", "another sentence"))]),
+    );
+    assert_eq!(view(&f.store, &mut f.p, &f.id).state, ClaimState::Fresh);
+}
+
+/// The same hit for an anchor with a symbol: the symbol names the unit, so
+/// the side is `changed`, `next` is `hibi mark`, and `detail` says that the
+/// stored quote is no longer there. After the mark the side is `same` and
+/// says nothing.
+#[test]
+fn a_symbol_keeps_its_unit_when_the_stored_quote_is_gone() {
+    let w = file_world();
+    set(&w, "t:a", vec![sym_unit("limit", "function", "return 64")]);
+    let mut p = providers(&w, &["t"]);
+    let store = MemStore::new();
+    let id = claim_at(
+        &store,
+        &mut p,
+        engine::ClaimInput {
+            subject: json_anchor("t:a", symbol_sel("limit")),
+            ..claim_input("S", "t:a", &[])
+        },
+        NOW,
+    );
+    set(
+        &w,
+        "t:a",
+        vec![moved_context(sym_unit("limit", "function", "return 128"))],
+    );
+    let v = view(&store, &mut p, &id);
+    assert_eq!(v.state, ClaimState::Stale);
+    let side = &v.sides[0];
+    assert_eq!(
+        (side.state, side.reason),
+        (
+            engine::SideState::Changed,
+            Some(engine::Reason::FingerprintDiffers)
+        )
+    );
+    assert_eq!(side.detail.as_deref(), Some(engine::QUOTE_GONE));
+    assert_eq!(side.unit.as_ref().unwrap().key, "limit");
+    assert!(side.candidates.is_none());
+    assert_eq!(v.next, Some(format!("hibi mark {id}")));
+
+    let out = engine::mark(
+        &store,
+        &mut p,
+        &no_git(),
+        &[MarkInput::new(id.as_str())],
+        false,
+        now(),
+    )
+    .unwrap();
+    let side = &out.marks[0].claim_view.sides[0];
+    assert_eq!(side.state, engine::SideState::Same);
+    assert!(side.detail.is_none());
+    assert!(view(&store, &mut p, &id).sides[0].detail.is_none());
+}
+
 /// A stored side that matches very many units shows twenty candidates
 /// and the count of all of them.
 #[test]

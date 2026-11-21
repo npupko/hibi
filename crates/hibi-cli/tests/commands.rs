@@ -2454,6 +2454,121 @@ fn human_output_has_no_control_characters_from_file_text() {
     assert!(!raw.contains('\u{1b}'));
 }
 
+/// Section 9.2: a quote that is found exactly in another sentence does not
+/// make that sentence the claim's unit. The side is missing with the
+/// sentence as a candidate, `mark` is refused, the caller anchors the
+/// claim where the statement lives, and a later change there is reported.
+#[test]
+fn an_exact_quote_in_another_sentence_is_a_candidate_and_never_the_side() {
+    let repo = seeded();
+    repo.write(
+        "doc.md",
+        "# Doc\n\nThe timeout is 30 s by default. Retries back off slowly.\n",
+    );
+    let id = repo.claim("The timeout is 30 s", "file:doc.md::30 s", &[]);
+    repo.write(
+        "doc.md",
+        "# Doc\n\nThe timeout is 45 s by default. Retries back off slowly, up to 30 s.\n",
+    );
+
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "stale");
+    assert_eq!(sides(&view), json!([["missing", "not_exact", true]]));
+    let side = &view["sides"][0];
+    assert_eq!(side["unit"], Value::Null);
+    assert_eq!(side["candidatesTotal"], 1);
+    let candidate = &side["candidates"][0];
+    assert_eq!(candidate["label"], "Retries back off slowly, up to 30 s.");
+    assert_eq!(candidate["sameFingerprint"], false);
+    let next = format!("hibi reanchor {id} --subject <anchor>");
+    assert_eq!(s(&view["next"]), next);
+
+    let e = refused(&repo, &["mark", &id]);
+    assert_eq!(e["code"], "side_missing");
+    assert!(s(&e["message"]).contains("up to 30 s"), "{e}");
+    assert_eq!(s(&e["remediation"]), next);
+    assert_eq!(repo.records("marks").len(), 1);
+
+    // The statement is about the timeout sentence.
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &[
+            "reanchor",
+            &id,
+            "--subject",
+            "file:doc.md::The timeout is 45 s",
+        ],
+    );
+    let new = id_of(&v["new"], "c1-");
+    assert_eq!(v["claim"]["state"], "fresh");
+    assert_eq!(
+        v["claim"]["sides"][0]["unit"]["label"],
+        "The timeout is 45 s by default."
+    );
+    assert_eq!(j(&repo, &["status"])["claims"], json!([]));
+
+    // The timeout sentence changes again: the claim is stale.
+    repo.write(
+        "doc.md",
+        "# Doc\n\nThe timeout is 60 s by default. Retries back off slowly, up to 30 s.\n",
+    );
+    let v = j(&repo, &["status"]);
+    assert_eq!(ids(&v), [new.as_str()]);
+    assert_eq!(v["claims"][0]["state"], "stale");
+    assert_eq!(v["claims"][0]["sides"][0]["state"], "missing");
+}
+
+/// The sentence before a quoted sentence is edited: the quoted sentence is
+/// what was marked, so the claim stays fresh and there is nothing to do.
+#[test]
+fn an_edit_next_to_a_quoted_sentence_leaves_the_claim_fresh() {
+    let repo = seeded();
+    repo.write("n.md", "# N\n\nFirst sentence here. The cap is five.\n");
+    let id = repo.claim("cap", "file:n.md::The cap is five.", &[]);
+    let stored = repo.store_files();
+    repo.write(
+        "n.md",
+        "# N\n\nFirst sentence was edited, twice. The cap is five.\n",
+    );
+
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "fresh");
+    assert_eq!(view["next"], Value::Null);
+    assert_eq!(sides(&view), json!([["same", null, false]]));
+    assert_eq!(view["sides"][0]["detail"], Value::Null);
+    assert_eq!(j(&repo, &["status"])["claims"], json!([]));
+    assert_eq!(repo.store_files(), stored);
+}
+
+/// A quote on part of a sentence, and the sentence is edited elsewhere:
+/// the edited sentence is a candidate, not the side.
+#[test]
+fn a_quoted_phrase_in_an_edited_sentence_is_a_candidate() {
+    let repo = seeded();
+    repo.write("s.md", "# S\n\nThe cap is five attempts per request.\n");
+    let id = repo.claim("cap", "file:s.md::The cap is five", &[]);
+    repo.write("s.md", "# S\n\nThe cap is five attempts per call.\n");
+
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "stale");
+    assert_eq!(sides(&view), json!([["missing", "not_exact", true]]));
+    let candidate = &view["sides"][0]["candidates"][0];
+    assert_eq!(candidate["text"], "The cap is five attempts per call.");
+    assert_eq!(candidate["sameFingerprint"], false);
+    assert_eq!(refused(&repo, &["mark", &id])["code"], "side_missing");
+
+    // The caller read it and takes it.
+    let anchor = s(&candidate["anchor"]).to_owned();
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &["reanchor", &id, "--subject", &anchor],
+    );
+    assert_eq!(v["claim"]["state"], "fresh");
+    assert_eq!(v["accepted"]["sides"][0]["reason"], "not_exact");
+}
+
 /// R55: editing the quoted line of a declaration anchored by symbol does
 /// not lose the side; the symbol identifies the unit exactly.
 #[test]
@@ -2480,7 +2595,6 @@ fn r55_editing_the_quoted_line_under_a_symbol_keeps_the_side() {
     );
     assert_eq!(view["sides"][1]["unit"]["key"], "function:limit");
     assert_eq!(s(&view["next"]), format!("hibi mark {id}"));
-
     // After the mark the claim is fresh and there is nothing more to do.
     let v = at(&repo, "2026-11-20T13:00:00Z", &["mark", &id]);
     let marked = &v["marks"][0]["claimView"];
@@ -2508,6 +2622,28 @@ fn r55_editing_the_quoted_line_under_a_symbol_keeps_the_side() {
         ])
     );
     assert_eq!(s(&view["next"]), format!("hibi mark {id}"));
+    // The symbol names the unit; the side says that the stored quote is
+    // no longer in it, in JSON and in text.
+    assert_eq!(
+        view["sides"][1]["detail"],
+        "the stored quote is no longer in this unit"
+    );
+    let human = repo.human(&["--now", NOW, "status"]);
+    assert!(
+        human.stdout.contains(
+            "    the stored quote is no longer in this unit
+"
+        ),
+        "{}",
+        human.stdout
+    );
+    // After the mark the side is the same and says nothing.
+    let v = at(&repo, "2026-11-20T14:00:00Z", &["mark", &id]);
+    assert_eq!(
+        v["marks"][0]["claimView"]["sides"][1]["detail"],
+        Value::Null
+    );
+    assert_eq!(repo.view(&id)["sides"][1]["detail"], Value::Null);
 }
 
 /// Reverting the content to what an older mark covers makes the claim

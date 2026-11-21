@@ -117,6 +117,52 @@ fn closest<'m>(marks: impl Iterator<Item = &'m Mark>, resolved: &[Resolved]) -> 
     })
 }
 
+/// What `detail` says for a side whose symbol still names its unit while
+/// the stored quote is gone from it (section 9.2).
+pub const QUOTE_GONE: &str = "the stored quote is no longer in this unit";
+
+/// An exact hit identifies its unit only with corroboration (section 9.2).
+/// `resolved` holds the resolutions of the stored anchors of `claim`, one
+/// per side; each side that resolved to one unit which the provider flags
+/// `contextChanged` is decided here:
+///
+/// - the unit's fingerprint equals this side's fingerprint in some mark of
+///   the claim: it is the unit that was marked and only its surroundings
+///   changed. The side stays resolved and the flag is cleared.
+/// - otherwise, for an anchor without a symbol: nothing says that the
+///   place where the quote now stands is the unit the claim is about. The
+///   side becomes `missing` with reason `not_exact`, and the unit is its
+///   candidate.
+/// - otherwise, for an anchor with a symbol: the symbol identifies the
+///   unit. The side stays resolved, so it is `changed`, and the flag stays
+///   set: the side's `detail` is then [`QUOTE_GONE`].
+///
+/// Every reader of a stored anchor's resolution applies this first, so a
+/// side that it turns away is missing for `status`, `mark`, `reanchor`,
+/// the same-claim rule and `cover` alike.
+pub fn corroborate(claim: &Claim, marks: &[&Mark], resolved: &mut [Resolved]) {
+    for (i, (anchor, r)) in claim.sides().zip(resolved.iter_mut()).enumerate() {
+        let Resolved::One(unit) = r else { continue };
+        if !unit.context_changed {
+            continue;
+        }
+        let marked = marks.iter().any(|m| {
+            m.check_against(claim).is_ok() && m.sides.get(i).is_some_and(|s| s.fp == unit.fp)
+        });
+        if marked {
+            unit.context_changed = false;
+        } else if anchor.sel.symbol.is_none() {
+            let select = serde_json::to_string(&Anchor::new(anchor.loc.clone(), unit.sel.clone()))
+                .unwrap_or_default();
+            *r = Resolved::NotExact(Candidates {
+                units: vec![(**unit).clone()],
+                anchors: vec![select],
+                total: 1,
+            });
+        }
+    }
+}
+
 /// Evaluate a claim by sections 9.2 and 9.3.
 ///
 /// `marks` are the claim's marks; a mark that does not fit the claim (wrong
@@ -354,6 +400,11 @@ pub fn claim_view(
             let said = match r {
                 Resolved::Failed { message, .. } if *state == SideState::Unavailable => {
                     Some(message.as_str())
+                }
+                // Left set by `corroborate` for a unit that its symbol
+                // names and its stored quote is no longer in.
+                Resolved::One(u) if u.context_changed && *state == SideState::Changed => {
+                    Some(QUOTE_GONE)
                 }
                 _ => None,
             };

@@ -40,7 +40,10 @@ pub use cover::{
     ExclusionReport, ScopeCoverage, ScopeReport, Skipped, UnavailableResource, UncoveredUnit,
     UnitCoverage, changed_since, classify, cover, coverage, covered_keys, unit_texts,
 };
-pub use fresh::{Evaluation, Index, ViewOptions, accepted, claim_view, evaluate, next_command};
+pub use fresh::{
+    Evaluation, Index, QUOTE_GONE, ViewOptions, accepted, claim_view, corroborate, evaluate,
+    next_command,
+};
 pub use input::{
     AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput, parse_claim_stdin,
     parse_mark_stdin, read_claim_stdin, read_mark_stdin,
