@@ -2158,9 +2158,15 @@ fn the_text_of_a_candidate_is_cut_to_240_characters() {
     );
     let view = repo.view(&id);
     assert_eq!(sides(&view), json!([["missing", "not_exact", true]]));
+    // 240 characters of the text, and a marker that says it was cut and
+    // how long the whole text is.
     let text = s(&view["sides"][0]["candidates"][0]["text"]);
-    assert_eq!(text.chars().count(), 240);
+    let whole = sentence.replace("word7 ", "word-seven ");
+    let marker = format!("… ({} characters)", whole.chars().count());
+    assert!(text.ends_with(&marker), "{text}");
+    assert_eq!(text.chars().count(), 240 + marker.chars().count());
     assert!(text.starts_with("The list is word0 word1 "));
+    assert!(whole.starts_with(text.strip_suffix(&marker).unwrap()));
 }
 
 /// The first JSON anchor in an error message.
@@ -2232,13 +2238,13 @@ fn a_candidate_anchor_selects_one_unit_of_the_whole_resource() {
     assert!(message.contains(": file:a.rs#T.run"), "{message}");
     assert_eq!(
         message
-            .matches("identical to another candidate, no anchor selects it alone")
+            .matches("identical to another one, no anchor selects it alone")
             .count(),
         2,
         "{message}"
     );
     assert!(
-        message.contains("quote a longer passage that tells them apart"),
+        message.contains("Anchor the unit that contains them"),
         "{message}"
     );
     assert!(

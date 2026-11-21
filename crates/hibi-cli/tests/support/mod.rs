@@ -373,9 +373,7 @@ impl Repo {
 
     /// Every file of the repository outside `.git/`, with its content.
     pub fn files(&self) -> BTreeMap<String, Vec<u8>> {
-        let mut all = tree(&self.root);
-        all.retain(|k, _| !k.starts_with(".git/"));
-        all
+        tree(&self.root)
     }
 
     /// The parsed lines of one shard, for example `claims/3.jsonl`.
@@ -396,6 +394,10 @@ impl Repo {
     }
 }
 
+/// Every file under `dir` with its content, by path relative to `dir`. The
+/// `.git` directory at the top of `dir` is not entered: git may write and
+/// remove files there (a lock, a temporary object) while a test looks. A
+/// file that is gone between the listing and the read is left out.
 fn tree(dir: &Path) -> BTreeMap<String, Vec<u8>> {
     fn walk(base: &Path, dir: &Path, out: &mut BTreeMap<String, Vec<u8>>) {
         let Ok(entries) = std::fs::read_dir(dir) else {
@@ -403,16 +405,21 @@ fn tree(dir: &Path) -> BTreeMap<String, Vec<u8>> {
         };
         for entry in entries.flatten() {
             let path = entry.path();
-            let meta = std::fs::symlink_metadata(&path).expect("metadata");
+            if dir == base && entry.file_name() == ".git" {
+                continue;
+            }
+            let Ok(meta) = std::fs::symlink_metadata(&path) else {
+                continue;
+            };
             if meta.is_dir() {
                 walk(base, &path, out);
-            } else {
+            } else if let Ok(bytes) = std::fs::read(&path) {
                 let rel = path
                     .strip_prefix(base)
                     .unwrap()
                     .to_string_lossy()
                     .into_owned();
-                out.insert(rel, std::fs::read(&path).unwrap_or_default());
+                out.insert(rel, bytes);
             }
         }
     }

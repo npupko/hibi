@@ -104,7 +104,7 @@ Record a claim: a statement, the unit it is about (the subject) and the units th
 
 Every anchor must match exactly one unit. When one matches several, the error lists each of them with an anchor that selects it. The recheck period must be longer than zero, and the same evidence anchor may be given only once.
 
-Running the same claim again adds a new mark and no second claim. A live claim is the same claim when it has the same statement, recheck period and note, and each of its anchors has the same locator, resolves to the same unit and has the same symbol, and the same quote when you give one. Text edited near a quote does not make a new claim. The result says "created": false and gives the id of the existing claim, and under "accepted" the state that claim was in before this mark: if it was stale, the sides that had changed are listed, and this run has now marked them as checked.
+Running the same claim again adds a new mark and no second claim. A claim is the same claim when it has the same statement, recheck period and note, and each of its sides resolves to the same unit of the same resource. How an anchor is written does not matter: a name and a quote that reach the same unit are the same side. The rule holds against the live claims, inside one --stdin batch, and against retired claims, where the command fails with claim_retired unless you give another --note. The result says "created": false and gives the id of the existing claim, and under "accepted" the state that claim was in before this mark: if it was stale, the sides that had changed are listed, and this run has now marked them as checked.
 
 With --stdin, standard input is a JSON array of claims, written all or not at all:
 
@@ -141,7 +141,7 @@ Compare every claim with the current content. A claim is fresh when some mark ma
 
 Without arguments the stale and expired claims are listed. Each listed claim shows the sides that are not the same as at its mark, and the next command to run. Re-check the statement before you run that command.
 
-A side is missing when its stored anchor finds no unit exactly. If the unit moved, was renamed or was reworded, hibi lists what it found by similarity as candidates under that side, each with an anchor. A candidate is a guess: hibi never uses one by itself. Read the candidate, and if it is the unit the statement is about, give its anchor to `hibi reanchor`. A candidate marked as having the same content as at the reference mark is the marked unit, moved or renamed.
+A side is missing when its stored anchor finds no unit exactly. If the unit moved, was renamed or was reworded, hibi lists what it found by similarity as candidates under that side, each with an anchor. A candidate is a guess: hibi never uses one by itself. Read the candidate, and if it is the unit the statement is about, give its anchor to `hibi reanchor`. A candidate marked as having the same content as at the reference mark is a unit with that content. It may be the marked unit, moved or renamed, and it may be a copy of it: it is still a guess.
 
 The summary always counts every claim in the store.
 

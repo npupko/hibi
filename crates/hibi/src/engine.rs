@@ -41,7 +41,8 @@ pub use cover::{
     UnitCoverage, changed_since, classify, cover, coverage, covered_keys, unit_texts,
 };
 pub use fresh::{
-    Evaluation, Index, QUOTE_GONE, ViewOptions, accepted, claim_view, evaluate, next_command,
+    Evaluation, Index, NAME_ONLY, QUOTE_GONE, ViewOptions, accepted, claim_view, evaluate,
+    gone_detail, next_command,
 };
 pub use input::{
     AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput, parse_claim_stdin,
@@ -63,7 +64,8 @@ pub use resolve::{
 pub use types::{
     Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Envelope,
     ErrorEnvelope, NEXT_NOTE, Reason, Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, Warning,
-    WarningCode, escape_controls, excerpt, sh_quote, side_remediation, unavailable_remediation,
+    WarningCode, cut_text, escape_controls, excerpt, sh_quote, side_remediation,
+    unavailable_remediation,
 };
 pub use write::{
     ClaimOutput, ClaimResult, MarkOutput, MarkResult, ReanchorOutput, RetireOutput, RetireResult,

@@ -53,6 +53,7 @@ fn resolution(v: &Value) -> Resolved {
                     .collect(),
                 anchors: Vec::new(),
                 total: usize::try_from(n).unwrap(),
+                by_fp: Default::default(),
             }),
         };
     }

@@ -826,7 +826,7 @@ fn identical_twins_are_listed_without_an_anchor() {
     let message = &errors[0].message;
     assert_eq!(
         message
-            .matches("identical to another candidate, no anchor selects it alone")
+            .matches("identical to another one, no anchor selects it alone")
             .count(),
         2,
         "{message}"

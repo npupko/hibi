@@ -23,7 +23,7 @@ c1-rd7108gmy3g6n4kr30mk  stale  The retry count is 3.
     - sentence "The retry count is 3.", line 11; same content as at the reference mark
       | line 11 of the resource
       cannot be told apart from another candidate: no anchor selects it alone
-    Units that are identical where they stand cannot be anchored by that text alone: quote a longer passage that tells them apart, or in code anchor <loc>#<symbol>::<line>.
+    Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key.
   evidence 1  file:docs/data.md  unavailable (not_text)
     file:docs/data.md is not valid UTF-8
     The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource.

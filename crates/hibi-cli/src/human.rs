@@ -220,14 +220,27 @@ fn side_lines(out: &mut String, side: &Side, detail: bool) {
     {
         let _ = writeln!(out, "    {}", one_line(said, 300));
     }
+    // The remediation is left out only where the claim's `next` is the
+    // same command (section 15.2): for these three reasons.
+    let in_next = matches!(
+        side.reason,
+        Some(
+            hibi::engine::Reason::ProviderNotRegistered
+                | hibi::engine::Reason::ProviderFailed
+                | hibi::engine::Reason::RepoNotAllowed
+        )
+    );
     if let Some(fix) = &side.remediation
-        && fix != "hibi providers"
+        && !in_next
     {
         let _ = writeln!(out, "    {fix}");
     }
     // A side that no longer resolves to one unit: what the claim stored,
     // so that the reader knows what to look for.
-    if matches!(side.state, SideState::Missing | SideState::Ambiguous) {
+    // The same for a changed side whose stored quote is gone from its unit:
+    // the reader sees which line is no longer there.
+    let gone = side.state == SideState::Changed && side.detail.is_some();
+    if matches!(side.state, SideState::Missing | SideState::Ambiguous) || gone {
         let sel = &side.anchor.sel;
         let mut stored = Vec::new();
         if let Some(symbol) = &sel.symbol {
@@ -588,6 +601,15 @@ pub fn cover(o: &CoverOutput) -> String {
                 item.unit.kind,
                 one_line(text, LINE_TEXT_CHARS)
             );
+            // Identical to another uncovered unit where it stands: no
+            // anchor selects it alone, so none is offered.
+            if item.anchor.is_none() {
+                let _ = writeln!(
+                    out,
+                    "           cannot be anchored alone: claim the unit that contains it, or exclude it with unit = \"{}\"",
+                    item.unit.key
+                );
+            }
         }
         if scope.truncated {
             let _ = writeln!(

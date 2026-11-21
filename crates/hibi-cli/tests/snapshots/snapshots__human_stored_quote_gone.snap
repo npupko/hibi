@@ -11,6 +11,7 @@ c1-h11mnkp70sgmegp55r2g  stale  The cache holds 64 entries.
   marked 2026-11-20T12:00:00Z (m1-0jseyppy3zdpd0gvx6v6)
   evidence 1  file:src/cache.rs  changed (fingerprint_differs)  function "limit", lines 1-4
     the stored quote is no longer in this unit
+    stored: symbol limit, quote "let max_entries = 64;"
     | pub fn limit() -> u32 {
     |     let max_entries = 128;
     |     max_entries

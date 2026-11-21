@@ -216,7 +216,10 @@ fn r38_covered_through_the_parent_chain_and_exclusions_with_counts() {
     );
 
     // The item's anchor can be claimed; the unit is then covered.
-    let anchor = out.scopes[0].items[0].anchor.clone();
+    let anchor = out.scopes[0].items[0]
+        .anchor
+        .clone()
+        .expect("the unit has an anchor of its own");
     let input = engine::ClaimInput {
         subject: anchor.into(),
         ..claim_input("Checked.", "file:docs/a.md", &[])
@@ -265,7 +268,8 @@ fn items_are_ordered_capped_and_cut() {
     assert!(!out.scopes[0].truncated);
     assert_eq!(
         out.scopes[0].items[4].text.as_deref(),
-        Some("é".repeat(240).as_str())
+        // Cut text says that it is cut, and how long the whole is.
+        Some(format!("{}… (300 characters)", "é".repeat(240)).as_str())
     );
 
     // --limit caps items, never counts; text is fetched only for the

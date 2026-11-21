@@ -35,6 +35,10 @@ pub struct Candidates {
     /// carry the same anchor: it selects all of them, so it is not shown as
     /// a way to pick one ([`Candidates::selects_alone`]).
     pub anchors: Vec<String>,
+    /// How many of all the units the provider returned have each
+    /// fingerprint. It makes the count of a merged list exact when only
+    /// the first units are kept.
+    pub by_fp: HashMap<crate::model::Fingerprint, usize>,
 }
 
 impl Candidates {
@@ -42,7 +46,7 @@ impl Candidates {
     /// which have the marked content, then those of `second`, which the
     /// provider returned; a unit once, by its key; at most
     /// [`MAX_CANDIDATES`]. `total` counts the units of both once each, as
-    /// far as the kept units tell. `None` when both are `None`.
+    /// `None` when both are `None`.
     pub fn merged(first: Option<&Candidates>, second: Option<&Candidates>) -> Option<Candidates> {
         let (first, second) = match (first, second) {
             (None, None) => return None,
@@ -57,15 +61,25 @@ impl Candidates {
                 anchors.push(anchor.to_owned());
             }
         }
+        // Every unit of `first` has the marked fingerprint, and both lists
+        // hold units of one resource: the units in both are the units of
+        // `second` with that fingerprint.
         let twice = first
             .units
-            .iter()
-            .filter(|u| second.units.iter().any(|x| x.key == u.key))
-            .count();
+            .first()
+            .and_then(|u| second.by_fp.get(&u.fp))
+            .copied()
+            .unwrap_or(0)
+            .min(first.total);
+        let mut by_fp = second.by_fp.clone();
+        if let Some(u) = first.units.first() {
+            by_fp.insert(u.fp.clone(), first.total.max(twice));
+        }
         Some(Candidates {
             units,
             anchors,
             total: first.total + second.total - twice,
+            by_fp,
         })
     }
 
@@ -100,7 +114,7 @@ impl Candidates {
                 format!(
                     "{}: {}",
                     describe_unit(u),
-                    anchor.unwrap_or("identical to another candidate, no anchor selects it alone")
+                    anchor.unwrap_or("identical to another one, no anchor selects it alone")
                 )
             })
             .collect();
@@ -153,8 +167,9 @@ pub const NOT_IDENTIFIED: &str = "the stored anchor no longer identifies one uni
 /// still names one declaration, and the quoted text is in other units.
 pub const NAME_AND_QUOTE_APART: &str = "the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text";
 
-/// What to do about candidates that no anchor can tell apart.
-pub const TWINS_REMEDY: &str = "Units that are identical where they stand cannot be anchored by that text alone: quote a longer passage that tells them apart, or in code anchor <loc>#<symbol>::<line>.";
+/// What to do about units that no anchor can tell apart. A longer quote
+/// does not help: it reaches outside the unit or matches both again.
+pub const TWINS_REMEDY: &str = "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key.";
 
 /// The current resolution of one anchor.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -262,9 +277,16 @@ impl Resolved {
         };
         match self {
             Resolved::One(_) => None,
+            // "use one of these anchors" is said only when the list holds
+            // one: units that cannot be told apart have none.
             Resolved::Several(c) => Some(format!(
-                "the anchor matches {} units; use one of these anchors: {}",
+                "the anchor matches {} units{}: {}",
                 c.total,
+                if c.selectable().any(|(_, anchor)| anchor.is_some()) {
+                    "; use one of these anchors"
+                } else {
+                    " that cannot be told apart"
+                },
                 c.describe()
             )),
             Resolved::NotExact(c) => {
@@ -406,12 +428,17 @@ fn candidates_of(loc: &Locator, units: Vec<Unit>) -> Candidates {
         })
         .collect();
     let total = units.len();
+    let mut by_fp: HashMap<crate::model::Fingerprint, usize> = HashMap::new();
+    for u in &units {
+        *by_fp.entry(u.fp.clone()).or_default() += 1;
+    }
     let mut units = units;
     units.truncate(MAX_CANDIDATES);
     Candidates {
         units,
         anchors,
         total,
+        by_fp,
     }
 }
 

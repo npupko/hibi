@@ -480,6 +480,18 @@ impl ErrorEnvelope {
 }
 
 /// The first `max` characters of `text`.
+/// Unit text for an output, cut to `max` characters. Text that is cut says
+/// so: it ends with `… (<n> characters)`, where `<n>` is the length of the
+/// whole text, so that a reader does not take the cut for the end.
+pub fn cut_text(text: &str, max: usize) -> String {
+    let total = text.chars().count();
+    if total <= max {
+        text.to_owned()
+    } else {
+        format!("{}… ({total} characters)", excerpt(text, max))
+    }
+}
+
 pub fn excerpt(text: &str, max: usize) -> String {
     match text.char_indices().nth(max) {
         Some((i, _)) => text[..i].to_owned(),

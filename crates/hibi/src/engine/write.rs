@@ -15,7 +15,7 @@ use crate::model::{Locator, SelectorKey, Timestamp, parse_compact, same_quote};
 use crate::provider::{Providers, Unit};
 use crate::store::{Batch, Ledger, Store};
 
-use super::fresh::{Evaluation, QUOTE_GONE, content_wanted};
+use super::fresh::{Evaluation, content_wanted, gone_detail};
 use super::fresh::{Index, ViewOptions, accepted, claim_view, evaluate, next_command};
 use super::input::{AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput};
 use super::resolve::{
@@ -157,10 +157,16 @@ fn stored_side_error(
         return Some(Error::new(
             Code::SelectorNotExact,
             format!(
-                "{} ({}): {QUOTE_GONE}, {}; a mark would keep the stale quote",
+                "{} ({}): {}, {}; a mark would keep the stale {}",
                 side_name(number),
                 anchor.loc,
-                describe_unit(unit)
+                gone_detail(&anchor.sel),
+                describe_unit(unit),
+                if anchor.sel.quote.is_some() {
+                    "quote"
+                } else {
+                    "selector"
+                }
             ),
         ));
     }
@@ -309,6 +315,14 @@ fn advise(providers: &mut Providers, loc: &Locator, r: &Resolved, e: Error) -> E
         keys.retain(|k| *k != SelectorKey::Symbol);
     }
     match e.code {
+        // Units that no anchor tells apart cannot be narrowed by a symbol
+        // or a longer quote: the advice is the one for such units.
+        Code::SideAmbiguous
+            if r.candidates()
+                .is_some_and(|c| !c.selectable().any(|(_, anchor)| anchor.is_some())) =>
+        {
+            e.with_remediation(super::resolve::TWINS_REMEDY)
+        }
         Code::SideAmbiguous => {
             let advice = ambiguous_advice(&keys);
             e.with_remediation(advice)

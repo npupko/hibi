@@ -17,7 +17,7 @@ use crate::store::Ledger;
 use super::resolve::{Candidates, Resolved};
 use super::types::{
     Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Reason, Role, Side,
-    SideState, TEXT_EXCERPT_CHARS, UnitRef, excerpt, side_remediation,
+    SideState, TEXT_EXCERPT_CHARS, UnitRef, cut_text, excerpt, side_remediation,
 };
 
 /// A ledger with its marks grouped by claim and its retired claims as a
@@ -136,6 +136,20 @@ fn closest<'m>(marks: impl Iterator<Item = &'m Mark>, resolved: &[Resolved]) -> 
 /// unit while the stored quote is gone from it (section 9.2). The unit is
 /// identified by the name alone; the side asks for a new anchor.
 pub const QUOTE_GONE: &str = "the stored quote is no longer in this unit";
+
+/// The same for a stored selector that holds no quote: an external provider
+/// may identify a unit by its name alone for a selector of its own.
+pub const NAME_ONLY: &str = "the provider identified this unit by its name alone: the stored selector no longer matches it otherwise";
+
+/// What `detail` says for a `changed` side resolved by its symbol alone,
+/// worded by what the stored selector holds.
+pub fn gone_detail(sel: &crate::model::Selector) -> &'static str {
+    if sel.quote.is_some() {
+        QUOTE_GONE
+    } else {
+        NAME_ONLY
+    }
+}
 
 /// Evaluate a claim by sections 9.2 and 9.3.
 ///
@@ -275,7 +289,7 @@ pub fn accepted(claim: &Claim, eval: &Evaluation<'_>, resolved: &[Resolved]) -> 
                     .and_then(Resolved::unit)
                     .and_then(|u| u.text.as_deref())
                     .filter(|_| *state == SideState::Changed)
-                    .map(|t| excerpt(t, TEXT_EXCERPT_CHARS)),
+                    .map(|t| cut_text(t, TEXT_EXCERPT_CHARS)),
             })
             .collect(),
     }
@@ -389,7 +403,7 @@ pub fn claim_view(
                 if options.detail {
                     Some(t.to_owned())
                 } else if *state == SideState::Changed {
-                    Some(excerpt(t, TEXT_EXCERPT_CHARS))
+                    Some(cut_text(t, TEXT_EXCERPT_CHARS))
                 } else {
                     None
                 }
@@ -401,7 +415,7 @@ pub fn claim_view(
                 }
                 // Left set by `corroborate` for a unit that its symbol
                 // names and its stored quote is no longer in.
-                Resolved::One(_) if eval.quote_gone(index) => Some(QUOTE_GONE),
+                Resolved::One(_) if eval.quote_gone(index) => Some(gone_detail(&anchor.sel)),
                 // Why a `not_exact` side resolves nothing.
                 other => other.not_exact_cause(anchor),
             };
@@ -415,7 +429,7 @@ pub fn claim_view(
                         label: u.label.clone(),
                         line: u.range.map(|r| r.line),
                         end_line: u.range.map(|r| r.end_line),
-                        text: u.text.as_deref().map(|t| excerpt(t, TEXT_EXCERPT_CHARS)),
+                        text: u.text.as_deref().map(|t| cut_text(t, TEXT_EXCERPT_CHARS)),
                         anchor: select.map(str::to_owned),
                         same_fingerprint: marked_fp.as_ref() == Some(&u.fp),
                     })

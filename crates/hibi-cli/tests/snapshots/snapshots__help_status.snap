@@ -9,7 +9,7 @@ Compare every claim with the current content. A claim is fresh when some mark ma
 
 Without arguments the stale and expired claims are listed. Each listed claim shows the sides that are not the same as at its mark, and the next command to run. Re-check the statement before you run that command.
 
-A side is missing when its stored anchor finds no unit exactly. If the unit moved, was renamed or was reworded, hibi lists what it found by similarity as candidates under that side, each with an anchor. A candidate is a guess: hibi never uses one by itself. Read the candidate, and if it is the unit the statement is about, give its anchor to `hibi reanchor`. A candidate marked as having the same content as at the reference mark is the marked unit, moved or renamed.
+A side is missing when its stored anchor finds no unit exactly. If the unit moved, was renamed or was reworded, hibi lists what it found by similarity as candidates under that side, each with an anchor. A candidate is a guess: hibi never uses one by itself. Read the candidate, and if it is the unit the statement is about, give its anchor to `hibi reanchor`. A candidate marked as having the same content as at the reference mark is a unit with that content. It may be the marked unit, moved or renamed, and it may be a copy of it: it is still a guess.
 
 The summary always counts every claim in the store.
 

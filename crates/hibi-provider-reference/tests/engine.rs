@@ -237,7 +237,7 @@ fn r38_coverage_through_the_parent_chain_of_the_reference_provider() {
     assert_eq!((s.units, s.covered, s.uncovered), (2, 0, 2));
     assert_eq!(s.items[0].unit.key, "n1");
     assert_eq!(s.items[0].text.as_deref(), Some("Retries are capped at 5."));
-    assert_eq!(s.items[0].anchor.sel, key("n1"));
+    assert_eq!(s.items[0].anchor.as_ref().unwrap().sel, key("n1"));
 
     engine::claim(
         &store,

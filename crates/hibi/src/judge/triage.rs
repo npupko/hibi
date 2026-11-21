@@ -6,7 +6,7 @@ use schemars::JsonSchema;
 use serde::Serialize;
 
 use crate::engine::{
-    self, CoverEnv, SinceRun, TEXT_EXCERPT_CHARS, UncoveredUnit, UnitRef, Warning, excerpt,
+    self, CoverEnv, SinceRun, TEXT_EXCERPT_CHARS, UncoveredUnit, UnitRef, Warning, cut_text,
 };
 use crate::error::Error;
 use crate::model::{Anchor, Locator};
@@ -223,7 +223,7 @@ pub fn triage(
                 TriageItem {
                     loc: p.unit.loc.clone(),
                     unit: UnitRef::from(&p.unit.unit),
-                    text: excerpt(&p.text, TEXT_EXCERPT_CHARS),
+                    text: cut_text(&p.text, TEXT_EXCERPT_CHARS),
                     anchor: Anchor::new(p.unit.loc.clone(), p.unit.unit.sel.clone()),
                     checkable,
                     band: Band::of(checkable),

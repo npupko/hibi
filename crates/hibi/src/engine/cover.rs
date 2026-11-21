@@ -18,7 +18,7 @@ use super::read::{SinceRun, SinceView};
 use super::resolve::{
     Resolved, info_of, reason_of_no_provider, resolve_anchors, side_of_error, validate_units,
 };
-use super::types::{Nullable, Reason, TEXT_EXCERPT_CHARS, UnitRef, Warning, WarningCode, excerpt};
+use super::types::{Nullable, Reason, TEXT_EXCERPT_CHARS, UnitRef, Warning, WarningCode, cut_text};
 
 /// The default of `cover --limit`.
 pub const DEFAULT_COVER_LIMIT: usize = 200;
@@ -143,7 +143,13 @@ pub struct CoverItem {
     pub text: Option<String>,
     /// The unit's locator with its completed selector; can be passed to
     /// `claim --stdin`.
-    pub anchor: Anchor,
+    /// `null` when another uncovered unit of the resource carries the same
+    /// printed anchor: the two are identical where they stand and no
+    /// anchor selects this one alone. Such a unit is covered by a claim on
+    /// the unit that contains it, or taken out of the scope by an exclusion
+    /// that names its key.
+    #[schemars(with = "Nullable<Anchor>")]
+    pub anchor: Option<Anchor>,
 }
 
 /// One scope in the output of `cover`.
@@ -630,6 +636,11 @@ pub fn cover(
     let mut scopes = Vec::with_capacity(coverage.scopes.len());
     for sc in &coverage.scopes {
         let n = shown(sc);
+        // How many uncovered units of the scope carry each printed anchor.
+        let mut printed: HashMap<(&Locator, &crate::model::Selector), usize> = HashMap::new();
+        for u in &sc.uncovered {
+            *printed.entry((&u.loc, &u.unit.sel)).or_default() += 1;
+        }
         let items = sc.uncovered[..n]
             .iter()
             .map(|u| CoverItem {
@@ -638,8 +649,9 @@ pub fn cover(
                 text: texts
                     .next()
                     .flatten()
-                    .map(|t| excerpt(&t, TEXT_EXCERPT_CHARS)),
-                anchor: Anchor::new(u.loc.clone(), u.unit.sel.clone()),
+                    .map(|t| cut_text(&t, TEXT_EXCERPT_CHARS)),
+                anchor: (printed.get(&(&u.loc, &u.unit.sel)) == Some(&1))
+                    .then(|| Anchor::new(u.loc.clone(), u.unit.sel.clone())),
             })
             .collect();
         summary.units += sc.units;
