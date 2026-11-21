@@ -134,6 +134,21 @@ pub fn is_comment_kind(kind: &str) -> bool {
     )
 }
 
+/// The node kinds of a language whose only comma, before the closing
+/// delimiter, makes a one-element tuple, so that removing it changes the
+/// meaning (ruling on section 8.4): Rust `(u8,)` against `(u8)`, Python
+/// `x[1,]` against `x[1]`. Only the Rust and Python grammars have such a
+/// node; the TypeScript, Go and Java grammars have none. The language is
+/// told by the grammar's name, which the pinned Rust and Python grammars
+/// carry (ABI 15).
+fn tuple_kinds(language: Option<&str>) -> &'static [&'static str] {
+    match language {
+        Some("rust") => &["tuple_expression", "tuple_type", "tuple_pattern"],
+        Some("python") => &["tuple", "tuple_pattern", "subscript"],
+        _ => &[],
+    }
+}
+
 /// Content literal kinds (section 8.4).
 fn is_content_literal_kind(kind: &str) -> bool {
     matches!(
@@ -175,8 +190,9 @@ fn node_text<'t>(node: Node<'_>, text: &'t str) -> &'t str {
 
 /// The `ast-v1` semantic stream of `node` (section 8.4): a pre-order walk
 /// over all children, named and anonymous, in source order, skipping
-/// comment subtrees and a comma directly before a closing delimiter.
-/// `text` is the source the tree was parsed from.
+/// comment subtrees and a comma directly before a closing delimiter, except
+/// the only comma of a one-element tuple (see [`tuple_kinds`]). `text` is
+/// the source the tree was parsed from.
 pub fn semantic_stream(node: Node<'_>, text: &str) -> Vec<String> {
     stream_walk(node, text, &HashSet::new()).0
 }
@@ -218,6 +234,7 @@ fn stream_walk(
 ) -> (Vec<String>, HashMap<usize, (usize, usize)>) {
     let mut out = Vec::new();
     let mut ranges = HashMap::new();
+    let tuples = tuple_kinds(node.language().name());
     let mut cursor = node.walk();
     let mut stack = vec![Step::Enter(node)];
     let mut kept = Vec::new();
@@ -256,12 +273,17 @@ fn stream_walk(
         kept.clear();
         let mut next: Option<Node<'_>> = None;
         let children: Vec<Node<'_>> = n.children(&mut cursor).collect();
+        let is_comma = |c: &Node<'_>| !c.is_named() && node_text(*c, text) == ",";
+        // The only comma of a tuple-like node stays, even before the
+        // closing delimiter: `(u8,)` is a tuple type, `(u8)` is `u8`.
+        let tuple_comma =
+            tuples.contains(&kind) && children.iter().filter(|c| is_comma(c)).count() == 1;
         for &c in children.iter().rev() {
             if is_skipped(c) {
                 continue;
             }
-            let trailing_comma = !c.is_named()
-                && node_text(c, text) == ","
+            let trailing_comma = !tuple_comma
+                && is_comma(&c)
                 && next.is_some_and(|x| {
                     !x.is_named() && matches!(node_text(x, text), ")" | "]" | "}" | ">")
                 });
@@ -364,7 +386,10 @@ enum NameRule {
     /// field its type name (without `*`, package qualifier and type
     /// arguments).
     GoField,
-    /// Java `formal_parameter` in the `formal_parameters` of a record.
+    /// Java `formal_parameter` or `spread_parameter` in the
+    /// `formal_parameters` of a record. A varargs component (`String...
+    /// rest`) has no `name` field: its name is the `name` field of its
+    /// `variable_declarator`.
     JavaRecordComponent,
 }
 
@@ -502,7 +527,9 @@ fn declaration(class: Class, kind: &str) -> Option<Decl> {
         (Class::Java, "record_declaration") => {
             decl("class", Field, &["formal_parameters", "class_body"])
         }
-        (Class::Java, "formal_parameter") => decl("field", JavaRecordComponent, &[]),
+        (Class::Java, "formal_parameter" | "spread_parameter") => {
+            decl("field", JavaRecordComponent, &[])
+        }
         (Class::Java, "enum_constant") => decl("variant", Field, &["class_body"]),
         (Class::Java, "interface_declaration" | "annotation_type_declaration") => decl(
             "interface",
@@ -644,7 +671,15 @@ fn decl_name(
                 .filter(|p| p.kind() == "formal_parameters")
                 .and_then(|p| p.parent())
                 .filter(|r| r.kind() == "record_declaration")?;
-            own(node_text(field("name")?, text).to_owned())
+            let name = if node.kind() == "spread_parameter" {
+                let mut cursor = node.walk();
+                node.named_children(&mut cursor)
+                    .find(|c| c.kind() == "variable_declarator")?
+                    .child_by_field_name("name")?
+            } else {
+                field("name")?
+            };
+            own(node_text(name, text).to_owned())
         }
     }
 }
@@ -1430,6 +1465,23 @@ mod tests {
                 "{changed}"
             );
         }
+    }
+
+    /// Ruling on section 8.4: the only comma of a Rust or Python tuple-like
+    /// node counts, so `(u8,)` and `(u8)` differ; any other comma before a
+    /// closing delimiter, and a second one in a tuple, is still skipped.
+    #[test]
+    fn one_element_tuple_commas_count() {
+        let rs = |src: &str| fp_of(src, Class::Rust, "type:A");
+        assert_ne!(rs("type A = (u8,);"), rs("type A = (u8);"));
+        assert_eq!(rs("type A = (u8, u16,);"), rs("type A = (u8, u16);"));
+        let py = |src: &str| fp_of(src, Class::Python, "variable:v");
+        assert_ne!(py("v = x[1,]"), py("v = x[1]"));
+        assert_eq!(py("v = f(a,)"), py("v = f(a)"));
+        assert_eq!(py("v = [1,]"), py("v = [1]"));
+        // A TypeScript tuple type is not tuple-like: `[number,]` is `[number]`.
+        let ts = |src: &str| fp_of(src, Class::Typescript, "type:A");
+        assert_eq!(ts("type A = [number,];"), ts("type A = [number];"));
     }
 
     #[test]

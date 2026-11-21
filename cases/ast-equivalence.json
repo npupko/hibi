@@ -4198,5 +4198,369 @@
     },
     "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); integer_literal:2 and =2 differ from integer_literal:3 and =3",
     "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust (u8,) is a one-element tuple type and (u8) is not",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.rs",
+        "language": "rust",
+        "quote": "type A = (u8,);",
+        "start": 0,
+        "end": 15,
+        "startByte": 0,
+        "endByte": 15
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.rs",
+        "language": "rust",
+        "quote": "type A = (u8);",
+        "start": 0,
+        "end": 14,
+        "startByte": 0,
+        "endByte": 14
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); both are tuple_type; the comma is the only one in its tuple_type, so it stays",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust tuple pattern (a,) differs from (a)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.rs",
+        "language": "rust",
+        "quote": "let (a,) = t;",
+        "start": 25,
+        "end": 38,
+        "startByte": 25,
+        "endByte": 38
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.rs",
+        "language": "rust",
+        "quote": "let (a) = t;",
+        "start": 24,
+        "end": 36,
+        "startByte": 24,
+        "endByte": 36
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); both patterns are tuple_pattern; the only comma of the tuple_pattern stays",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust tuple expression (1,) differs from (1)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.rs",
+        "language": "rust",
+        "quote": "let v = (1,);",
+        "start": 104,
+        "end": 117,
+        "startByte": 104,
+        "endByte": 117
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.rs",
+        "language": "rust",
+        "quote": "let v = (1);",
+        "start": 99,
+        "end": 111,
+        "startByte": 99,
+        "endByte": 111
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); (1,) is tuple_expression and (1) is parenthesized_expression; the kinds differ as well",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust a lone trailing comma in call arguments is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.rs",
+        "language": "rust",
+        "quote": "f(a,)",
+        "start": 50,
+        "end": 55,
+        "startByte": 50,
+        "endByte": 55
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.rs",
+        "language": "rust",
+        "quote": "f(a)",
+        "start": 48,
+        "end": 52,
+        "startByte": 48,
+        "endByte": 52
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); arguments is not tuple-like, so its comma before ) is skipped",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust a trailing comma after two tuple elements is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.rs",
+        "language": "rust",
+        "quote": "type D = (u8, u16,);",
+        "start": 59,
+        "end": 79,
+        "startByte": 59,
+        "endByte": 79
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.rs",
+        "language": "rust",
+        "quote": "type D = (u8, u16);",
+        "start": 56,
+        "end": 75,
+        "startByte": 56,
+        "endByte": 75
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); the tuple_type has two commas, so the one before ) is a trailing comma",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust a lone trailing comma in tuple struct fields is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.rs",
+        "language": "rust",
+        "quote": "struct S(u8,);",
+        "start": 80,
+        "end": 94,
+        "startByte": 80,
+        "endByte": 94
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.rs",
+        "language": "rust",
+        "quote": "struct S(u8);",
+        "start": 76,
+        "end": 89,
+        "startByte": 76,
+        "endByte": 89
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); ordered_field_declaration_list is not tuple-like",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python x[1,] differs from x[1]",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.py",
+        "language": "python",
+        "quote": "v = x[1,]",
+        "start": 0,
+        "end": 9,
+        "startByte": 0,
+        "endByte": 9
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.py",
+        "language": "python",
+        "quote": "v = x[1]",
+        "start": 0,
+        "end": 8,
+        "startByte": 0,
+        "endByte": 8
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); the comma is the only one among the subscript's children, so it stays",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python a trailing comma after two subscript elements is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.py",
+        "language": "python",
+        "quote": "w = x[1, 2,]",
+        "start": 10,
+        "end": 22,
+        "startByte": 10,
+        "endByte": 22
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.py",
+        "language": "python",
+        "quote": "w = x[1, 2]",
+        "start": 9,
+        "end": 20,
+        "startByte": 9,
+        "endByte": 20
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); the subscript has two commas, so the one before ] is a trailing comma",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python tuple pattern (a,) differs from (a)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.py",
+        "language": "python",
+        "quote": "(a,) = y",
+        "start": 23,
+        "end": 31,
+        "startByte": 23,
+        "endByte": 31
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.py",
+        "language": "python",
+        "quote": "(a) = y",
+        "start": 21,
+        "end": 28,
+        "startByte": 21,
+        "endByte": 28
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); both left sides are tuple_pattern; the only comma of the tuple_pattern stays",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python case pattern (j,) differs from (j)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.py",
+        "language": "python",
+        "quote": "(j,)",
+        "start": 50,
+        "end": 54,
+        "startByte": 50,
+        "endByte": 54
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.py",
+        "language": "python",
+        "quote": "(j)",
+        "start": 47,
+        "end": 50,
+        "startByte": 47,
+        "endByte": 50
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); both case patterns are tuple_pattern; the only comma stays",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python a lone trailing comma in call arguments is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.py",
+        "language": "python",
+        "quote": "c = f(a,)",
+        "start": 69,
+        "end": 78,
+        "startByte": 69,
+        "endByte": 78
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.py",
+        "language": "python",
+        "quote": "c = f(a)",
+        "start": 65,
+        "end": 73,
+        "startByte": 65,
+        "endByte": 73
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); argument_list is not tuple-like",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python tuple (1,) differs from (1)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.py",
+        "language": "python",
+        "quote": "t = (1,)",
+        "start": 79,
+        "end": 87,
+        "startByte": 79,
+        "endByte": 87
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.py",
+        "language": "python",
+        "quote": "t = (1)",
+        "start": 74,
+        "end": 81,
+        "startByte": 74,
+        "endByte": 81
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); (1,) is tuple and (1) is parenthesized_expression; the kinds differ as well",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python a lone trailing comma in a list is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tuples/tuples-a.py",
+        "language": "python",
+        "quote": "l = [1,]",
+        "start": 88,
+        "end": 96,
+        "startByte": 88,
+        "endByte": 96
+      },
+      "b": {
+        "fixture": "fixtures/ast/tuples/tuples-b.py",
+        "language": "python",
+        "quote": "l = [1]",
+        "start": 82,
+        "end": 89,
+        "startByte": 82,
+        "endByte": 89
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); list is not tuple-like: [1,] and [1] are the same list",
+    "origin": "spec-derived"
   }
 ]

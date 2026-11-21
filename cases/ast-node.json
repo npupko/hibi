@@ -8014,5 +8014,121 @@
     },
     "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; a leaf token",
     "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust the comma of (u8,) is in the stream",
+    "input": {
+      "fixture": "fixtures/ast/tuples/tuples-a.rs",
+      "language": "rust",
+      "quote": "(u8,)",
+      "start": 9,
+      "end": 14,
+      "startByte": 9,
+      "endByte": 14
+    },
+    "expected": {
+      "nodeType": "tuple_type",
+      "start": 9,
+      "end": 14,
+      "startByte": 9,
+      "endByte": 14,
+      "semanticStream": [
+        "tuple_type",
+        "(:(",
+        "primitive_type:u8",
+        ",:,",
+        "):)"
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); the span is exactly the tuple-like node; the comma before the closing delimiter is its only comma and stays",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust the comma of (1,) is in the stream",
+    "input": {
+      "fixture": "fixtures/ast/tuples/tuples-a.rs",
+      "language": "rust",
+      "quote": "(1,)",
+      "start": 112,
+      "end": 116,
+      "startByte": 112,
+      "endByte": 116
+    },
+    "expected": {
+      "nodeType": "tuple_expression",
+      "start": 112,
+      "end": 116,
+      "startByte": 112,
+      "endByte": 116,
+      "semanticStream": [
+        "tuple_expression",
+        "(:(",
+        "integer_literal:1",
+        "=1",
+        ",:,",
+        "):)"
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); the span is exactly the tuple-like node; the comma before the closing delimiter is its only comma and stays",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python the comma of x[1,] is in the stream",
+    "input": {
+      "fixture": "fixtures/ast/tuples/tuples-a.py",
+      "language": "python",
+      "quote": "x[1,]",
+      "start": 4,
+      "end": 9,
+      "startByte": 4,
+      "endByte": 9
+    },
+    "expected": {
+      "nodeType": "subscript",
+      "start": 4,
+      "end": 9,
+      "startByte": 4,
+      "endByte": 9,
+      "semanticStream": [
+        "subscript",
+        "identifier:x",
+        "[:[",
+        "integer:1",
+        "=1",
+        ",:,",
+        "]:]"
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); the span is exactly the tuple-like node; the comma before the closing delimiter is its only comma and stays",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python the comma of (1,) is in the stream",
+    "input": {
+      "fixture": "fixtures/ast/tuples/tuples-a.py",
+      "language": "python",
+      "quote": "(1,)",
+      "start": 83,
+      "end": 87,
+      "startByte": 83,
+      "endByte": 87
+    },
+    "expected": {
+      "nodeType": "tuple",
+      "start": 83,
+      "end": 87,
+      "startByte": 83,
+      "endByte": 87,
+      "semanticStream": [
+        "tuple",
+        "(:(",
+        "integer:1",
+        "=1",
+        ",:,",
+        "):)"
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (a comma before a closing delimiter is kept when it is the only `,` among its parent's children and the parent is a tuple-like node: Rust tuple_expression, tuple_type, tuple_pattern; Python tuple, tuple_pattern, subscript); the span is exactly the tuple-like node; the comma before the closing delimiter is its only comma and stays",
+    "origin": "spec-derived"
   }
 ]

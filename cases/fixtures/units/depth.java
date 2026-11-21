@@ -1,0 +1,66 @@
+class C0 {
+    class C1 {
+        class C2 {
+            class C3 {
+                class C4 {
+                    class C5 {
+                        class C6 {
+                            class C7 {
+                                class C8 {
+                                    class C9 {
+                                        class C10 {
+                                            class C11 {
+                                                class C12 {
+                                                    class C13 {
+                                                        class C14 {
+                                                            class C15 {
+                                                                class C16 {
+                                                                    class C17 {
+                                                                        class C18 {
+                                                                            class C19 {
+                                                                                class C20 {
+                                                                                    class C21 {
+                                                                                        class C22 {
+                                                                                            class C23 {
+                                                                                                class C24 {
+                                                                                                    class C25 {
+                                                                                                        class C26 {
+                                                                                                            class C27 {
+                                                                                                                class C28 {
+                                                                                                                    class C29 {
+                                                                                                                        class C30 {
+                                                                                                                            class C31 {
+                                                                                                                                class C32 {
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

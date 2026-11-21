@@ -3212,5 +3212,1371 @@
     },
     "source": "written for v5 from the ruling on SPEC 6.4 (MAX_CONTAINER_DEPTH = 32: a declaration at depth 32 is a unit, its body is not searched); module m_d (depth d+1) spans from its `mod` keyword to its own closing brace; m32 stays inside module m0...m31",
     "origin": "spec-derived"
+  },
+  {
+    "name": "java: a varargs record component is a field named by its declarator",
+    "input": {
+      "fixture": "fixtures/units/record-varargs.java",
+      "path": "src/R.java"
+    },
+    "expected": {
+      "class": "java",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 73,
+          "line": 1,
+          "endLine": 5
+        },
+        {
+          "kind": "class",
+          "symbol": "R",
+          "key": "class:R",
+          "parent": "file",
+          "start": 0,
+          "end": 35,
+          "line": 1,
+          "endLine": 2
+        },
+        {
+          "kind": "field",
+          "symbol": "R.a",
+          "key": "field:R.a",
+          "parent": "class:R",
+          "start": 9,
+          "end": 14,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "field",
+          "symbol": "R.rest",
+          "key": "field:R.rest",
+          "parent": "class:R",
+          "start": 16,
+          "end": 30,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "class",
+          "symbol": "S",
+          "key": "class:S",
+          "parent": "file",
+          "start": 37,
+          "end": 72,
+          "line": 4,
+          "endLine": 5
+        },
+        {
+          "kind": "field",
+          "symbol": "S.xs",
+          "key": "field:S.xs",
+          "parent": "class:S",
+          "start": 46,
+          "end": 67,
+          "line": 4,
+          "endLine": 4
+        }
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 6.4 (a `spread_parameter` directly under the `formal_parameters` of a `record_declaration` is a record component: a `field` unit whose name is the `name` field of its `variable_declarator` child); the annotation of `xs` is in the spread_parameter's `modifiers`, so the unit starts at it; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "typescript: construct signatures are not units; #private, quoted, numeric and computed member names are written as in the source",
+    "input": {
+      "fixture": "fixtures/units/member-names.ts",
+      "path": "src/names.ts"
+    },
+    "expected": {
+      "class": "typescript",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 185,
+          "line": 1,
+          "endLine": 15
+        },
+        {
+          "kind": "interface",
+          "symbol": "Ctor",
+          "key": "interface:Ctor",
+          "parent": "file",
+          "start": 0,
+          "end": 101,
+          "line": 1,
+          "endLine": 7
+        },
+        {
+          "kind": "field",
+          "symbol": "Ctor.'a-b'",
+          "key": "field:Ctor.'a-b'",
+          "parent": "interface:Ctor",
+          "start": 44,
+          "end": 57,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "field",
+          "symbol": "Ctor.1",
+          "key": "field:Ctor.1",
+          "parent": "interface:Ctor",
+          "start": 61,
+          "end": 70,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "field",
+          "symbol": "Ctor.[k]",
+          "key": "field:Ctor.[k]",
+          "parent": "interface:Ctor",
+          "start": 74,
+          "end": 85,
+          "line": 5,
+          "endLine": 5
+        },
+        {
+          "kind": "method",
+          "symbol": "Ctor.m",
+          "key": "method:Ctor.m",
+          "parent": "interface:Ctor",
+          "start": 89,
+          "end": 98,
+          "line": 6,
+          "endLine": 6
+        },
+        {
+          "kind": "class",
+          "symbol": "C",
+          "key": "class:C",
+          "parent": "file",
+          "start": 103,
+          "end": 184,
+          "line": 9,
+          "endLine": 15
+        },
+        {
+          "kind": "field",
+          "symbol": "C.#count",
+          "key": "field:C.#count",
+          "parent": "class:C",
+          "start": 115,
+          "end": 125,
+          "line": 10,
+          "endLine": 10
+        },
+        {
+          "kind": "method",
+          "symbol": "C.#step",
+          "key": "method:C.#step",
+          "parent": "class:C",
+          "start": 129,
+          "end": 145,
+          "line": 11,
+          "endLine": 11
+        },
+        {
+          "kind": "field",
+          "symbol": "C.'a-b'",
+          "key": "field:C.'a-b'",
+          "parent": "class:C",
+          "start": 148,
+          "end": 157,
+          "line": 12,
+          "endLine": 12
+        },
+        {
+          "kind": "field",
+          "symbol": "C.2",
+          "key": "field:C.2",
+          "parent": "class:C",
+          "start": 161,
+          "end": 170,
+          "line": 13,
+          "endLine": 13
+        },
+        {
+          "kind": "field",
+          "symbol": "C.[k]",
+          "key": "field:C.[k]",
+          "parent": "class:C",
+          "start": 174,
+          "end": 181,
+          "line": 14,
+          "endLine": 14
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 (\"name\" is the text of the node's `name` field, as written): a `construct_signature` is not in the table, so `new (x: number): Ctor` is not a unit; `property_signature`, `public_field_definition` and `method_definition` take their name field as written, whether it is a `private_property_identifier` (`#count`), a `string` (`'a-b'`, quotes kept), a `number` (`1`) or a `computed_property_name` (`[k]`, brackets kept); expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "tsx: the same member names through the TSX grammar",
+    "input": {
+      "fixture": "fixtures/units/member-names.ts",
+      "path": "src/names.tsx"
+    },
+    "expected": {
+      "class": "tsx",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 185,
+          "line": 1,
+          "endLine": 15
+        },
+        {
+          "kind": "interface",
+          "symbol": "Ctor",
+          "key": "interface:Ctor",
+          "parent": "file",
+          "start": 0,
+          "end": 101,
+          "line": 1,
+          "endLine": 7
+        },
+        {
+          "kind": "field",
+          "symbol": "Ctor.'a-b'",
+          "key": "field:Ctor.'a-b'",
+          "parent": "interface:Ctor",
+          "start": 44,
+          "end": 57,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "field",
+          "symbol": "Ctor.1",
+          "key": "field:Ctor.1",
+          "parent": "interface:Ctor",
+          "start": 61,
+          "end": 70,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "field",
+          "symbol": "Ctor.[k]",
+          "key": "field:Ctor.[k]",
+          "parent": "interface:Ctor",
+          "start": 74,
+          "end": 85,
+          "line": 5,
+          "endLine": 5
+        },
+        {
+          "kind": "method",
+          "symbol": "Ctor.m",
+          "key": "method:Ctor.m",
+          "parent": "interface:Ctor",
+          "start": 89,
+          "end": 98,
+          "line": 6,
+          "endLine": 6
+        },
+        {
+          "kind": "class",
+          "symbol": "C",
+          "key": "class:C",
+          "parent": "file",
+          "start": 103,
+          "end": 184,
+          "line": 9,
+          "endLine": 15
+        },
+        {
+          "kind": "field",
+          "symbol": "C.#count",
+          "key": "field:C.#count",
+          "parent": "class:C",
+          "start": 115,
+          "end": 125,
+          "line": 10,
+          "endLine": 10
+        },
+        {
+          "kind": "method",
+          "symbol": "C.#step",
+          "key": "method:C.#step",
+          "parent": "class:C",
+          "start": 129,
+          "end": 145,
+          "line": 11,
+          "endLine": 11
+        },
+        {
+          "kind": "field",
+          "symbol": "C.'a-b'",
+          "key": "field:C.'a-b'",
+          "parent": "class:C",
+          "start": 148,
+          "end": 157,
+          "line": 12,
+          "endLine": 12
+        },
+        {
+          "kind": "field",
+          "symbol": "C.2",
+          "key": "field:C.2",
+          "parent": "class:C",
+          "start": 161,
+          "end": 170,
+          "line": 13,
+          "endLine": 13
+        },
+        {
+          "kind": "field",
+          "symbol": "C.[k]",
+          "key": "field:C.[k]",
+          "parent": "class:C",
+          "start": 174,
+          "end": 181,
+          "line": 14,
+          "endLine": 14
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 (\"name\" is the text of the node's `name` field, as written): a `construct_signature` is not in the table, so `new (x: number): Ctor` is not a unit; `property_signature`, `public_field_definition` and `method_definition` take their name field as written, whether it is a `private_property_identifier` (`#count`), a `string` (`'a-b'`, quotes kept), a `number` (`1`) or a `computed_property_name` (`[k]`, brackets kept); expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "java: initializer blocks are not units; a field in an enum constant's body is a field of the constant",
+    "input": {
+      "fixture": "fixtures/units/initializers.java",
+      "path": "src/Init.java"
+    },
+    "expected": {
+      "class": "java",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 207,
+          "line": 1,
+          "endLine": 18
+        },
+        {
+          "kind": "class",
+          "symbol": "Init",
+          "key": "class:Init",
+          "parent": "file",
+          "start": 0,
+          "end": 104,
+          "line": 1,
+          "endLine": 10
+        },
+        {
+          "kind": "field",
+          "symbol": "Init.n",
+          "key": "field:Init.n",
+          "parent": "class:Init",
+          "start": 17,
+          "end": 30,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "field",
+          "symbol": "Init.m",
+          "key": "field:Init.m",
+          "parent": "class:Init",
+          "start": 96,
+          "end": 102,
+          "line": 9,
+          "endLine": 9
+        },
+        {
+          "kind": "enum",
+          "symbol": "Level",
+          "key": "enum:Level",
+          "parent": "file",
+          "start": 106,
+          "end": 206,
+          "line": 12,
+          "endLine": 18
+        },
+        {
+          "kind": "variant",
+          "symbol": "Level.HIGH",
+          "key": "variant:Level.HIGH",
+          "parent": "enum:Level",
+          "start": 123,
+          "end": 194,
+          "line": 13,
+          "endLine": 16
+        },
+        {
+          "kind": "field",
+          "symbol": "Level.HIGH.weight",
+          "key": "field:Level.HIGH.weight",
+          "parent": "variant:Level.HIGH",
+          "start": 138,
+          "end": 153,
+          "line": 14,
+          "endLine": 14
+        },
+        {
+          "kind": "method",
+          "symbol": "Level.HIGH.w",
+          "key": "method:Level.HIGH.w",
+          "parent": "variant:Level.HIGH",
+          "start": 162,
+          "end": 188,
+          "line": 15,
+          "endLine": 15
+        },
+        {
+          "kind": "variant",
+          "symbol": "Level.LOW",
+          "key": "variant:Level.LOW",
+          "parent": "enum:Level",
+          "start": 200,
+          "end": 203,
+          "line": 17,
+          "endLine": 17
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4: `static_initializer` and `block` are not in the Java table, so they are not units and stay part of the class; an `enum_constant` with a `class_body` is a container of kind `variant`, which is class-like, so its field declarator is a `field` with the constant as parent; the single declarator climbs to its `field_declaration`, `;` included; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "go: type set elements are not units; embedded generic fields are named by their type name",
+    "input": {
+      "fixture": "fixtures/units/type-sets.go",
+      "path": "types.go"
+    },
+    "expected": {
+      "class": "go",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 162,
+          "line": 1,
+          "endLine": 17
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 0,
+          "end": 9,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "type",
+          "symbol": "Number",
+          "key": "type:Number",
+          "parent": "file",
+          "start": 11,
+          "end": 69,
+          "line": 3,
+          "endLine": 6
+        },
+        {
+          "kind": "method",
+          "symbol": "Number.String",
+          "key": "method:Number.String",
+          "parent": "type:Number",
+          "start": 52,
+          "end": 67,
+          "line": 5,
+          "endLine": 5
+        },
+        {
+          "kind": "type",
+          "symbol": "G",
+          "key": "type:G",
+          "parent": "file",
+          "start": 71,
+          "end": 100,
+          "line": 8,
+          "endLine": 10
+        },
+        {
+          "kind": "field",
+          "symbol": "G.v",
+          "key": "field:G.v",
+          "parent": "type:G",
+          "start": 95,
+          "end": 98,
+          "line": 9,
+          "endLine": 9
+        },
+        {
+          "kind": "type",
+          "symbol": "Box",
+          "key": "type:Box",
+          "parent": "file",
+          "start": 102,
+          "end": 161,
+          "line": 12,
+          "endLine": 17
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.G",
+          "key": "field:Box.G",
+          "parent": "type:Box",
+          "start": 121,
+          "end": 127,
+          "line": 13,
+          "endLine": 13
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.H",
+          "key": "field:Box.H",
+          "parent": "type:Box",
+          "start": 129,
+          "end": 139,
+          "line": 14,
+          "endLine": 14
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.K",
+          "key": "field:Box.K",
+          "parent": "type:Box",
+          "start": 141,
+          "end": 152,
+          "line": 15,
+          "endLine": 15
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.n",
+          "key": "field:Box.n",
+          "parent": "type:Box",
+          "start": 154,
+          "end": 159,
+          "line": 16,
+          "endLine": 16
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4: a `type_elem` (`~int | ~string`) is not in the Go table, so it is not a unit; an embedded field's name is symbol_text of its `type` field (a `generic_type`, without the `*`, which is a child of the field_declaration) cut before the first `[`, then the part after the last `.`: `G[int]` gives G, `*H[string]` gives H, `pkg.K[bool]` gives K; the field's range includes the `*`; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python: augmented assignments and assignments to several names in a class body are not units",
+    "input": {
+      "fixture": "fixtures/units/class-statements.py",
+      "path": "pkg/counter.py"
+    },
+    "expected": {
+      "class": "python",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 63,
+          "line": 1,
+          "endLine": 5
+        },
+        {
+          "kind": "class",
+          "symbol": "Counter",
+          "key": "class:Counter",
+          "parent": "file",
+          "start": 0,
+          "end": 62,
+          "line": 1,
+          "endLine": 5
+        },
+        {
+          "kind": "field",
+          "symbol": "Counter.k",
+          "key": "field:Counter.k",
+          "parent": "class:Counter",
+          "start": 19,
+          "end": 24,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "field",
+          "symbol": "Counter.h",
+          "key": "field:Counter.h",
+          "parent": "class:Counter",
+          "start": 56,
+          "end": 62,
+          "line": 5,
+          "endLine": 5
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4: `k += 1` is an `augmented_assignment`, which is not in the Python table; `f, g = 1, 2` is an `assignment` whose `left` is a `pattern_list`, not an `identifier`, so it has no name by the table; both stay part of the class; `k = 0` and `h: int` are fields; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python: classes 33 deep: classes at depth 32 are units, deeper ones are not",
+    "input": {
+      "fixture": "fixtures/units/depth.py",
+      "path": "pkg/depth.py"
+    },
+    "expected": {
+      "class": "python",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 2602,
+          "line": 1,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0",
+          "key": "class:C0",
+          "parent": "file",
+          "start": 0,
+          "end": 2601,
+          "line": 1,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1",
+          "key": "class:C0.C1",
+          "parent": "class:C0",
+          "start": 14,
+          "end": 2601,
+          "line": 2,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2",
+          "key": "class:C0.C1.C2",
+          "parent": "class:C0.C1",
+          "start": 32,
+          "end": 2601,
+          "line": 3,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3",
+          "key": "class:C0.C1.C2.C3",
+          "parent": "class:C0.C1.C2",
+          "start": 54,
+          "end": 2601,
+          "line": 4,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4",
+          "key": "class:C0.C1.C2.C3.C4",
+          "parent": "class:C0.C1.C2.C3",
+          "start": 80,
+          "end": 2601,
+          "line": 5,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5",
+          "key": "class:C0.C1.C2.C3.C4.C5",
+          "parent": "class:C0.C1.C2.C3.C4",
+          "start": 110,
+          "end": 2601,
+          "line": 6,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6",
+          "parent": "class:C0.C1.C2.C3.C4.C5",
+          "start": 144,
+          "end": 2601,
+          "line": 7,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6",
+          "start": 182,
+          "end": 2601,
+          "line": 8,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7",
+          "start": 224,
+          "end": 2601,
+          "line": 9,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8",
+          "start": 270,
+          "end": 2601,
+          "line": 10,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9",
+          "start": 320,
+          "end": 2601,
+          "line": 11,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10",
+          "start": 375,
+          "end": 2601,
+          "line": 12,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11",
+          "start": 434,
+          "end": 2601,
+          "line": 13,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12",
+          "start": 497,
+          "end": 2601,
+          "line": 14,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13",
+          "start": 564,
+          "end": 2601,
+          "line": 15,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14",
+          "start": 635,
+          "end": 2601,
+          "line": 16,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15",
+          "start": 710,
+          "end": 2601,
+          "line": 17,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16",
+          "start": 789,
+          "end": 2601,
+          "line": 18,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17",
+          "start": 872,
+          "end": 2601,
+          "line": 19,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18",
+          "start": 959,
+          "end": 2601,
+          "line": 20,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19",
+          "start": 1050,
+          "end": 2601,
+          "line": 21,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20",
+          "start": 1145,
+          "end": 2601,
+          "line": 22,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21",
+          "start": 1244,
+          "end": 2601,
+          "line": 23,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22",
+          "start": 1347,
+          "end": 2601,
+          "line": 24,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23",
+          "start": 1454,
+          "end": 2601,
+          "line": 25,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24",
+          "start": 1565,
+          "end": 2601,
+          "line": 26,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25",
+          "start": 1680,
+          "end": 2601,
+          "line": 27,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26",
+          "start": 1799,
+          "end": 2601,
+          "line": 28,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27",
+          "start": 1922,
+          "end": 2601,
+          "line": 29,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28",
+          "start": 2049,
+          "end": 2601,
+          "line": 30,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29",
+          "start": 2180,
+          "end": 2601,
+          "line": 31,
+          "endLine": 34
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30.C31",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30.C31",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30",
+          "start": 2315,
+          "end": 2601,
+          "line": 32,
+          "endLine": 34
+        }
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 6.4 (MAX_CONTAINER_DEPTH = 32: a declaration at depth 32 is a unit, its body is not searched); class C_d is on line d+1 and every class ends with the block of C32, at the end of its `pass`; C32 stays inside C0...C31; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "java: classes 33 deep: classes at depth 32 are units, deeper ones are not",
+    "input": {
+      "fixture": "fixtures/units/depth.java",
+      "path": "src/Depth.java"
+    },
+    "expected": {
+      "class": "java",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 4676,
+          "line": 1,
+          "endLine": 66
+        },
+        {
+          "kind": "class",
+          "symbol": "C0",
+          "key": "class:C0",
+          "parent": "file",
+          "start": 0,
+          "end": 4675,
+          "line": 1,
+          "endLine": 66
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1",
+          "key": "class:C0.C1",
+          "parent": "class:C0",
+          "start": 15,
+          "end": 4673,
+          "line": 2,
+          "endLine": 65
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2",
+          "key": "class:C0.C1.C2",
+          "parent": "class:C0.C1",
+          "start": 34,
+          "end": 4667,
+          "line": 3,
+          "endLine": 64
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3",
+          "key": "class:C0.C1.C2.C3",
+          "parent": "class:C0.C1.C2",
+          "start": 57,
+          "end": 4657,
+          "line": 4,
+          "endLine": 63
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4",
+          "key": "class:C0.C1.C2.C3.C4",
+          "parent": "class:C0.C1.C2.C3",
+          "start": 84,
+          "end": 4643,
+          "line": 5,
+          "endLine": 62
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5",
+          "key": "class:C0.C1.C2.C3.C4.C5",
+          "parent": "class:C0.C1.C2.C3.C4",
+          "start": 115,
+          "end": 4625,
+          "line": 6,
+          "endLine": 61
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6",
+          "parent": "class:C0.C1.C2.C3.C4.C5",
+          "start": 150,
+          "end": 4603,
+          "line": 7,
+          "endLine": 60
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6",
+          "start": 189,
+          "end": 4577,
+          "line": 8,
+          "endLine": 59
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7",
+          "start": 232,
+          "end": 4547,
+          "line": 9,
+          "endLine": 58
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8",
+          "start": 279,
+          "end": 4513,
+          "line": 10,
+          "endLine": 57
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9",
+          "start": 330,
+          "end": 4475,
+          "line": 11,
+          "endLine": 56
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10",
+          "start": 386,
+          "end": 4433,
+          "line": 12,
+          "endLine": 55
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11",
+          "start": 446,
+          "end": 4387,
+          "line": 13,
+          "endLine": 54
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12",
+          "start": 510,
+          "end": 4337,
+          "line": 14,
+          "endLine": 53
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13",
+          "start": 578,
+          "end": 4283,
+          "line": 15,
+          "endLine": 52
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14",
+          "start": 650,
+          "end": 4225,
+          "line": 16,
+          "endLine": 51
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15",
+          "start": 726,
+          "end": 4163,
+          "line": 17,
+          "endLine": 50
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16",
+          "start": 806,
+          "end": 4097,
+          "line": 18,
+          "endLine": 49
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17",
+          "start": 890,
+          "end": 4027,
+          "line": 19,
+          "endLine": 48
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18",
+          "start": 978,
+          "end": 3953,
+          "line": 20,
+          "endLine": 47
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19",
+          "start": 1070,
+          "end": 3875,
+          "line": 21,
+          "endLine": 46
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20",
+          "start": 1166,
+          "end": 3793,
+          "line": 22,
+          "endLine": 45
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21",
+          "start": 1266,
+          "end": 3707,
+          "line": 23,
+          "endLine": 44
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22",
+          "start": 1370,
+          "end": 3617,
+          "line": 24,
+          "endLine": 43
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23",
+          "start": 1478,
+          "end": 3523,
+          "line": 25,
+          "endLine": 42
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24",
+          "start": 1590,
+          "end": 3425,
+          "line": 26,
+          "endLine": 41
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25",
+          "start": 1706,
+          "end": 3323,
+          "line": 27,
+          "endLine": 40
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26",
+          "start": 1826,
+          "end": 3217,
+          "line": 28,
+          "endLine": 39
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27",
+          "start": 1950,
+          "end": 3107,
+          "line": 29,
+          "endLine": 38
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28",
+          "start": 2078,
+          "end": 2993,
+          "line": 30,
+          "endLine": 37
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29",
+          "start": 2210,
+          "end": 2875,
+          "line": 31,
+          "endLine": 36
+        },
+        {
+          "kind": "class",
+          "symbol": "C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30.C31",
+          "key": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30.C31",
+          "parent": "class:C0.C1.C2.C3.C4.C5.C6.C7.C8.C9.C10.C11.C12.C13.C14.C15.C16.C17.C18.C19.C20.C21.C22.C23.C24.C25.C26.C27.C28.C29.C30",
+          "start": 2346,
+          "end": 2753,
+          "line": 32,
+          "endLine": 35
+        }
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 6.4 (MAX_CONTAINER_DEPTH = 32: a declaration at depth 32 is a unit, its body is not searched); class C_d spans from `class` on line d+1 to its own `}` on line 66-d; C32 stays inside C0...C31; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "go: a struct type written in a field is not a container, so Go declarations nest at most two deep",
+    "input": {
+      "fixture": "fixtures/units/nested-struct.go",
+      "path": "nested.go"
+    },
+    "expected": {
+      "class": "go",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 81,
+          "line": 1,
+          "endLine": 9
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 0,
+          "end": 9,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "type",
+          "symbol": "Outer",
+          "key": "type:Outer",
+          "parent": "file",
+          "start": 11,
+          "end": 80,
+          "line": 3,
+          "endLine": 9
+        },
+        {
+          "kind": "field",
+          "symbol": "Outer.Inner",
+          "key": "field:Outer.Inner",
+          "parent": "type:Outer",
+          "start": 32,
+          "end": 78,
+          "line": 4,
+          "endLine": 8
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4: the only Go containers are `type_spec` nodes, reached at the top level only, and a `field_declaration` has no container body, so the fields of `Inner` and `Deep` are not units and MAX_CONTAINER_DEPTH cannot be reached in Go; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
   }
 ]
