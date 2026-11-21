@@ -989,9 +989,12 @@ syntax: the whole argument MUST be one JSON object of section 5.3,
 - No valid compact anchor starts with `{`, because a scheme starts with a
   lower-case letter, so the rule changes the meaning of no compact anchor.
 
-The rule applies to command-line arguments only. In a standard-input
-document an anchor is a JSON string, read as compact syntax whatever its
-first character, or a JSON object, read as the anchor of section 5.3.
+The rule applies to a standard-input document as well. There an anchor is
+a JSON object, read as the anchor of section 5.3, or a JSON string, read as
+a command-line argument is: as a JSON anchor when its first character after
+leading WS is `{`, and as compact syntax otherwise. So the `anchor` of a
+candidate (section 15.2), which is a string, can be pasted as the `subject`
+or an `evidence` entry of a batch.
 
 ---
 

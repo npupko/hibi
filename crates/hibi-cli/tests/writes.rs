@@ -298,6 +298,43 @@ fn a_merge_is_reported_and_a_retired_claim_points_to_its_replacement() {
     assert!(text(&e["remediation"]).contains("hibi list"));
 }
 
+/// A candidate's `anchor` is a string that may hold a JSON anchor. Pasted
+/// as the `subject` or an `evidence` string of a standard-input document,
+/// it is read as on the command line.
+#[test]
+fn a_json_anchor_written_as_a_string_is_read_in_a_stdin_batch() {
+    let repo = Repo::new();
+    repo.write("docs/x.md", "Alpha is one. Beta is two.\n");
+    let alpha = r#"{"loc":"file:docs/x.md","sel":{"quote":"Alpha is one."}}"#;
+    let beta = r#"{"loc":"file:docs/x.md","sel":{"quote":"Beta is two."}}"#;
+    let batch = serde_json::json!([
+        {"statement": "a", "subject": alpha, "evidence": [format!("  {beta}")]}
+    ]);
+    let v = repo
+        .hibi()
+        .args(["--format", "json", "claim", "--stdin"])
+        .stdin(&batch.to_string())
+        .run()
+        .ok();
+    let sides = &v["claims"][0]["claim"]["sides"];
+    assert_eq!(sides[0]["unit"]["label"], "Alpha is one.");
+    assert_eq!(sides[1]["unit"]["label"], "Beta is two.");
+    // The same claim from the command line.
+    let again = repo.json(&["claim", "a", "--subject", alpha, "--evidence", beta]);
+    assert_eq!(again["claims"][0]["id"], v["claims"][0]["id"]);
+    assert_eq!(again["claims"][0]["created"], false);
+
+    // A string that starts with `{` and is not a JSON anchor.
+    let out = repo
+        .hibi()
+        .args(["--format", "json", "claim", "--stdin"])
+        .stdin(r#"[{"statement":"b","subject":"{not json"}]"#)
+        .run();
+    let e = &out.errs()[0];
+    assert_eq!(e["code"], "invalid_anchor");
+    assert_eq!(e["index"], 0);
+}
+
 /// Spec 15.3: one run of a standard-input batch reports every failing
 /// element, the malformed ones and the others, in index order, and writes
 /// nothing.

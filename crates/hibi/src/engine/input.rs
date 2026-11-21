@@ -9,7 +9,10 @@ use crate::error::{Code, Error};
 use crate::model::{Anchor, CLAIM_ID_ARGUMENT_PATTERN, DURATION_PATTERN, parse_compact};
 
 /// An anchor as a caller gives it: compact syntax (section 5.5) or the
-/// JSON object of section 5.3.
+/// JSON object of section 5.3. A string whose first character after white
+/// space is `{` is that JSON object written as text, on the command line
+/// and in a standard-input document alike: it is how the `anchor` of a
+/// candidate is given back.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum AnchorInput {
@@ -21,6 +24,13 @@ impl AnchorInput {
     /// The anchor. Errors are `invalid_anchor`.
     pub fn parse(&self) -> Result<Anchor, Error> {
         match self {
+            AnchorInput::Compact(s) if s.trim_start().starts_with('{') => {
+                let anchor: Anchor = serde_json::from_str(s).map_err(|e| {
+                    Error::invalid_anchor(format!("the JSON anchor does not parse: {e}"))
+                })?;
+                anchor.sel.validate()?;
+                Ok(anchor)
+            }
             AnchorInput::Compact(s) => parse_compact(s),
             AnchorInput::Anchor(a) => {
                 a.sel.validate()?;
