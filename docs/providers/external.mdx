@@ -336,11 +336,13 @@ An error is `{"code": <string>, "message": <string>}`.
 `invalid_locator` and `invalid_selector` say that the anchor is wrong for the
 resource, not that the provider failed. On a stored anchor the side's
 `detail` holds your message and its `next` is the `hibi reanchor` template.
-With `unavailable` or `unparsable`, your message is both the side's
-`detail` and its `remediation`, so end it with what the user can do. With
-`unparsable` hibi also adds the commands to anchor the side to another
-resource or to drop it, because no anchor on the same resource can work
-until it parses.
+With `unavailable` or `unparsable`, your message is the side's `detail`,
+and its `remediation` is your message followed by "Run the command again
+once that is fixed.", so say in the message what the user can do. With
+`unparsable` hibi also adds the commands to move on without the resource,
+because no anchor on it can work until it parses: for evidence, anchor the
+side to another resource or drop it; for the subject, re-point it or retire
+the claim.
 
 An unknown code is treated as `internal`. After answering `hello` with
 `unsupported_protocol`, a provider may keep running or exit; hibi never sends

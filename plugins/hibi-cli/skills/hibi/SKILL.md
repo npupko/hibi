@@ -123,16 +123,17 @@ Ask the user before each of these steps; they change the repository.
    | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
    | `several_units` | The anchor matches several units, listed in `candidates`, for example a name that now has a second declaration. Choose the one the statement is about and re-anchor to its `anchor`. A candidate with `anchor: null` is identical, where it stands, to another one, and cannot be anchored alone: follow the sentence hibi prints with it. After you anchor a containing unit, the claim stays on it: re-anchoring it back to the original unit later is `claim_retired` (step 6 says what to do). |
    | `selector_refused` | The provider refuses the stored anchor, or no longer allows one of its selector keys; `detail` says which. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
-   | `resource_unavailable` | The resource cannot be read now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses. The line named is where the parser reports its first error; the mistake can be before or after it, by many lines (an unclosed string or block comment, a deleted `}`), so read the code around it. Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
-   | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. For these, `provider_error` and a code file that does not parse, the `remediation` also gives the whole commands to move on: anchor an evidence side to another resource or drop it, re-point or retire a subject. A file list that cannot be read has no such commands. When such a side and a missing side block a claim, `next` and the `reanchor` error name both. |
+   | `resource_unavailable` | The resource cannot be used now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses. The line named is where the parser reports its first error; the mistake can be before or after it, by many lines (an unclosed string or block comment, a deleted `}`), so read the code around it. Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
+   | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. For these, `provider_error` and a code file that does not parse, the `remediation` also gives the whole commands to move on: anchor an evidence side to another resource or drop it, re-point or retire a subject. Evidence dropped this way comes back with `hibi reanchor <id> --add-evidence <anchor>` once the file is readable. A file list that cannot be read has no such commands. When such a side and a missing side block a claim, `next` and the `reanchor` error name both. |
    | `profile_mismatch` | The fingerprint profile changed, for example after an external provider renamed its profile, or after a hibi upgrade. Re-check and mark. |
    | `provider_failed` | `next` is `hibi providers --check <scheme>`, which starts the provider and reports what fails. Tell the user, and run it when they ask. Do not mark. |
    | `provider_not_registered`, `repo_not_allowed` | `next` is `hibi providers`. Run it and tell the user: providers and sibling repositories are set up in their user config. |
    | `scheme_not_declared` | The scheme is no longer declared in `.hibi/hibi.toml`. Ask the user whether to declare it again or retire the claim. |
    | `repo_not_found`, `provider_error` | The sibling repository is missing, or the provider answered with an error. `remediation` says what to do; tell the user. |
 
-   `mark` refuses a claim with a side that is missing, ambiguous or refused:
-   it never follows a candidate.
+   `mark` refuses a claim with a side that is missing, ambiguous, or
+   unavailable for any reason but `profile_mismatch`, and a changed side
+   whose `#name::<line>` line is gone. It never follows a candidate.
 5. **Record what you found.**
    - Still holds: `hibi mark <id>`.
    - Holds, but the subject moved or matches several units:
@@ -179,7 +180,10 @@ Ask the user before each of these steps; they change the repository.
    hint under a unit that cannot be anchored alone:
    `{ resource = "file:docs/retry.md", unit = "sentence:0863e2920c1f", reason = "a pointer, not a statement" }`.
    A prose unit's key comes from its content, so the exclusion stops
-   matching when that sentence is reworded, and `cover` lists it again.
+   matching when that sentence is reworded, and `cover` lists it again. A
+   declaration's key (`function:run_job`) names a place by source order:
+   when that declaration is deleted, another of the same name takes the key
+   and is excluded, so check `cover` after deleting one.
    Leave out `unit` to exclude a whole file: it is then not read at all, its
    units are not counted, it is not listed as unavailable, and a claim on it
    does not show as covered in that scope. That is the remedy, with the
@@ -287,21 +291,18 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
 - A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is
   refused (`quote_in_comment`): anchor the code the comment describes. A
   Python docstring is a string and can be quoted.
-- When you type a quote, quote whole lines or whole tokens. A quote is
-  matched as text, so one that ends inside a number or a word still matches
-  after an edit (`A = 1` still occurs in `A = 10`). A printed anchor may end
-  inside a word; it still selects its unit.
+- When you type a quote, quote whole lines or whole tokens: the line of a
+  `#name::<line>` that ends inside a number still matches after an edit
+  (`A = 1` in `A = 10`), so the side is only `changed`. A printed anchor may
+  end inside a word; it still selects its unit.
 - A quote must lie inside one unit (`quote_spans_units`). A quote copied from
   a member line may keep its indentation and a trailing `,` or `;`.
 - A `file:` path must be one git lists (tracked, or untracked and not
   ignored), spelled with the same letter case. Ignored files and paths under
   `.git/` or `.hibi/` cannot be anchored.
 
-`mark` checks only that every side resolves to exactly one unit. It never
-follows a candidate.
-
 Units of code: functions, methods, classes, structs, interfaces, traits,
-enums, types, variables, modules, impls, macros, top-level statements, and
+enums, types, variables, modules, impls (symbol `impl fmt::Debug for Id`), macros, top-level statements, and
 members: `field` for data members, `variant` for enum variants and Java enum
 constants. Rust attributes and TS decorators belong to the declaration they
 precede. Units of prose: `sentence`, `heading`, `list-item`, `table-row`,
@@ -315,8 +316,9 @@ but a Python backslash line continuation counts, and a formatter that
 changes semicolons, quote style or parentheses stales claims; re-check and
 mark them. A claim on a declaration by name stays fresh through the ignored
 edits. A bare quote is found by the text right around it, so such an edit
-next to it (a comment inserted in or beside the quoted line, a trailing
-comma removed, whitespace added between tokens) makes the side `missing`
+next to it (a comment inside the quoted text or between tokens with no
+whitespace, a trailing comma removed, whitespace added between tokens)
+makes the side `missing`
 (`not_exact`) with the unit as a candidate: re-anchor it. A reverted change
 makes a claim fresh again.
 
@@ -341,8 +343,11 @@ echo '["c1-xqhb", {"claim": "c1-2axv", "note": "checked against delay_ms"}]' | h
 An anchor in a batch is a compact string, `{"loc": ..., "sel": {...}}`, or
 that object as a JSON string, as candidates and errors print it.
 Use the object form for a selector other than the empty one on an external
-scheme, for example `{"loc": "ref:notes", "sel": {"key": "n1"}}`, and for a
-path that contains `#` or `::`. Each `cover` item has an `anchor` object you
+scheme, for example `{"loc": "ref:notes", "sel": {"key": "n1"}}`, for a
+path that contains `#` or `::`, and for a symbol that contains `::`, such
+as a Rust impl:
+`{"loc": "file:src/id.rs", "sel": {"symbol": "impl fmt::Debug for Id"}}`.
+The compact form splits at the first `::`. Each `cover` item has an `anchor` object you
 can use as `subject` unchanged, or `null` for a unit that cannot be anchored
 alone.
 

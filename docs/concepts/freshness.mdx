@@ -50,7 +50,7 @@ Consequences:
 | `missing` | `resource_not_found` | The file or resource does not exist |
 | `ambiguous` | `several_units` | The anchor matches several units, for example a name that now has a second declaration; `candidates` lists them |
 | `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example after an external provider renamed its profile |
-| `unavailable` | `resource_unavailable` | The resource exists but cannot be read now: a code file that does not parse, for any anchor on it, or git's file list cannot be read |
+| `unavailable` | `resource_unavailable` | The resource exists but cannot be used now: a code file that does not parse (it can be read, but not split into units), for any anchor on it, or git's file list cannot be read |
 | `unavailable` | `scheme_not_declared` | The locator's scheme is not declared in `.hibi/hibi.toml`, for example after its declaration was removed |
 | `unavailable` | `provider_not_registered` | The scheme is declared, but your user config has no command for it. No command is run. |
 | `unavailable` | `provider_failed` | The provider command could not start, timed out, broke the protocol or was killed; `next` is `hibi providers --check <scheme>` |

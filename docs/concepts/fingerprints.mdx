@@ -56,12 +56,14 @@ break that counts is a Python backslash continuation.
 A bare quote is different, because it is found by the text right around it
 inside its unit. Such an edit right next to the quote makes the side
 `missing` (`not_exact`), with the unit as a candidate: a comment inserted
-inside or beside the quoted line, a TSX `{/* */}` removed, a trailing comma
+inside the quoted text, or between tokens with no whitespace around it
+within 48 characters of the quote, a TSX `{/* */}` removed, a trailing comma
 removed next to the quote, or whitespace added between tokens where there
 was none, within 48 characters of it. A changed run of whitespace has no
-effect. Such an edit never makes a claim fresh that should be stale. A formatter that changes semicolons, quote
-style or parentheses stales claims, and each stale claim needs a re-check and
-a `mark`.
+effect. Such an edit never makes a claim fresh that should be stale.
+
+A formatter that changes semicolons, quote style or parentheses stales
+claims, and each stale claim needs a re-check and a `mark`.
 
 ### Examples
 
@@ -141,8 +143,9 @@ error: side_unavailable: evidence 1 (file:src/Conf.java) cannot be evaluated (re
 ```
 
 The side's `remediation` repeats the message and gives the whole commands
-to move on without the file: one that anchors the side to another resource,
-and one that drops it. `next` is `null`, because no hibi command fixes a
+to move on without the file: for evidence, one that anchors the side to
+another resource and one that drops it; for the subject, one that re-points
+it and one that retires the claim. `next` is `null`, because no hibi command fixes a
 syntax error. Here `src/size.ts` has a claim on the whole file and
 one on a quote inside the declaration `SIZE`, and a syntax error was added
 on line 2:
