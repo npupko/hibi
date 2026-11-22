@@ -218,6 +218,66 @@ fn r19_status_since_lists_exactly_the_claims_the_range_invalidated() {
     assert_eq!(ids(&v), Vec::<String>::new());
 }
 
+/// Section 10.3: a claim that was made in the range and is stale now is
+/// listed by `status --since`. The branch adds a constant, a sentence about
+/// it and a claim, and a later commit on the branch changes the constant.
+/// The claim did not exist at the base, so nothing about it can be read
+/// there; it is stale because of the range all the same.
+#[test]
+fn status_since_lists_a_stale_claim_that_was_made_in_the_range() {
+    let repo = Repo::new();
+    repo.write("src/a.py", "LIMIT = 1\n");
+    repo.write("docs/guide.md", "# Guide\n\nThe limit is 1.\n");
+    let old = repo.claim(
+        "the limit is 1",
+        "file:docs/guide.md::The limit is 1.",
+        &["file:src/a.py#LIMIT"],
+    );
+    let base = repo.commit("base");
+    repo.git(&["checkout", "-q", "-b", "feature"]);
+
+    repo.write("src/a.py", "LIMIT = 1\nDELAY = 2\n");
+    repo.write(
+        "docs/guide.md",
+        "# Guide\n\nThe limit is 1.\n\nThe delay is 2.\n",
+    );
+    let made = repo.claim(
+        "the delay is 2",
+        "file:docs/guide.md::The delay is 2.",
+        &["file:src/a.py#DELAY"],
+    );
+    repo.commit("add the delay and its claim");
+    for range in ["main...", "main"] {
+        let v = repo.json(&["status", "--since", range]);
+        assert_eq!(
+            ids(&v),
+            Vec::<String>::new(),
+            "{range}: nothing is stale yet"
+        );
+    }
+
+    repo.write("src/a.py", "LIMIT = 1\nDELAY = 3\n");
+    repo.commit("change the delay");
+    assert_eq!(ids(&repo.json(&["status"])), vec![made.clone()]);
+    for range in ["main...", "main", "main..HEAD"] {
+        let v = repo.json(&["status", "--since", range]);
+        assert_eq!(v["since"]["base"], base.as_str(), "{range}");
+        assert_eq!(ids(&v), vec![made.clone()], "{range}");
+        assert_eq!(v["claims"][0]["state"], "stale");
+        assert_eq!(v["claims"][0]["next"], format!("hibi mark {made}"));
+    }
+    // The claim that existed at the base and did not change is not listed,
+    // and a claim made in the range that is fresh is not either.
+    assert_eq!(repo.state(&old), "fresh");
+    // Since the commit that made the claim, the claim existed: it is listed
+    // by the rule for claims of the base (its evidence changed since).
+    let v = repo.json(&["status", "--since", "HEAD~1"]);
+    assert_eq!(ids(&v), vec![made.clone()]);
+    // Since HEAD nothing changed, and the claim exists there.
+    let v = repo.json(&["status", "--since", "HEAD"]);
+    assert_eq!(ids(&v), Vec::<String>::new());
+}
+
 /// Section 10.3: `A`, `A..` and `A..HEAD` use commit `A`; `A...` and
 /// `A...HEAD` use the merge base of `A` and `HEAD`. Shown with a `main` that
 /// moved after the branch was cut: its new commit edits `second` again.

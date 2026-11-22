@@ -311,14 +311,25 @@ pub fn next_command(claim: &Claim, eval: &Evaluation<'_>) -> Option<String> {
     if matches!(eval.state, ClaimState::Retired | ClaimState::Fresh) {
         return None;
     }
-    let mut reanchor = String::new();
-    for (i, (state, reason)) in eval.sides.iter().enumerate() {
-        // A side whose stored anchor the provider no longer accepts needs
-        // another anchor too.
-        if matches!(state, SideState::Missing | SideState::Ambiguous)
+    // The sides that need a new anchor. When there is one, the command
+    // also names every side that would stop it: a side whose resource
+    // cannot be evaluated blocks `reanchor` too, so it gets a placeholder
+    // as well, and its remediation says that it can be dropped instead.
+    let needs_anchor = |i: usize, state: &SideState, reason: &Option<Reason>| {
+        matches!(state, SideState::Missing | SideState::Ambiguous)
             || *reason == Some(Reason::SelectorRefused)
             || eval.quote_gone(i)
-        {
+    };
+    let any = eval
+        .sides
+        .iter()
+        .enumerate()
+        .any(|(i, (state, reason))| needs_anchor(i, state, reason));
+    let mut reanchor = String::new();
+    for (i, (state, reason)) in eval.sides.iter().enumerate() {
+        let blocked = *state == SideState::Unavailable
+            && reason.is_some_and(super::types::blocks_the_resource);
+        if needs_anchor(i, state, reason) || (any && blocked) {
             if i == 0 {
                 reanchor.push_str(" --subject <anchor>");
             } else {
@@ -440,7 +451,14 @@ pub fn claim_view(
                         label: u.label.clone(),
                         line: u.range.map(|r| r.line),
                         end_line: u.range.map(|r| r.end_line),
-                        text: u.text.as_deref().map(|t| cut_text(t, TEXT_EXCERPT_CHARS)),
+                        // Whole with `--detail`, cut otherwise.
+                        text: u.text.as_deref().map(|t| {
+                            if options.detail {
+                                t.to_owned()
+                            } else {
+                                cut_text(t, TEXT_EXCERPT_CHARS)
+                            }
+                        }),
                         anchor: select.map(str::to_owned),
                         same_fingerprint: marked_fp.as_ref() == Some(&u.fp),
                     })
@@ -458,9 +476,17 @@ pub fn claim_view(
                 marked_fp,
                 remediation: match (state, reason) {
                     (SideState::Unavailable, Some(reason)) => {
-                        side_remediation(*reason, said, anchor.loc.scheme())
+                        side_remediation(*reason, said, anchor.loc.scheme()).map(|fix| {
+                            if super::types::blocks_the_resource(*reason) {
+                                fix + &super::types::blocked_choice(index)
+                            } else {
+                                fix
+                            }
+                        })
                     }
-                    _ => None,
+                    // Listed units that no anchor selects alone: what to
+                    // anchor instead.
+                    _ => all.as_ref().and_then(Candidates::twins_remedy),
                 },
                 detail: said.map(|m| excerpt(m, DETAIL_CHARS)),
                 candidates_total: total,

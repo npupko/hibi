@@ -22,6 +22,8 @@ pub const MAX_CANDIDATES: usize = 20;
 /// A candidate is never used as the side's unit: the caller chooses.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Candidates {
+    /// The resource the units are in.
+    pub loc: Locator,
     /// The first [`MAX_CANDIDATES`] units the provider returned. The rest
     /// are not kept: an anchor that matches every one of many identical
     /// units would otherwise hold all of them once per claim.
@@ -76,6 +78,7 @@ impl Candidates {
             by_fp.insert(u.fp.clone(), first.total.max(twice));
         }
         Some(Candidates {
+            loc: first.loc.clone(),
             units,
             anchors,
             total: first.total + second.total - twice,
@@ -102,6 +105,47 @@ impl Candidates {
         })
     }
 
+    /// What to do, for a claim, about shown units that no anchor selects
+    /// alone; `None` when every shown unit has an anchor. Such units cannot
+    /// be anchored one by one: a longer quote reaches outside the unit or
+    /// matches both again, and an exclusion in a scope plays no part in
+    /// resolving a claim. What works is the unit that contains them. That
+    /// is the whole file, and in code also the declaration that encloses
+    /// them, when they have one: units of markdown, prose and text have no
+    /// names, and declarations at the top of a file have nothing around
+    /// them but the file.
+    pub fn twins_remedy(&self) -> Option<String> {
+        let twins: Vec<&Unit> = self
+            .selectable()
+            .filter(|(_, anchor)| anchor.is_none())
+            .map(|(u, _)| u)
+            .collect();
+        let first = twins.first()?;
+        let enclosing = |u: &Unit| -> Option<String> {
+            match (&u.sel.symbol, u.sel.within.as_deref()) {
+                (Some(symbol), _) => symbol.rsplit_once('.').map(|(outer, _)| outer.to_owned()),
+                (None, Some([name])) if u.fp.profile() == "ast-v1" => Some(name.clone()),
+                _ => None,
+            }
+        };
+        let name =
+            enclosing(first).filter(|n| twins.iter().all(|u| enclosing(u).as_ref() == Some(n)));
+        let loc = &self.loc;
+        let whole = if loc.is_file_or_repo() {
+            "the whole file"
+        } else {
+            "the whole resource"
+        };
+        Some(match name {
+            Some(name) => format!(
+                "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration {loc}#{name}, or {whole} {loc}."
+            ),
+            None => format!(
+                "Units that are identical where they stand cannot be anchored one by one. Anchor {whole} {loc} instead."
+            ),
+        })
+    }
+
     /// True when the anchor of every shown candidate selects it alone.
     pub fn selects_alone(&self) -> bool {
         self.selectable().all(|(_, anchor)| anchor.is_some())
@@ -125,9 +169,9 @@ impl Candidates {
             lines.push(format!("and {more} more"));
         }
         let mut out = lines.join("; ");
-        if !self.selects_alone() {
+        if let Some(remedy) = self.twins_remedy() {
             out.push_str(". ");
-            out.push_str(TWINS_REMEDY);
+            out.push_str(&remedy);
         }
         out
     }
@@ -177,12 +221,6 @@ pub const NOT_IDENTIFIED: &str = "the stored anchor no longer identifies one uni
 /// A stored `#name::<quote>` anchor whose name and quote disagree: the name
 /// still names one declaration, and the quoted text is in other units.
 pub const NAME_AND_QUOTE_APART: &str = "the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text";
-
-/// What to do, for a claim, about units that no anchor can tell apart. A
-/// longer quote does not help: it reaches outside the unit or matches both
-/// again. An exclusion in a scope does not help either: scopes play no
-/// part in resolving a claim (it is `cover`'s remedy, and `cover` says so).
-pub const TWINS_REMEDY: &str = "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file.";
 
 /// The current resolution of one anchor.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -452,6 +490,7 @@ fn candidates_of(loc: &Locator, units: Vec<Unit>) -> Candidates {
     let mut units = units;
     units.truncate(MAX_CANDIDATES);
     Candidates {
+        loc: loc.clone(),
         units,
         anchors,
         total,

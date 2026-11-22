@@ -671,7 +671,11 @@ fn r39_a_repo_side_without_git_is_repo_not_found() {
     );
     // The claim has no `next`, so the text output prints what the side says
     // to do.
-    assert_eq!(claim["sides"][1]["remediation"], "hibi providers");
+    let fix = claim["sides"][1]["remediation"].as_str().unwrap();
+    assert!(
+        fix.starts_with("The message says what is missing. A sibling repository needs its alias declared under [repos]"),
+        "{fix}"
+    );
     let human = s
         .repo
         .hibi()
@@ -680,7 +684,9 @@ fn r39_a_repo_side_without_git_is_repo_not_found() {
         .run();
     assert!(
         human.stdout.contains("unavailable (repo_not_found)\n")
-            && human.stdout.contains("\n    hibi providers\n"),
+            && human
+                .stdout
+                .contains("\n    The message says what is missing. A sibling repository needs"),
         "{}",
         human.stdout
     );

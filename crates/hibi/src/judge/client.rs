@@ -60,9 +60,13 @@ enum Cause {
     /// A redirect, a status outside 200 to 599, an unusable URL, or an
     /// answer that is not the service's: the endpoint is not Jev.
     Endpoint,
-    /// 408, 429, 5xx, a connection error, a timeout, or a cause not known:
-    /// the default remediation of `judge_failed`.
+    /// 408, 429, 5xx, or a cause not known: the default remediation of
+    /// `judge_failed`.
     Later,
+    /// No HTTP answer at all: the connection failed, timed out, or what
+    /// came back was not HTTP. The service may be down, and when
+    /// `HIBI_JEV_URL` is set the endpoint may be the wrong one.
+    Unreachable,
 }
 
 impl Cause {
@@ -80,7 +84,7 @@ impl Cause {
                 "This is a bug in hibi. Report it at {ISSUES} with this message."
             )),
             Cause::Endpoint => Some(endpoint_remediation()),
-            Cause::Later => None,
+            Cause::Later | Cause::Unreachable => None,
         }
     }
 }
@@ -99,8 +103,9 @@ struct Failure {
 enum Attempt {
     /// A 2xx status, with the body.
     Done(String),
-    /// Worth another attempt: the reason, and the `Retry-After` delay.
-    Retry(String, Option<Duration>),
+    /// Worth another attempt: the reason, the `Retry-After` delay, and the
+    /// cause to report when no attempt is left.
+    Retry(String, Option<Duration>, Cause),
     /// Not retried.
     Fatal(Failure),
 }
@@ -184,6 +189,17 @@ fn failed(judge: &Judge, failure: Failure) -> Error {
     let e = Error::new(Code::JudgeFailed, failure.message);
     let e = match failure.cause.remediation() {
         Some(r) => e.with_remediation(r),
+        // No HTTP answer may be the service having a bad moment. With
+        // another endpoint set it may as well be that endpoint, so it is
+        // named.
+        None if failure.cause == Cause::Unreachable
+            && judge.endpoint != super::DEFAULT_ENDPOINT =>
+        {
+            e.with_remediation(format!(
+                "Run the command again later. If it keeps failing, check {ENDPOINT_VAR}: it is set to {:?}, not the default endpoint.",
+                judge.endpoint
+            ))
+        }
         None => e,
     };
     seal(judge, e)
@@ -290,7 +306,7 @@ fn transport_error(judge: &Judge, e: &ureq::Error) -> Attempt {
         | ureq::Error::Io(_)
         | ureq::Error::ConnectionFailed
         | ureq::Error::HostNotFound
-        | ureq::Error::Protocol(_) => return Attempt::Retry(message, None),
+        | ureq::Error::Protocol(_) => return Attempt::Retry(message, None, Cause::Unreachable),
         // Raised before anything is sent.
         ureq::Error::BadUri(_) | ureq::Error::RequireHttpsOnly(_) => Cause::Endpoint,
         ureq::Error::Http(_) | ureq::Error::BodyExceedsLimit(_) => Cause::Bug,
@@ -333,7 +349,11 @@ fn attempt(agent: &Agent, judge: &Judge, prepared: &Prepared, body: &[u8]) -> At
     if (200..300).contains(&status) {
         return match read {
             Ok(_) => Attempt::Done(text),
-            Err(e) => Attempt::Retry(format!("reading the response failed: {e}"), None),
+            Err(e) => Attempt::Retry(
+                format!("reading the response failed: {e}"),
+                None,
+                Cause::Unreachable,
+            ),
         };
     }
     // Redacted before the cut, so that the cut cannot leave a part of the
@@ -343,7 +363,7 @@ fn attempt(agent: &Agent, judge: &Judge, prepared: &Prepared, body: &[u8]) -> At
         detail(&redact(&text, &judge.key))
     );
     match status_cause(status) {
-        None => Attempt::Retry(message, wait),
+        None => Attempt::Retry(message, wait, Cause::Later),
         Some(cause) => Attempt::Fatal(Failure { message, cause }),
     }
 }
@@ -358,11 +378,11 @@ fn post(agent: &Agent, judge: &Judge, prepared: &Prepared, body: &[u8]) -> Resul
         match attempt(agent, judge, prepared, body) {
             Attempt::Done(text) => return Ok(text),
             Attempt::Fatal(failure) => return Err(failure),
-            Attempt::Retry(message, wait) => {
+            Attempt::Retry(message, wait, cause) => {
                 if n >= attempts {
                     return Err(Failure {
                         message: format!("{message} (after {attempts} attempts)"),
-                        cause: Cause::Later,
+                        cause,
                     });
                 }
                 (policy.sleep)(policy.backoff(n, wait));

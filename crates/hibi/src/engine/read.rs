@@ -154,14 +154,68 @@ fn file_path(loc: &Locator) -> Option<&str> {
     }
 }
 
-/// The ids of the stale claims a range invalidated (section 10.3): a claim
-/// qualifies when one of its sides is on a changed `file:` path, resolved
-/// to exactly one unit at the base, and now does not resolve to exactly one
-/// unit or resolves to a unit with another fingerprint.
+/// The largest claims shard read from the base commit: the size limit of a
+/// shard file (section 12.3).
+const MAX_BASE_SHARD_BYTES: u64 = 67_108_864;
+
+/// The ids of the claims in the store as of commit `base`: the `id` of
+/// every line of the claim shards `.hibi/claims/<0-f>.jsonl` in that
+/// commit's tree (section 12.2). A base without `.hibi/` has none. A line
+/// that is not a JSON object with a string `id` is skipped: the base is
+/// only asked which claims existed.
+fn claim_ids_at(git: &Git, root: &Path, base: &ObjectId) -> Result<BTreeSet<String>, Error> {
+    let paths: BTreeSet<String> = "0123456789abcdef"
+        .chars()
+        .map(|d| format!(".hibi/claims/{d}.jsonl"))
+        .collect();
+    let entries = git.tree_entries(root, base, &paths)?;
+    let ids: Vec<ObjectId> = entries.values().map(|e| e.id.clone()).collect();
+    let mut out = BTreeSet::new();
+    for (blob, path) in git
+        .read_blobs(root, &ids, MAX_BASE_SHARD_BYTES)?
+        .into_iter()
+        .zip(entries.keys())
+    {
+        let bytes = match blob {
+            crate::git::Blob::Content(bytes) => bytes,
+            crate::git::Blob::TooLarge { size } => {
+                return Err(Error::new(
+                    crate::error::Code::StoreCorrupt,
+                    format!(
+                        "{path} at the base commit {base} has {size} bytes, more than the limit of {MAX_BASE_SHARD_BYTES} bytes"
+                    ),
+                ));
+            }
+            // Not a file at the base: no claims there.
+            crate::git::Blob::NotBlob | crate::git::Blob::Missing => continue,
+        };
+        for line in String::from_utf8_lossy(&bytes).lines() {
+            let id = serde_json::from_str::<serde_json::Value>(line)
+                .ok()
+                .and_then(|v| v.get("id").and_then(|id| id.as_str()).map(str::to_owned));
+            out.extend(id);
+        }
+    }
+    Ok(out)
+}
+
+/// The ids of the stale claims a range invalidated (section 10.3). A claim
+/// that existed at the base qualifies when one of its sides is on a changed
+/// `file:` path, resolved to exactly one unit at the base, and now does not
+/// resolve to exactly one unit or resolves to a unit with another
+/// fingerprint. A claim that did not exist at the base (its id is not in
+/// the store as of the base commit) was made in the range, so its being
+/// stale now is the range's doing: it qualifies as it is.
 fn invalidated<'a>(
     stale: &[(&'a Claim, &[Resolved])],
     run: &mut SinceRun<'_>,
 ) -> Result<BTreeSet<&'a str>, Error> {
+    let existed = claim_ids_at(run.git, run.root, &run.since.base)?;
+    let mut made_in_range: BTreeSet<&'a str> = stale
+        .iter()
+        .map(|(claim, _)| claim.id.as_str())
+        .filter(|id| !existed.contains(*id))
+        .collect();
     let changed = run.git.changed_paths(run.root, &run.since.base)?;
     let mut candidates: Vec<(&'a Claim, &Anchor, &Resolved)> = Vec::new();
     for (claim, resolved) in stale {
@@ -182,6 +236,7 @@ fn invalidated<'a>(
             out.insert(claim.id.as_str());
         }
     }
+    out.append(&mut made_in_range);
     Ok(out)
 }
 

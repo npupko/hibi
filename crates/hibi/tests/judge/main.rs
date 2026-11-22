@@ -1107,7 +1107,13 @@ fn remediation_connection_errors_and_timeouts_say_run_again_later() {
     }));
     let (e, sent) = fail_once(&fx, &mock, &fx.judge(&mock));
     assert_eq!(sent, 3);
-    assert_eq!(e.remediation.as_deref(), Some(LATER));
+    // No HTTP answer, and HIBI_JEV_URL is set (the mock's address): the
+    // endpoint is named as a possible cause.
+    let fix = e.remediation.as_deref().unwrap();
+    assert!(
+        fix.starts_with("Run the command again later. If it keeps failing, check HIBI_JEV_URL: it is set to \"http://127.0.0.1:"),
+        "{fix}"
+    );
     assert_eq!(fx.sleeps(), [500, 1000]);
 
     // A refused connection: three attempts, seen as two backoffs.
@@ -1128,7 +1134,15 @@ fn remediation_connection_errors_and_timeouts_say_run_again_later() {
     });
     let e = fx.triage(&judge, false).unwrap_err();
     assert_eq!(e.code, Code::JudgeFailed);
-    assert_eq!(e.remediation.as_deref(), Some(LATER));
+    assert_eq!(
+        e.remediation.as_deref(),
+        Some(
+            format!(
+                "Run the command again later. If it keeps failing, check HIBI_JEV_URL: it is set to \"http://127.0.0.1:{port}/v1/systemone\", not the default endpoint."
+            )
+            .as_str()
+        )
+    );
     assert_eq!(fx.sleeps(), [500, 1000]);
 }
 

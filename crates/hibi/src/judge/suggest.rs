@@ -129,7 +129,9 @@ fn resources(pats: &[ResourcePattern], gate: &mut Gate<'_>) -> Result<Vec<Locato
                         .unwrap_or_else(|| format!("sibling repository {alias} is not allowed"));
                     return Err(
                         Error::invalid_argument(format!("--in {:?}: {why}", p.as_str()))
-                            .with_remediation("hibi providers"),
+                            .with_remediation(
+                                "The message says what is missing. A sibling repository needs its alias declared under [repos] in .hibi/hibi.toml, its directory registered with a [[repo]] entry in the user config, and a git that hibi can run. hibi providers lists what is declared and registered.",
+                            ),
                     );
                 }
             },

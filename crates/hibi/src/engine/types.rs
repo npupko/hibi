@@ -131,10 +131,14 @@ closed_enum!(
 /// for a reason that does not make a side unavailable in a write.
 pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
     Some(match reason {
-        Reason::ProviderNotRegistered
-        | Reason::ProviderFailed
-        | Reason::RepoNotAllowed
-        | Reason::RepoNotFound => "hibi providers",
+        Reason::ProviderNotRegistered | Reason::ProviderFailed | Reason::RepoNotAllowed => {
+            "hibi providers"
+        }
+        // `hibi providers` shows nothing about an alias that is not
+        // declared, so the two steps are named.
+        Reason::RepoNotFound => {
+            "The message says what is missing. A sibling repository needs its alias declared under [repos] in .hibi/hibi.toml, its directory registered with a [[repo]] entry in the user config, and a git that hibi can run. hibi providers lists what is declared and registered."
+        }
         Reason::TooLarge => {
             "The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
         }
@@ -171,6 +175,31 @@ pub fn escape_controls(json: &str) -> String {
         }
     }
     out
+}
+
+/// True for a reason that no anchor on the same resource can fix: the
+/// resource itself cannot be evaluated. An evidence side in that state
+/// blocks every write on its claim until it is given an anchor on another
+/// resource or dropped; a subject has to be re-pointed, or the claim
+/// retired.
+pub fn blocks_the_resource(reason: Reason) -> bool {
+    matches!(
+        reason,
+        Reason::TooLarge | Reason::NotText | Reason::ResourceUnavailable | Reason::ProviderError
+    )
+}
+
+/// What a stored side that [`blocks_the_resource`] adds to its
+/// remediation: the choice the caller has in `hibi reanchor`. `index` is 0
+/// for the subject.
+pub fn blocked_choice(index: usize) -> String {
+    if index == 0 {
+        " To move on without that: re-point the subject to another resource with hibi reanchor --subject <anchor>, or retire the claim.".to_owned()
+    } else {
+        format!(
+            " To move on without that: give this side an anchor on another resource with hibi reanchor --evidence {index}=<anchor>, or drop it with --drop-evidence {index}."
+        )
+    }
 }
 
 /// The command that shows what is wrong with the provider of `scheme`:

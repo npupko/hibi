@@ -486,6 +486,25 @@ pub fn commit_all(root: &std::path::Path, message: &str) -> String {
     sh_git(root, &["rev-parse", "HEAD"]).trim().to_owned()
 }
 
+/// Commit the ids of `store`'s claims as the claims shard `.hibi/claims/0.jsonl`
+/// on top of `HEAD`, and nothing else of the working tree. The engine tests
+/// keep their records in memory; `status --since` asks the base commit which
+/// claims existed there (section 10.3), so a fixture whose claims are meant
+/// to be older than the range says so with this. Returns the new commit.
+pub fn commit_claim_ids(root: &std::path::Path, store: &MemStore) -> String {
+    let lines: String = store
+        .ledger()
+        .claims
+        .iter()
+        .map(|c| format!("{{\"id\":\"{}\"}}\n", c.id))
+        .collect();
+    let rel = ".hibi/claims/0.jsonl";
+    write_files(root, &[(rel, &lines)]);
+    sh_git(root, &["add", rel]);
+    sh_git(root, &["commit", "-q", "-m", "claims", "--", rel]);
+    sh_git(root, &["rev-parse", "HEAD"]).trim().to_owned()
+}
+
 /// The installed git, which the coverage and `--since` tests need.
 pub fn real_git() -> hibi::git::Git {
     GitStatus::probe()

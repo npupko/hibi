@@ -58,7 +58,7 @@ pub use report::{
 };
 pub use resolve::{
     BY_SIMILARITY, Candidates, MAX_CANDIDATES, NAME_AND_QUOTE_APART, NOT_IDENTIFIED, Resolved,
-    TWINS_REMEDY, content_candidates, quoted, reason_of_no_provider, resolve_anchors, resolve_with,
+    content_candidates, quoted, reason_of_no_provider, resolve_anchors, resolve_with,
     selects_its_unit, side_of_error,
 };
 // For the judge's output types.
@@ -67,8 +67,8 @@ pub(crate) use types::Nullable;
 pub use types::{
     Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Envelope,
     ErrorEnvelope, NEXT_NOTE, Reason, Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, Warning,
-    WarningCode, cut_text, escape_controls, excerpt, sh_quote, side_remediation,
-    unavailable_remediation,
+    WarningCode, blocked_choice, blocks_the_resource, cut_text, escape_controls, excerpt, sh_quote,
+    side_remediation, unavailable_remediation,
 };
 pub use write::{
     ClaimOutput, ClaimResult, MarkOutput, MarkResult, ReanchorOutput, RetireOutput, RetireResult,

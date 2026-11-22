@@ -192,15 +192,25 @@ fn unsettled(r: &Resolved) -> bool {
             .is_some_and(|u| u.identity == Some(crate::provider::Identity::Symbol))
 }
 
-/// [`stored_side_error`] for the first side of `claim` that fails.
+/// [`stored_side_error`] for every side of `claim` that fails, as one
+/// error: the code and remediation of the first, and the messages of all
+/// of them joined with `; `, so that the caller sees each side that stops
+/// the write and not only the first.
 fn stored_failure(
     providers: &mut Providers,
     claim: &Claim,
     eval: &Evaluation<'_>,
     rs: &[Resolved],
 ) -> Option<Error> {
-    let side = (0..rs.len()).find(|i| rs[*i].failure().is_some() || eval.quote_gone(*i))?;
-    stored_side_error(providers, claim, eval, rs, side, side)
+    let mut errors = (0..rs.len())
+        .filter(|i| rs[*i].failure().is_some() || eval.quote_gone(*i))
+        .filter_map(|side| stored_side_error(providers, claim, eval, rs, side, side));
+    let mut first = errors.next()?;
+    for e in errors {
+        first.message.push_str("; ");
+        first.message.push_str(&e.message);
+    }
+    Some(first)
 }
 
 fn unresolved_error_with(
@@ -255,6 +265,11 @@ fn unresolved_error_with(
                 format!("{what} cannot be evaluated ({reason}): {detail}"),
             );
             match side_remediation(reason, Some(&detail), anchor.loc.scheme()) {
+                // A stored side whose resource cannot be evaluated: the
+                // remediation also says how to go on without it.
+                Some(fix) if !new && super::types::blocks_the_resource(reason) => {
+                    e.with_remediation(fix + &super::types::blocked_choice(index))
+                }
                 Some(fix) => e.with_remediation(fix),
                 None => e.without_remediation(),
             }
@@ -329,7 +344,10 @@ fn advise(providers: &mut Providers, loc: &Locator, r: &Resolved, e: Error) -> E
             if r.candidates()
                 .is_some_and(|c| !c.selectable().any(|(_, anchor)| anchor.is_some())) =>
         {
-            e.with_remediation(super::resolve::TWINS_REMEDY)
+            match r.candidates().and_then(Candidates::twins_remedy) {
+                Some(remedy) => e.with_remediation(remedy),
+                None => e,
+            }
         }
         Code::SideAmbiguous => {
             let advice = ambiguous_advice(&keys);
@@ -1177,12 +1195,14 @@ fn mark_elements(
 /// The command that repeats the caller's arguments and ends with
 /// `--note <text>`: the remediation when the rebuilt claim is a retired one.
 fn reanchor_with_note(old: &ClaimId, input: &ReanchorInput) -> String {
-    format!("{} --note <text>", reanchor_again(old, input))
+    format!("{} --note <text>", reanchor_again(old, input, false))
 }
 
 /// The `reanchor` command the caller gave, with every argument repeated, so
 /// that a remediation can add to it and lose nothing the caller asked for.
-fn reanchor_again(old: &ClaimId, input: &ReanchorInput) -> String {
+///
+/// `with_note` is false only where the remediation is to give another note.
+fn reanchor_again(old: &ClaimId, input: &ReanchorInput, with_note: bool) -> String {
     let mut cmd = format!("hibi reanchor {old}");
     let mut arg = |flag: &str, value: &str| {
         cmd.push_str(&format!(" {flag} {}", sh_quote(value)));
@@ -1207,6 +1227,9 @@ fn reanchor_again(old: &ClaimId, input: &ReanchorInput) -> String {
     }
     if let Some(b) = &input.by {
         arg("--by", b);
+    }
+    if let Some(n) = input.note.as_deref().filter(|_| with_note) {
+        arg("--note", n);
     }
     cmd
 }
@@ -1331,6 +1354,10 @@ pub fn reanchor(
     // one error, with one command that gives a placeholder for each, so
     // that the caller is not sent from one side to the next.
     let mut need_anchor: Vec<(usize, Error)> = Vec::new();
+    // Kept sides whose resource cannot be evaluated, with their own error.
+    // They join the others when a side needs an anchor; alone, the first
+    // one is reported with its own remediation, which says the cause.
+    let mut blocked: Vec<(usize, Error, Error)> = Vec::new();
     for (((anchor, new), r), n) in plan.iter().zip(&resolved).zip(numbers.iter().copied()) {
         if *new {
             units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, r, e))?);
@@ -1344,12 +1371,36 @@ pub fn reanchor(
                 None
                 | Some((SideState::Missing | SideState::Ambiguous, _))
                 | Some((_, Reason::SelectorRefused)) => need_anchor.push((n, e)),
-                // Nothing an anchor can fix: the side's own remediation.
+                // The resource itself cannot be evaluated: no anchor on it
+                // helps. The side is named with the others, with the
+                // choice the caller has.
+                Some((_, reason)) if super::types::blocks_the_resource(reason) => {
+                    let choice = if n == 0 {
+                        " (re-point the subject to another resource, or retire the claim)"
+                            .to_owned()
+                    } else {
+                        format!(
+                            " (give evidence {n} an anchor on another resource, or drop it with --drop-evidence {n})"
+                        )
+                    };
+                    let joined = Error::new(e.code, e.message.clone() + &choice);
+                    blocked.push((n, e, joined));
+                }
+                // Something else is wrong (a provider, a configuration):
+                // the side's own remediation.
                 _ => return Err(advise(providers, &anchor.loc, r, e)),
             }
         } else {
             units.push(r.unit().expect("no failure means one unit"));
         }
+    }
+    if need_anchor.is_empty() {
+        if let Some((_, own, _)) = blocked.into_iter().next() {
+            return Err(own);
+        }
+    } else {
+        need_anchor.extend(blocked.into_iter().map(|(n, _, joined)| (n, joined)));
+        need_anchor.sort_by_key(|(n, _)| *n);
     }
     if let Some((_, first)) = need_anchor.first() {
         let code = first.code;
@@ -1360,7 +1411,7 @@ pub fn reanchor(
             .join("; ");
         // The caller's own arguments are repeated: the command to run next
         // is the one that was run, with an anchor for each of these sides.
-        let mut command = reanchor_again(&old.id, input);
+        let mut command = reanchor_again(&old.id, input, true);
         for (n, _) in &need_anchor {
             if *n == 0 {
                 command.push_str(" --subject <anchor>");

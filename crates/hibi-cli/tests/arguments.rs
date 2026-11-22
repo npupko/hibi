@@ -195,10 +195,26 @@ fn selector_advice_comes_from_the_provider() {
     );
     assert_eq!(
         e["remediation"],
-        // Only what works for a claim: scopes play no part in resolving
-        // one, so an exclusion is not offered here.
-        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file."
+        // Only what works for a claim, by what the units are: sentences
+        // of a markdown file have no enclosing declaration, so the whole
+        // file is the unit that contains them.
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the whole file file:docs/twins.md instead."
     );
+    // Twins inside a declaration: the enclosing declaration is named, and
+    // anchoring it works.
+    repo.write(
+        "src/t.py",
+        "class K:\n    def v(self):\n        return 1\n\n    def v(self):\n        return 1\n",
+    );
+    let e = repo.fail(&["claim", "S", "--subject", "file:src/t.py#K.v"]);
+    assert_eq!(e["code"], "side_ambiguous", "{e}");
+    assert_eq!(
+        e["remediation"],
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration file:src/t.py#K, or the whole file file:src/t.py.",
+        "{e}"
+    );
+    let v = repo.json(&["claim", "S", "--subject", "file:src/t.py#K"]);
+    assert_eq!(v["claims"][0]["created"], true);
     // The units of a code file have symbols.
     repo.write(
         "src/a.py",

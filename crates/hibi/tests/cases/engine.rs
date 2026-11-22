@@ -51,6 +51,7 @@ fn resolution(v: &Value) -> Resolved {
                 units: (0..n)
                     .map(|i| unit(&format!("u{i}"), "k", None, prose_v1(&i.to_string())))
                     .collect(),
+                loc: hibi::model::Locator::new("t:s").unwrap(),
                 anchors: Vec::new(),
                 total: usize::try_from(n).unwrap(),
                 by_fp: Default::default(),

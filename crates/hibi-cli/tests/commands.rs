@@ -2040,7 +2040,9 @@ fn r37_a_renamed_function_is_a_candidate_and_never_the_side() {
         "missing (not_exact)",
         "1 candidate; each is a guess, read it before you anchor to it:",
         "- function \"max_cache_size\", line ",
-        "anchor: file:src/a.rs#max_cache_size",
+        // The stored anchor named a line; the printed one is the name alone,
+        // and the line says so.
+        "anchor: file:src/a.rs#max_cache_size  (the name alone: the stored line quote is not carried over; add ::<line> to anchor a line again)",
     ] {
         assert!(human.stdout.contains(part), "{part}: {}", human.stdout);
     }
@@ -2167,6 +2169,18 @@ fn the_text_of_a_candidate_is_cut_to_240_characters() {
     // how long the whole text is.
     let text = s(&view["sides"][0]["candidates"][0]["text"]);
     let whole = sentence.replace("word7 ", "word-seven ");
+    // With --detail the candidate's text is whole, in JSON and in text.
+    let detailed = j(&repo, &["status", &id, "--detail"]);
+    assert_eq!(
+        detailed["claims"][0]["sides"][0]["candidates"][0]["text"],
+        whole.as_str()
+    );
+    let human = repo.human(&["--now", NOW, "status", &id, "--detail"]);
+    assert!(
+        human.stdout.contains("and it ends here."),
+        "{}",
+        human.stdout
+    );
     let marker = format!("… ({} characters)", whole.chars().count());
     assert!(text.ends_with(&marker), "{text}");
     assert_eq!(text.chars().count(), 240 + marker.chars().count());
@@ -2363,7 +2377,7 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable() {
     // command again, once.
     assert_eq!(
         s(&side["remediation"]),
-        "file:report.py does not parse as python (the first error is near line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed."
+        "file:report.py does not parse as python (the first error is near line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: give this side an anchor on another resource with hibi reanchor --evidence 1=<anchor>, or drop it with --drop-evidence 1."
     );
 
     // The stored anchor: `mark` is refused with the same remediation.
@@ -2379,7 +2393,11 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable() {
     assert_eq!(e["code"], "side_unavailable");
     assert!(s(&e["message"]).contains("resource_unavailable"), "{e}");
     assert!(s(&e["message"]).contains("line 5"), "{e}");
-    assert_eq!(e["remediation"], side["remediation"]);
+    // A new anchor has no stored side to drop: the cause and the fix only.
+    assert_eq!(
+        s(&e["remediation"]),
+        "file:report.py does not parse as python (the first error is near line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed."
+    );
     let human = repo.human(&["--now", NOW, "status"]);
     assert!(
         human
@@ -2510,11 +2528,19 @@ fn an_unreadable_git_file_list_is_resource_unavailable_without_repetition() {
         fix.starts_with(s(&side["detail"]).trim_end_matches('.')),
         "{fix}"
     );
+    // Then when to run again, once, and how to go on without the resource.
+    let (said, choice) = fix
+        .split_once(" To move on without that: ")
+        .unwrap_or_else(|| panic!("{fix}"));
     assert!(
-        fix.ends_with(". Run the command again once that is fixed."),
+        said.ends_with(". Run the command again once that is fixed."),
         "{fix}"
     );
-    assert_eq!(fix.to_lowercase().matches("again").count(), 1, "{fix}");
+    assert_eq!(said.to_lowercase().matches("again").count(), 1, "{fix}");
+    assert_eq!(
+        choice,
+        "re-point the subject to another resource with hibi reanchor --subject <anchor>, or retire the claim."
+    );
 
     std::fs::write(&index, saved).unwrap();
     assert_eq!(repo.state(&id), "fresh");
@@ -3056,6 +3082,152 @@ fn reanchor_names_every_failing_kept_side_in_one_error_and_one_command() {
     );
     assert_eq!(v["claim"]["state"], "fresh");
     assert_eq!(v["claim"]["recheck"], "P30D");
+}
+
+/// The fix line of a failing `reanchor` repeats every argument the caller
+/// gave, the note included.
+#[test]
+fn the_reanchor_fix_line_repeats_every_argument_the_caller_gave() {
+    let repo = seeded();
+    let id = repo.claim(
+        "The cache holds 64 entries.",
+        CACHE_SUBJECT,
+        &[LIMIT_EVIDENCE, "file:src/a.rs#timeout"],
+    );
+    repo.write(
+        "src/a.rs",
+        &CODE.replace("max_entries = 64", "max_entries = 128"),
+    );
+    let e = refused(
+        &repo,
+        &[
+            "reanchor",
+            &id,
+            "--statement",
+            "The cache holds entries.",
+            "--subject",
+            "file:docs/a.md::The retry count is 3.",
+            "--add-evidence",
+            "file:docs/a.md",
+            "--drop-evidence",
+            "2",
+            "--recheck",
+            "P30D",
+            "--by",
+            "nick",
+            "--note",
+            "read it again",
+        ],
+    );
+    assert_eq!(e["code"], "selector_not_exact");
+    assert_eq!(
+        s(&e["remediation"]),
+        format!(
+            "hibi reanchor {id} --statement 'The cache holds entries.' --subject 'file:docs/a.md::The retry count is 3.' --add-evidence file:docs/a.md --drop-evidence 2 --recheck P30D --by nick --note 'read it again' --evidence 1=<anchor>"
+        )
+    );
+}
+
+/// Section 15.2: `next` names every side that blocks the write. With a
+/// missing subject and an evidence file that is no longer text, the
+/// command has a placeholder for both, and the evidence side says that it
+/// can be dropped instead. Following it with the drop goes through.
+#[test]
+fn next_names_every_side_that_blocks_the_write() {
+    let repo = seeded();
+    repo.write("docs/data.md", "The table has 4 columns.\n");
+    let id = repo.claim(
+        "Retries",
+        RETRY_SUBJECT,
+        &["file:docs/data.md::The table has 4 columns."],
+    );
+    repo.write(
+        "docs/a.md",
+        &DOC.replace("The retry count is 3.", "Retries: three."),
+    );
+    std::fs::write(repo.root.join("docs/data.md"), [0xff, 0xfe, 0x00, 0x80]).unwrap();
+
+    let view = repo.view(&id);
+    assert_eq!(view["sides"][0]["state"], "missing");
+    assert_eq!(view["sides"][1]["reason"], "not_text");
+    assert_eq!(
+        s(&view["next"]),
+        format!("hibi reanchor {id} --subject <anchor> --evidence 1=<anchor>")
+    );
+    let fix = s(&view["sides"][1]["remediation"]);
+    assert!(
+        fix.ends_with("To move on without that: give this side an anchor on another resource with hibi reanchor --evidence 1=<anchor>, or drop it with --drop-evidence 1."),
+        "{fix}"
+    );
+    // `mark` names both sides.
+    let e = refused(&repo, &["mark", &id]);
+    let message = s(&e["message"]);
+    assert!(
+        message.starts_with("the subject (file:docs/a.md) "),
+        "{message}"
+    );
+    assert!(
+        message.contains("; evidence 1 (file:docs/data.md) cannot be evaluated (not_text)"),
+        "{message}"
+    );
+    // With the subject given, the evidence is the one side that still
+    // blocks: its own error says the cause and the choice.
+    let e = refused(
+        &repo,
+        &[
+            "reanchor",
+            &id,
+            "--subject",
+            "file:docs/a.md::Retries: three.",
+        ],
+    );
+    assert_eq!(e["code"], "side_unavailable");
+    assert!(
+        s(&e["message"]).starts_with("evidence 1 (file:docs/data.md) "),
+        "{e}"
+    );
+    assert_eq!(e["remediation"], view["sides"][1]["remediation"]);
+    // Keeping both sides: both are named, with one command.
+    let e = refused(&repo, &["reanchor", &id, "--note", "again"]);
+    let message = s(&e["message"]);
+    assert!(
+        message.starts_with("the subject (file:docs/a.md) "),
+        "{message}"
+    );
+    assert!(
+        message.ends_with(
+            "(give evidence 1 an anchor on another resource, or drop it with --drop-evidence 1)"
+        ),
+        "{message}"
+    );
+    assert_eq!(
+        s(&e["remediation"]),
+        format!("hibi reanchor {id} --note again --subject <anchor> --evidence 1=<anchor>")
+    );
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &[
+            "reanchor",
+            &id,
+            "--subject",
+            "file:docs/a.md::Retries: three.",
+            "--drop-evidence",
+            "1",
+        ],
+    );
+    assert_eq!(v["claim"]["state"], "fresh");
+
+    // A blocked evidence side alone has no `next`: nothing needs an anchor,
+    // and its remediation says the cause and the choice.
+    repo.write("docs/more.md", "More text here.\n");
+    let lone = repo.claim(
+        "More",
+        CACHE_SUBJECT,
+        &["file:docs/more.md::More text here."],
+    );
+    std::fs::write(repo.root.join("docs/more.md"), [0xff, 0xfe]).unwrap();
+    assert_eq!(repo.view(&lone)["next"], Value::Null);
 }
 
 /// R55: the same anchor when another line of the function is edited: the

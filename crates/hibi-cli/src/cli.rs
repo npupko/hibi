@@ -387,7 +387,9 @@ pub struct StatusArgs {
     #[arg(value_name = "claim-id")]
     pub ids: Vec<String>,
 
-    /// List only the stale claims that the changes since a commit caused.
+    /// List only the stale claims that the changes since a commit caused:
+    /// claims of that commit whose anchored text or code changed since, and
+    /// stale claims that were made after it.
     /// The range is A, A.. or A..HEAD (since commit A), or A... or A...HEAD
     /// (since the merge base of A and HEAD). The compared end is always the
     /// working tree. Cannot be combined with --state or with ids

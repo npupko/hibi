@@ -166,6 +166,12 @@ fn fixture() -> Fixture {
         vec![sym_unit("n", "sentence", "Brand new.")],
     );
 
+    // The claims of this fixture are older than the range: the base commit
+    // holds their ids.
+    let first_commit = base_commit;
+    let base_commit = commit_claim_ids(dir.path(), &store);
+    assert_ne!(base_commit, first_commit);
+    sh_git(dir.path(), &["branch", "-f", "other", "HEAD"]);
     let git = real_git();
     let since = engine::resolve_since(&git, dir.path(), "HEAD").unwrap();
     assert_eq!(since.base.as_str(), base_commit);

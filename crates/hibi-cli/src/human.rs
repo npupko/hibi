@@ -316,7 +316,18 @@ fn side_lines(out: &mut String, side: &Side, detail: bool) {
             // and is never offered for pasting.
             match &c.anchor {
                 Some(anchor) => {
-                    let _ = writeln!(out, "      anchor: {anchor}");
+                    // The stored anchor named a line of the declaration;
+                    // the anchor printed for a uniquely named declaration
+                    // is its name alone.
+                    let bare = side.anchor.sel.symbol.is_some()
+                        && side.anchor.sel.quote.is_some()
+                        && !anchor.starts_with('{');
+                    let note = if bare {
+                        "  (the name alone: the stored line quote is not carried over; add ::<line> to anchor a line again)"
+                    } else {
+                        ""
+                    };
+                    let _ = writeln!(out, "      anchor: {anchor}{note}");
                 }
                 None => {
                     let _ = writeln!(
@@ -328,9 +339,6 @@ fn side_lines(out: &mut String, side: &Side, detail: bool) {
         }
         if total > candidates.len() {
             let _ = writeln!(out, "    and {} more", total - candidates.len());
-        }
-        if candidates.iter().any(|c| c.anchor.is_none()) {
-            let _ = writeln!(out, "    {}", hibi::engine::TWINS_REMEDY);
         }
     }
     if let Some(text) = &side.text {
