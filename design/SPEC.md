@@ -665,7 +665,10 @@ A mark always covers every side. A mark whose `sides` length differs from
 A claim with at least one retirement is retired. Retirement cannot be undone.
 Because ids are derived from content, a claim with the same body as a retired
 claim is that retired claim. To record the same statement and anchors again,
-the caller gives a different `note`; that makes a different claim.
+the caller gives a different `note`; that makes a different claim. The
+`claim_retired` error says how the claim ended (section 15.2): it was
+retired by `hibi retire`, or another claim replaced it, and then the error
+points at that claim and does not offer the note.
 
 A retirement whose `replacedBy` equals its `retires` is invalid: it cannot be
 constructed and does not read.
@@ -5528,12 +5531,20 @@ Rules for the Side keys:
   set also when the side is `missing`, `ambiguous` or `unavailable`.
 - `remediation` is set for a side whose state is `unavailable`, by its
   reason, as the table below gives it. For a side whose reason is one of
-  the four that no anchor on the same resource can fix (`too_large`,
-  `not_text`, `resource_unavailable`, `provider_error`) the sentence of the
-  table is followed by the choice the caller has: for evidence `<n>`,
-  ` To move on without that: give this side an anchor on another resource with hibi reanchor --evidence <n>=<anchor>, or drop it with --drop-evidence <n>.`;
+  the three that no anchor on the same resource can fix (`too_large`,
+  `not_text`, `provider_error`) the sentence of the table is followed by
+  the commands the caller can run instead, each whole, with the full claim
+  id as `<id>`: for evidence `<n>`,
+  ` To move on without that: hibi reanchor <id> --evidence <n>=<anchor> gives this side an anchor on another resource, and hibi reanchor <id> --drop-evidence <n> drops it.`;
   for the subject,
-  ` To move on without that: re-point the subject to another resource with hibi reanchor --subject <anchor>, or retire the claim.`
+  ` To move on without that: hibi reanchor <id> --subject <anchor> re-points the subject to another resource, and hibi retire <id> retires the claim.`
+  In the error of a `reanchor` call, `hibi reanchor <id>` in these
+  sentences is followed by every argument the caller gave, as in the fix
+  line of section 15.3, so that a command taken from the sentence loses
+  none of them. `resource_unavailable` is not one of the three: it is also
+  the reason when the file list of the root cannot be read, a cause that
+  passes, where another anchor fails the same way and retiring would lose
+  the claim. Such a side has only the sentence of the table.
   It is also set for a `missing` or `ambiguous` side that lists a unit no
   anchor selects alone: the sentence for such units (section 15.3). It is
   `null` for every other side, where the claim's `next` says what to do.
@@ -5678,7 +5689,7 @@ in the run.
 | Condition | `next` |
 |---|---|
 | `fresh` or `retired` | `null` |
-| A side is `missing` or `ambiguous`, or `unavailable` with `selector_refused`, or `changed` with its unit resolved by its symbol alone because the stored quote is gone (`identity: "symbol"`, section 9.2; the side's `detail` says so) | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side, in side order. When at least one side needs an anchor in this way, the command also has a placeholder for every side that is `unavailable` with `too_large`, `not_text`, `resource_unavailable` or `provider_error`: no anchor on the same resource can fix such a side, it would stop the `reanchor` too, and its `remediation` says that it can be given an anchor on another resource or dropped (a subject: re-pointed, or the claim retired). Sides that are `unavailable` for a reason of configuration (`provider_not_registered`, `provider_failed`, `repo_not_allowed`, `scheme_not_declared`, `repo_not_found`) are not added |
+| A side is `missing` or `ambiguous`, or `unavailable` with `selector_refused`, or `changed` with its unit resolved by its symbol alone because the stored quote is gone (`identity: "symbol"`, section 9.2; the side's `detail` says so) | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side, in side order. When at least one side needs an anchor in this way, the command also has a placeholder for every side that is `unavailable` with `too_large`, `not_text` or `provider_error`: no anchor on the same resource can fix such a side, it would stop the `reanchor` too, and its `remediation` says that it can be given an anchor on another resource or dropped (a subject: re-pointed, or the claim retired). Sides that are `unavailable` for a reason of configuration (`provider_not_registered`, `provider_failed`, `repo_not_allowed`, `scheme_not_declared`, `repo_not_found`), and sides with `resource_unavailable`, are not added |
 | A side is `unavailable` with `provider_not_registered` or `repo_not_allowed` | `hibi providers` |
 | A side is `unavailable` with `provider_failed` | `hibi providers --check <scheme>` for the first such side, or `hibi providers` for a built-in scheme |
 | A side is `unavailable` with `scheme_not_declared`, `repo_not_found`, `not_text`, `too_large`, `provider_error` or `resource_unavailable`, and no side needs an anchor | `null` |
@@ -5731,9 +5742,14 @@ over: the state the claim had before the write and the sides that were not
 | `sides` | array of AcceptedSide, ordered by `index` |
 
 AcceptedSide, one entry for each side whose state before the write was not
-`same`. A side that was `changed` also has `text`: the unit's text as the
-write marked it, whole and not cut: it is what the caller accepted, so none
-of it is left out. Other sides have no `text` key.
+`same`. `text` is the text of the unit the write marked for the side, whole
+and not cut: it is what the caller accepted, so none of it is left out. In
+`claim` and `mark` a side that was `changed` has it, and other sides have
+no `text` key. In `reanchor` every listed side that the new claim still has
+carries the text of the unit the new claim has for it: the unit of the new
+anchor for a replaced side, whatever state the old side was in, and the
+same unit for a kept side. A side that was dropped has no `text` key. The
+text of a unit that the new claim no longer points at is never given.
 
 | Key | Type |
 |---|---|
@@ -5759,7 +5775,7 @@ Where `accepted` appears:
 |---|---|---|
 | `claim` | `accepted` in each entry of `claims` | `null` when the claim was not in the store before the run, which includes every element that creates a claim and a later element of the same batch that builds that claim again. Otherwise Accepted for the claim that is marked: the claim with the built id, or the existing claim of section 9.5. |
 | `mark` | `accepted` in each entry of `marks` | Accepted for the claim. Never `null`. |
-| `reanchor` | `accepted` at the top level | Accepted for the old claim, evaluated with the stored anchors of the old claim; `index` counts the sides of the old claim. Never `null`. A kept side that changed is listed here, because the write marks it. |
+| `reanchor` | `accepted` at the top level | Accepted for the old claim, evaluated with the stored anchors of the old claim; `index` counts the sides of the old claim. Never `null`. A kept side that changed is listed here, because the write marks it. `text` is that of the unit the new claim has for the side (above). |
 
 Example, a claim whose first evidence side changed since its last mark:
 
@@ -5820,15 +5836,25 @@ The error object is the one of section 15.1; these rules fix its
   anchor selects alone is written
   `<unit>: identical to another one, no anchor selects it alone`,
   and a list that holds one ends with
-  `. Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration <loc>#<name>, or the whole file <loc>.`
-  when the units have an enclosing declaration, and otherwise by
-  `. Units that are identical where they stand cannot be anchored one by one. Anchor the whole file <loc> instead.`
-  The units have an enclosing declaration `<name>` when each of them has a
-  symbol of the form `<name>.<member>` with the same `<name>`, or is a unit
-  of code without a symbol whose printed selector has the one-element
-  `within` `[<name>]`. Units of markdown, prose and text have none, and a
-  symbol there is `invalid_anchor`, so only the whole file is named. For a
-  scheme other than `file` and `repo` the sentence says `the whole resource`.
+  `. Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration <anchor> or the whole file <loc>`
+  when one declaration holds them, and otherwise by
+  `. Units that are identical where they stand cannot be anchored one by one. Anchor the whole file instead: <loc>`
+  Nothing follows a locator or an anchor in the sentence, not even a full
+  stop, so that each can be copied as it stands. A declaration is named
+  only when it is there to anchor: every listed unit that no anchor selects
+  alone has the same `parent` (section 6.2), that parent is a unit of the
+  resource with a symbol and is not the `file` unit, and its printed
+  selector selects it alone; `<anchor>` is its printed anchor, `<loc>#<symbol>`
+  or JSON as for a candidate. hibi reads this from the provider's unit list
+  of the resource, with one `units` call, and never from the text of a
+  symbol: the methods `Id.fmt` of two Rust `impl` blocks have two parents,
+  and `#Id` is the struct, which holds neither; two methods of one Go type
+  have no parent but the file; the two parts of a merged TypeScript
+  interface are themselves units no anchor selects alone. In all three only
+  the whole file is named. Units of markdown, prose and text have the
+  `file` unit as their parent, so only the whole file is named there too.
+  For a scheme other than `file` and `repo` the sentence says
+  `the whole resource`.
   The sentence names only what works for a claim. An exclusion in a scope
   is not offered here: scopes play no part in resolving a claim, so the
   side would stay ambiguous. (`cover` has its own hint, section 15.3.)
@@ -5939,19 +5965,18 @@ The error object is the one of section 15.1; these rules fix its
   cause or the limit and what the caller can do:
   - `too_large`: "The resource is over a size limit: 8 MiB for markdown,
     prose and text, 2 MiB for a code file, or 100,000 units in one resource.
-    Anchor a smaller file; for a claim that exists, retire it; in a scope,
-    add an exclusion for the resource."
+    Anchor a smaller file; in a scope, add an exclusion for the resource."
   - `not_text`: "The resource is not UTF-8 text, so it has no units. Anchor a
-    text file; for a claim that exists, retire it; in a scope, add an
-    exclusion for the resource."
+    text file; in a scope, add an exclusion for the resource."
   - `provider_error`: "The provider gave an answer hibi cannot use. Run hibi
-    providers --check <scheme> to see what it gets wrong; for a claim that
-    exists, retire it if the resource is gone for good.", with the scheme
+    providers --check <scheme> to see what it gets wrong.", with the scheme
     of the side's locator in place of `<scheme>`. For the built-in schemes
     `file` and `repo`, which `providers --check` does not take, it is
     "hibi's own provider for this scheme gave an answer hibi cannot use;
-    that is a fault in hibi. For a claim that exists, retire it if the
-    resource is gone for good."
+    that is a fault in hibi."
+  For a stored side these three sentences are followed by the commands of
+  the Side's `remediation` (above), which say how to retire the claim or
+  drop the side once; a new anchor has no claim to retire.
   In human `status` output the sentence is printed under such a side.
 - `mark`. When a side of a claim does not resolve exactly to one unit, the
   error code comes from the first such side in index order (`side_missing`,
@@ -5972,19 +5997,35 @@ The error object is the one of section 15.1; these rules fix its
   the full id of the old claim: it names the one side the error is about,
   and `<anchor>` is written literally. A kept side that is `unavailable`
   fails with `side_unavailable` and the remediation above.
-- `claim_retired` from `mark`, and from `reanchor` when the old claim is
-  retired. No command makes a retired claim writable, so the `remediation`
-  points at where to look instead:
-  - when a retirement of the claim has `replacedBy`:
-    `The claim was replaced by <new>: run hibi status <new>`, where `<new>`
-    is the full id in `replacedBy`. When several retirements of the claim
-    have one, the first of them in the order the store gives its
-    retirements is used.
-  - otherwise: `hibi list <id>`, with the full id of the retired claim,
-    which shows its record and history.
-
-  (`claim_retired` from `claim`, and from `reanchor` step 5, keeps the
-  remediation of sections 3.4 and 15.3.)
+- `claim_retired`. The message says how the claim ended: `was retired`
+  when no retirement of the claim has `replacedBy`, and
+  `was replaced by <new>` when one has, where `<new>` is the full id in
+  `replacedBy`. When several retirements of the claim have one, the first
+  of them in the order the store gives its retirements is used.
+  - From `mark`, and from `reanchor` when the old claim is retired, the
+    message is `the claim <id> was retired and cannot be marked` or
+    `the claim <id> was replaced by <new> and cannot be marked`
+    (`re-anchored` in `reanchor`). No command makes a retired claim
+    writable, so the `remediation` points at where to look instead:
+    `The claim was replaced by <new>: run hibi status <new>` for a replaced
+    claim, and otherwise `hibi list <id>`, with the full id of the retired
+    claim, which shows its record and history.
+  - From `claim`, the message is
+    `the claim <id>, with this statement, this note and its sides on the same units, was retired`
+    or the same with `was replaced by <new>`. A retired claim was a
+    decision, and the remediation says so and how to record the claim
+    again:
+    `The claim was retired, and that stands. A different --note records the statement and anchors again as a new claim.`
+    For an element of a standard-input batch it is
+    `The claim was retired, and that stands. A different "note" in the element records the statement and anchors again as a new claim.`
+    A replaced claim has a claim that stands for it: the remediation is
+    `The claim was replaced by <new>: run hibi status <new>`, and the note
+    is not offered.
+  - From `reanchor` step 5 the message is
+    `re-anchoring <old> would produce the claim <id>, which was retired`
+    or `..., which was replaced by <new>`, and the remediation is the
+    command of that step in both cases: the claim that replaced `<id>` is
+    often the one being re-anchored, so there is nowhere else to point.
 - `usage` found after the arguments were parsed, for example an evidence
   number that does not exist in `reanchor`: the `remediation` is
   `hibi <command> --help` with the name of the command that was run, for
@@ -6147,7 +6188,7 @@ For each element, in order:
    `invalid_duration`. Then find the target of the mark by the same-claim
    rule below. If the built claim's id is that of a retired claim and the
    rule finds no live claim: `claim_retired`, with the
-   remediation of section 3.4.
+   message and remediation of section 15.2.
 4. Build a mark for the target claim with `at = now`, the resolved
    fingerprints, `by`, and `note: null`.
 
@@ -6314,7 +6355,10 @@ Human: one line per claim:
   `    <role> is now:` followed by one `    | <line>` for each line of the
   text: the label of a unit can be the same before and after a change, so
   the caller is shown what it accepted. `mark` and `reanchor` print the
-  same lines. In `status`, a `changed` side is followed by its `text` in
+  same lines. In `reanchor` the text is that of the unit the new claim has
+  for the side (section 15.2): after a side was replaced, the lines show
+  the unit of the new anchor, also when the old side was missing, and a
+  dropped side has no such lines. In `status`, a `changed` side is followed by its `text` in
   the same `|` form.
 - No `next` line follows: the `next` of the ClaimView
   is always `null` in the output of `claim`, `mark` and `reanchor`
@@ -6379,7 +6423,6 @@ since <range> (base <commit>)
     - <kind> "<label>", line <n>
       cannot be told apart from another unit: no anchor selects it alone
     and <n> more
-    Units that are identical where they stand cannot be anchored one by one. Anchor the whole file <loc> instead.
     | <one line of the unit text>
   next: <next>
 
@@ -6420,7 +6463,10 @@ Re-check each statement before running its next command. If it no longer holds, 
   which line is no longer there.
 - A side's `remediation` is printed under it, except for the reasons
   `provider_not_registered`, `provider_failed` and `repo_not_allowed`,
-  where the claim's `next` is that same command.
+  where the claim's `next` is that same command. The sentence for units
+  that no anchor selects alone is such a remediation: it is printed there,
+  after `<detail>` and before the `stored:` line and the candidates, and
+  not after them.
 - In the output of `claim`, `mark` and `reanchor` the `text` of an accepted
   side is printed whole under `<role> is now:`.
 - The candidate lines are printed for a side that has `candidates`. The
@@ -6435,10 +6481,14 @@ Re-check each statement before running its next command. If it no longer holds, 
   is inside double quotes; only `"` (as `\"`) and control characters are
   escaped. The `|` line is the candidate's `text` put on one line and cut
   to 100 characters, and is omitted when `text` is `null`. When that line
-  would be equal for two candidates of the side whose texts differ, it is
-  instead `line <k> of the unit: <that line>` for the first line on which
-  the text differs from the other candidate's, or
-  its place, `lines <a>-<b> of the resource`, when it has no such line.
+  would be equal for two candidates of the side, it is instead
+  `line <k> of the unit: <that line>` for the first line of the candidate
+  that differs from line `<k>` of every such other candidate. A candidate
+  that has no such line, because its text equals another's or each of its
+  lines is shared with one of them, gives its place instead:
+  `line <n> of the resource`, or `lines <a>-<b> of the resource` for a unit
+  of several lines. So no two candidates of a side print the same line,
+  also when their texts are identical.
   With `--detail` the candidate's `text` is whole in JSON as well, and the
   whole text is printed, one `|` line per line of it. The `anchor:` line is the candidate's
   `anchor`, complete. `and <n> more` is printed when `candidatesTotal` is
@@ -6479,7 +6529,8 @@ option per missing or ambiguous side, or `hibi providers`, or, when that
 For a `not_exact` side the message lists the candidates with their anchors
 and the remediation is the `hibi reanchor` template with `<anchor>`
 (section 15.2). For `claim_retired`, in `mark` and for a
-retired old claim in `reanchor`, it points to where the claim went: a
+retired old claim in `reanchor`, the message says whether the claim was
+retired or replaced, and the remediation points to where it went: a
 retired claim cannot be marked or re-anchored. When a retirement of the
 claim has a `replacedBy`, the remediation is
 `The claim was replaced by <new id>: run hibi status <new id>`, with the
@@ -6539,7 +6590,8 @@ Builds a new claim from the old one:
 5. If the new claim id equals the old one: `no_change`, with the remediation
    `The stored anchors are up to date. To record a new check, run hibi mark <id>`.
    If it equals the id
-   of any retired claim: `claim_retired`, nothing is written, and the
+   of any retired claim: `claim_retired`, nothing is written, the message
+   says whether that claim was retired or replaced (section 15.2), and the
    remediation is the command `hibi reanchor <id> --note <text>` with the
    caller's other arguments repeated. (Without
    this rule, re-anchoring back to an earlier form would mark a retired claim
@@ -6570,17 +6622,23 @@ Builds a new claim from the old one:
    caller gave repeated (`--statement`, `--subject`, `--evidence`,
    `--add-evidence`, `--drop-evidence`, `--recheck`, `--by` and `--note`),
    followed by `--subject <anchor>` or `--evidence <n>=<anchor>` for each
-   of those sides, `<n>` being the number in the old claim's list. A kept
-   side that is `unavailable` with `too_large`, `not_text`,
-   `resource_unavailable` or `provider_error` is named in the same error
+   of those sides, `<n>` being the number in the old claim's list. An
+   argument is written as `<flag> <value>` with the value quoted for a
+   POSIX shell, and as `<flag>=<value>` when the value starts with `-`:
+   after a space such a value would be read as another option
+   (`--statement='-1 means no limit.'`). A kept
+   side that is `unavailable` with `too_large`, `not_text` or
+   `provider_error` is named in the same error
    when another kept side needs an anchor: its message ends with
-   ` (give evidence <n> an anchor on another resource, or drop it with --drop-evidence <n>)`
+   ` (in the fix command, give evidence <n> an anchor on another resource, or put --drop-evidence <n> in its place)`
    or, for the subject,
-   ` (re-point the subject to another resource, or retire the claim)`, and
+   ` (in the fix command, give the subject an anchor on another resource, or run hibi retire <id> instead)`, and
    it gets a placeholder in the command. When such a side is the only kept
    side that fails, the error is its own `side_unavailable`, whose
-   remediation is the side's (section 15.2). A kept side that is
-   `unavailable` for another reason fails alone with its own remediation.
+   remediation is the side's (section 15.2), with the caller's arguments
+   in its commands. A kept side that is `unavailable` for another reason,
+   `resource_unavailable` included, fails alone with its own remediation
+   and gets no placeholder.
    `mark`, and `claim` on a claim that exists, likewise name every side
    that stops them: the messages of the failing sides are joined with `; `,
    and the code is that of the first.
@@ -6919,7 +6977,7 @@ Closed list. Every error carries one of these codes.
 | `git_too_old` | The installed git is older than `MIN_GIT` (section 10.4) |
 | `claim_not_found` | Section 3.6 |
 | `ambiguous_id` | Section 3.6 |
-| `claim_retired` | A write on a retired claim. From `mark`, and from `reanchor` on a retired old claim, the remediation names the claim that replaced it, or is `hibi list <id>` (section 15.3). From `claim` the remediation says to give a different `--note`; for an element of a standard-input batch it is `To record the same statement and anchors again, give the element a different "note".` |
+| `claim_retired` | A write on a retired claim. The message says whether the claim was retired or replaced by another (section 15.2). From `mark`, and from `reanchor` on a retired old claim, the remediation names the claim that replaced it, or is `hibi list <id>`. From `claim` the remediation names the replacement when there is one; for a claim that was retired it says that this stands and that a different `--note` (in a standard-input batch, a different `"note"` in the element) records the statement and anchors again as a new claim. |
 | `no_change` | `reanchor` would produce the same claim |
 | `unknown_scheme` | A new anchor uses a scheme that is not declared |
 | `side_missing` | An anchor resolves to no unit. This includes a stored anchor (in `mark`, or a kept side in `reanchor`) that was found only by similarity: the reason is then `not_exact` and the message lists the candidates (section 15.2). |
@@ -7482,7 +7540,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 147 | A printed remedy must work when it is followed. At claim time the twin remedy names only the containing unit; `cover` names only the exclusion, one per unit. `reanchor` names every failing kept side in one error and repeats the caller's arguments. A failed provider points at its check, a refused stored key at a new anchor. The judge, store and indistinguishable-quote remedies say what is true for the command and the provider. An accepted side's text is whole. | Remedies that looped, dropped arguments or led nowhere were followed literally by the reader they are written for. |
 | 148 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
 | 149 | Rulings on section 6.7 (round 5): for a stored selector a hit inside a comment is not a hit in P either; the line of the first parse error is where parsing failed, not the start of the error node that holds it; a refresh keeps the stored `within` and `count`; a printed anchor of a unit in a multi-unit piece below a heading is also tried with its section alone; the unit cache key adds `UNIT_RULES_REVISION` to the hibi version; the count of containers a `within` names is two lookups. | A quote commented out stayed `changed` and could be marked; error lines pointed at line 1; a refresh could widen a side's scope; a unit selectable by its section was marked; two builds of one version shared rows and printed old anchors; counting by listing made `cover` quadratic on near-identical units. |
-| 150 | `status --since` also lists a stale claim made in the range. `next` and the `reanchor` error name every side that blocks the write; the four reasons no anchor on the resource can fix are `too_large`, `not_text`, `resource_unavailable` and `provider_error`. The twin sentence names an enclosing declaration only when there is one. The `reanchor` fix line keeps `--note`. | The check an agent runs before finishing must show what its own branch broke, and a printed command must be able to succeed. |
+| 150 | `status --since` also lists a stale claim made in the range. `next` and the `reanchor` error name every side that blocks the write; the three reasons no anchor on the resource can fix are `too_large`, `not_text` and `provider_error` (`resource_unavailable` is not one: it is also a file list that cannot be read now, where another anchor fails the same way and retiring loses a claim). The commands offered for such a side are whole, with the claim id and, in a `reanchor` error, the caller's arguments. The twin sentence names an enclosing declaration only when one unit of the resource holds every twin and selects alone, read from the unit list and not from a symbol's text, and nothing follows a locator in it. The `reanchor` fix line keeps `--note` and writes a value that starts with `-` as `--flag=value`. After `reanchor` the accepted text of a side is the unit the new claim has. `claim_retired` says whether the claim was retired or replaced. | The check an agent runs before finishing must show what its own branch broke, and a printed command must be able to succeed. |
 | 151 | Rulings on section 6.7 (round 6): in a resource with a parse tree the in-unit windows read every comment as one space; heading keys keep a run of `_` between two letters or digits (CommonMark: intraword `_` is not emphasis) and drop markup inside a link's text too; the parse-error message says "near line" (since decision 152, "the parser reports its first error at line"); `cover` reading the file once per listed item is a stated limit. | A comment edit next to a quote turned the side into a candidate although comments never make a side stale; `max_retries` and `maxretries` were one section; the parser's error line can be away from the mistake for unclosed strings and comments. |
 | 152 | The parse-error message says "the parser reports its first error at line <n>", which is true by construction; the spec says the mistake can be before or after that line and by many lines. `UNIT_RULES_REVISION` is 2, for the rules of decision 151, and a test pins it with a digest of the cache rows of a few texts, so a rules change without a new revision fails. | "near line" was false in 15 of 47 measured shapes; revision 1 was kept after decision 151 changed keys and printed anchors, so a newer binary read rows an older one wrote and printed anchors that did not select. |
 
@@ -8502,20 +8560,30 @@ Each of these has a test, named in parentheses.
   (`printed_anchors_of_near_identical_units_cost_linear_work`.)
 - R161. `next` names every side that blocks the write: a placeholder for
   each side that needs an anchor and, with them, for each side that is
-  `unavailable` with `too_large`, `not_text`, `resource_unavailable` or
-  `provider_error`, whose remediation states the choice to drop it or give
-  it an anchor on another resource; such a side alone keeps `next` `null`.
-  `mark` and `reanchor` name every failing side in one error. The
-  `reanchor` fix line repeats every argument, `--note` included. The twin
-  sentence names the enclosing declaration only where the units have one.
-  With no HTTP answer and `HIBI_JEV_URL` set, `judge_failed` names it. A
-  bare `#name` candidate for a stored `#name::<line>` says that the line is
-  not carried over, and `--detail` gives a candidate's whole text.
+  `unavailable` with `too_large`, `not_text` or `provider_error`, whose
+  remediation gives the whole commands that drop it or give it an anchor on
+  another resource; such a side alone keeps `next` `null`, and a
+  `resource_unavailable` side gets neither. `mark` and `reanchor` name
+  every failing side in one error. The `reanchor` fix line repeats every
+  argument, `--note` included, and joins a value that starts with `-` to
+  its flag with `=`. The twin sentence names an enclosing declaration only
+  when one unit holds every twin and selects alone. After `reanchor` the
+  accepted text of a side is the unit the new claim has for it.
+  `claim_retired` says whether the claim was retired or replaced, and
+  offers another note only for a retired one. With no HTTP answer and
+  `HIBI_JEV_URL` set, `judge_failed` names it. A bare `#name` candidate for
+  a stored `#name::<line>` says that the line is not carried over, and
+  `--detail` gives a candidate's whole text.
   (`next_names_every_side_that_blocks_the_write`,
   `the_reanchor_fix_line_repeats_every_argument_the_caller_gave`,
+  `a_fix_line_keeps_a_value_that_starts_with_a_dash`,
   `reanchor_names_every_failing_kept_side_in_one_error_and_one_command`,
+  `the_twin_sentence_names_a_declaration_only_when_one_holds_the_twins`,
   `selector_advice_comes_from_the_provider`,
   `identical_twins_are_listed_without_an_anchor`,
+  `reanchor_shows_the_text_of_the_unit_the_new_claim_has`,
+  `claim_retired_says_whether_the_claim_was_retired_or_replaced`,
+  `an_unreadable_git_file_list_is_resource_unavailable_without_repetition`,
   `remediation_connection_errors_and_timeouts_say_run_again_later`,
   `r37_a_renamed_function_is_a_candidate_and_never_the_side`,
   `the_text_of_a_candidate_is_cut_to_240_characters`,
