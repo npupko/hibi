@@ -632,7 +632,7 @@ impl Doc {
         }
         let line = code::first_error_line(&self.text, self.class);
         let at = line.map_or(String::new(), |l| {
-            format!(" (the first error is near line {l})")
+            format!(" (the parser reports its first error at line {l})")
         });
         Err(ProviderError::new(
             ProviderErrorCode::Unavailable,
@@ -2592,6 +2592,68 @@ mod tests {
             ProviderErrorCode::TooLarge
         );
         assert_eq!(MAX_UNITS_PER_RESOURCE, 100_000);
+    }
+
+    /// The unit rules revision (section 11.3) is pinned together with a
+    /// digest of the cache rows of a small set of texts: their units, keys,
+    /// fingerprints and printed anchors. A change to any of those rules
+    /// changes the digest, and this test then fails until
+    /// `UNIT_RULES_REVISION` is bumped and both values below are updated,
+    /// so that no build reads rows written under the old rules. The digest
+    /// is taken from the output by design: it detects change, it is not an
+    /// expected value.
+    #[cfg(feature = "cache")]
+    #[test]
+    fn the_unit_rules_revision_is_bumped_when_the_unit_rules_change() {
+        let texts: [(&str, Class); 9] = [
+            (
+                "# Doc\n\n## `max_retries`\n\nThe default is 3. It is read once.\n\n## **Limits**\n\n- One step. Then two.\n- One step. Then three.\n\n| key | value |\n| --- | --- |\n| port | 80 |\n\nSame first sentence. A.\n\nSame first sentence. B.\n",
+                Class::Markdown,
+            ),
+            (
+                "A plain paragraph. And another one.\n\nSecond paragraph.\n",
+                Class::Prose,
+            ),
+            ("alpha = 1\nbeta = 2\n\ngamma = 3\n", Class::Text),
+            (
+                "def run():\n    limit = 10  # cap\n    return limit\n\n\ndef run():\n    limit = 30\n    return limit\n\n\nclass C:\n    x = 1\n",
+                Class::Python,
+            ),
+            (
+                "function parse(s: string): number;\nfunction parse(s: any): number {\n  return Number(s); // note\n}\nexport class A { f(): number { return 1; } }\n",
+                Class::Typescript,
+            ),
+            (
+                "export function V() {\n  return <p>{1}</p>;\n}\n",
+                Class::Tsx,
+            ),
+            (
+                "/// Doc.\npub fn retry(n: u32) -> u32 {\n    let limit = 5; // cap here\n    n.min(limit)\n}\n\npub struct S { pub a: u8 }\n",
+                Class::Rust,
+            ),
+            (
+                "package p\n\n// F does it.\nfunc F() int {\n\treturn 1\n}\n",
+                Class::Go,
+            ),
+            (
+                "class A {\n  int run() {\n    // cap\n    return 10;\n  }\n}\n",
+                Class::Java,
+            ),
+        ];
+        let mut rows = String::new();
+        for (text, class) in texts {
+            rows.push_str(&Doc::build(text.to_owned(), class).unwrap().to_cache());
+            rows.push('\n');
+        }
+        let digest = blake3::hash(rows.as_bytes()).to_hex().to_string();
+        assert_eq!(
+            (crate::cache::UNIT_RULES_REVISION, digest.as_str()),
+            (
+                "2",
+                "ca46395594969d6adec2321e1cb5eddcba9de0b58089490dfc1031ce7a1228c6"
+            ),
+            "the unit rules changed: bump UNIT_RULES_REVISION in cache.rs and pin the new revision and digest here"
+        );
     }
 
     /// Limit 11: every condition of `from_cache` makes a row a miss.

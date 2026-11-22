@@ -2377,7 +2377,7 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable() {
     // command again, once.
     assert_eq!(
         s(&side["remediation"]),
-        "file:report.py does not parse as python (the first error is near line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: give this side an anchor on another resource with hibi reanchor --evidence 1=<anchor>, or drop it with --drop-evidence 1."
+        "file:report.py does not parse as python (the parser reports its first error at line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: give this side an anchor on another resource with hibi reanchor --evidence 1=<anchor>, or drop it with --drop-evidence 1."
     );
 
     // The stored anchor: `mark` is refused with the same remediation.
@@ -2396,7 +2396,7 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable() {
     // A new anchor has no stored side to drop: the cause and the fix only.
     assert_eq!(
         s(&e["remediation"]),
-        "file:report.py does not parse as python (the first error is near line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed."
+        "file:report.py does not parse as python (the parser reports its first error at line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed."
     );
     let human = repo.human(&["--now", NOW, "status"]);
     assert!(

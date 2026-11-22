@@ -45,14 +45,21 @@ pub const SCHEMA_VERSION: i64 = 1;
 /// The unit rules revision as a literal, for [`ENGINE`].
 macro_rules! unit_rules_revision {
     () => {
-        "1"
+        "2"
     };
 }
 
 /// The revision of the unit rules (section 11.3): how units are cut, keyed
 /// and fingerprinted, and how their printed anchors are chosen. Bump it in
 /// any change to those rules, so that a build with the same version number
-/// never reads a row that an older build wrote.
+/// never reads a row that an older build wrote. The test
+/// `the_unit_rules_revision_is_bumped_when_the_unit_rules_change` (in
+/// `provider/file/doc.rs`) pins this value with a digest of the cache rows of
+/// a few texts, and fails when the rules change and this does not.
+///
+/// Revisions: 1, `within` with `count`, checked printed anchors and the
+/// rules of decisions 148 and 149; 2, code windows read comments as one
+/// space and heading keys keep intraword underscores (decision 151).
 pub const UNIT_RULES_REVISION: &str = unit_rules_revision!();
 
 /// The engine string of the running hibi (section 11.3): its version and

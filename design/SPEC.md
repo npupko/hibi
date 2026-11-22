@@ -1543,19 +1543,21 @@ is reported:
 5. The file is not valid UTF-8: `not_text`.
 6. The resource is of a code class and does not parse (section 6.1):
    `unavailable`, for every selector. The message is
-   `<loc> does not parse as <class> (the first error is near line <n>), so its units cannot be read; fix the syntax error`.
-   `<n>` is the 1-based line where the parser first reported an error:
+   `<loc> does not parse as <class> (the parser reports its first error at line <n>), so its units cannot be read; fix the syntax error`.
+   `<n>` is the 1-based line where the parser reports its first error:
    going down the parse tree in source order to the first error node or
    missing node, a missing node's line, or, inside an error node, the line
    of its first token that is not part of a construct it holds (an error
    node can start lines earlier, at the first construct it swallowed); an
-   error node without such a token gives its own line. That line is near
-   the mistake but can be away from it, which is why the message says
-   "near": for an unclosed string in Java the parser reports the line of
-   the class around it, and for an unclosed block comment in Rust the line
-   where the comment would have to close, the end of the file. When the
-   tree has no error node or missing node the part in parentheses, with the
-   space before it, is left out.
+   error node without such a token gives its own line. The message states
+   only that: the mistake itself can be before or after that line, and by
+   many lines. For example, for an unclosed string in Java the parser
+   reports the line of the class around it; for an unclosed block comment
+   in Rust it reports the end of the file when the comment is at the top
+   level, and the first line of the item when the comment is inside an
+   item; a deleted `}` in TypeScript, Go or Java can be reported four or
+   five lines away. When the tree has no error node or missing node the
+   part in parentheses, with the space before it, is left out.
 7. The selector has a `key`: `invalid_selector`.
 8. The selector is not valid by section 5.2 in any other way, for example
    `prefix` without `quote`, `count` without `symbol` or `within`, or a quote longer than
@@ -3676,7 +3678,7 @@ Two hibi processes opening a missing cache at once MUST both succeed.
 CREATE TABLE units (
   blob    TEXT NOT NULL,   -- hex SHA-1 of "blob <byte length>\0" + file bytes (the git blob id)
   class   TEXT NOT NULL,   -- resource class, section 6.1
-  engine  TEXT NOT NULL,   -- engine string, e.g. "5.0.0+units.1"
+  engine  TEXT NOT NULL,   -- engine string, e.g. "5.0.0+units.2"
   units   TEXT NOT NULL,   -- JSON array of Unit without `text`, or the text not_text
   PRIMARY KEY (blob, class, engine)
 ) WITHOUT ROWID;
@@ -3700,7 +3702,12 @@ revision, written `<version>+units.<revision>`. `UNIT_RULES_REVISION` is
 bumped in any change to how units are cut, keyed or fingerprinted, or to how
 their printed anchors are chosen, so that two builds with one version number
 never share a row; every hibi release and every revision starts with empty
-rows. (`a_row_of_another_unit_rules_revision_is_a_miss`.) The blob id is computed from the bytes as read from
+rows. The revision is 2 (decision 152). A test pins it together with a
+digest of the cache rows of a few texts in every class: a change to the
+unit rules changes the digest, and the test fails until the revision is
+bumped and both pinned values are updated.
+(`a_row_of_another_unit_rules_revision_is_a_miss`,
+`the_unit_rules_revision_is_bumped_when_the_unit_rules_change`.) The blob id is computed from the bytes as read from
 disk or from git, before CRLF replacement.
 
 The value of the `units` column is one of two forms:
@@ -7476,7 +7483,8 @@ Each row is a choice the plan left open or marked illustrative.
 | 148 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
 | 149 | Rulings on section 6.7 (round 5): for a stored selector a hit inside a comment is not a hit in P either; the line of the first parse error is where parsing failed, not the start of the error node that holds it; a refresh keeps the stored `within` and `count`; a printed anchor of a unit in a multi-unit piece below a heading is also tried with its section alone; the unit cache key adds `UNIT_RULES_REVISION` to the hibi version; the count of containers a `within` names is two lookups. | A quote commented out stayed `changed` and could be marked; error lines pointed at line 1; a refresh could widen a side's scope; a unit selectable by its section was marked; two builds of one version shared rows and printed old anchors; counting by listing made `cover` quadratic on near-identical units. |
 | 150 | `status --since` also lists a stale claim made in the range. `next` and the `reanchor` error name every side that blocks the write; the four reasons no anchor on the resource can fix are `too_large`, `not_text`, `resource_unavailable` and `provider_error`. The twin sentence names an enclosing declaration only when there is one. The `reanchor` fix line keeps `--note`. | The check an agent runs before finishing must show what its own branch broke, and a printed command must be able to succeed. |
-| 151 | Rulings on section 6.7 (round 6): in a resource with a parse tree the in-unit windows read every comment as one space; heading keys keep a run of `_` between two letters or digits (CommonMark: intraword `_` is not emphasis) and drop markup inside a link's text too; the parse-error message says "near line"; `cover` reading the file once per listed item is a stated limit. | A comment edit next to a quote turned the side into a candidate although comments never make a side stale; `max_retries` and `maxretries` were one section; the parser's error line can be away from the mistake for unclosed strings and comments. |
+| 151 | Rulings on section 6.7 (round 6): in a resource with a parse tree the in-unit windows read every comment as one space; heading keys keep a run of `_` between two letters or digits (CommonMark: intraword `_` is not emphasis) and drop markup inside a link's text too; the parse-error message says "near line" (since decision 152, "the parser reports its first error at line"); `cover` reading the file once per listed item is a stated limit. | A comment edit next to a quote turned the side into a candidate although comments never make a side stale; `max_retries` and `maxretries` were one section; the parser's error line can be away from the mistake for unclosed strings and comments. |
+| 152 | The parse-error message says "the parser reports its first error at line <n>", which is true by construction; the spec says the mistake can be before or after that line and by many lines. `UNIT_RULES_REVISION` is 2, for the rules of decision 151, and a test pins it with a digest of the cache rows of a few texts, so a rules change without a new revision fails. | "near line" was false in 15 of 47 measured shapes; revision 1 was kept after decision 151 changed keys and printed anchors, so a newer binary read rows an older one wrote and printed anchors that did not select. |
 
 ---
 
@@ -8485,7 +8493,9 @@ Each of these has a test, named in parentheses.
   (`cases/resolve.json`: "markdown: a refresh keeps the stored within: ...",
   "markdown: a sentence whose piece name reads as a subsection: ...".)
 - R159. A unit cache row written under another unit rules revision is a
-  miss. (`a_row_of_another_unit_rules_revision_is_a_miss`.)
+  miss, and a change to the unit rules without a new revision fails a test.
+  (`a_row_of_another_unit_rules_revision_is_a_miss`,
+  `the_unit_rules_revision_is_bumped_when_the_unit_rules_change`.)
 - R160. Printed anchors of near-identical units cost linear work: pieces
   with one name, sections with one path, identical paragraphs, same-named
   and same-bodied functions, top-level statements.

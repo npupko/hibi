@@ -10,7 +10,7 @@ exit status: 0
 c1-grbrgqr9cw0g47arm9tx  stale  The threshold is 50.
   marked 2026-11-20T12:00:00Z (m1-fche2xvrp22ac1qvynp3)
   evidence 1  file:src/report.py  unavailable (resource_unavailable)
-    file:src/report.py does not parse as python (the first error is near line 1), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: give this side an anchor on another resource with hibi reanchor --evidence 1=<anchor>, or drop it with --drop-evidence 1.
+    file:src/report.py does not parse as python (the parser reports its first error at line 1), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: give this side an anchor on another resource with hibi reanchor --evidence 1=<anchor>, or drop it with --drop-evidence 1.
 
 c1-rd7108gmy3g6n4kr30mk  stale  The retry count is 3.
   marked 2026-11-20T12:00:00Z (m1-4ga5k9vwzprxzfwk7m3b)
