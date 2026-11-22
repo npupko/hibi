@@ -131,8 +131,8 @@ fn side_name(index: usize) -> String {
 /// `side_missing`, `side_ambiguous` or `side_unavailable` for a side that
 /// did not resolve to one unit. `unknown_scheme` and `unsupported_selector`
 /// are reported instead for a new anchor.
-fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> Option<Error> {
-    unresolved_error_with(index, anchor, r, new, None)
+fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved) -> Option<Error> {
+    unresolved_error_with(index, anchor, r, None, None)
 }
 
 /// The error of side `side` of the stored claim `claim`, when that side
@@ -146,6 +146,7 @@ fn stored_side_error(
     rs: &[Resolved],
     side: usize,
     number: usize,
+    again: &str,
 ) -> Option<Error> {
     let r = rs.get(side)?;
     let anchor = claim.sides().nth(side)?;
@@ -180,7 +181,7 @@ fn stored_side_error(
         .into_iter()
         .nth(side)
         .flatten();
-    unresolved_error_with(number, anchor, r, false, first.as_ref())
+    unresolved_error_with(number, anchor, r, Some((again, &claim.id)), first.as_ref())
 }
 
 /// True when a stored side may not be marked as it resolves: it does not
@@ -202,9 +203,10 @@ fn stored_failure(
     eval: &Evaluation<'_>,
     rs: &[Resolved],
 ) -> Option<Error> {
+    let again = format!("hibi reanchor {}", claim.id);
     let mut errors = (0..rs.len())
         .filter(|i| rs[*i].failure().is_some() || eval.quote_gone(*i))
-        .filter_map(|side| stored_side_error(providers, claim, eval, rs, side, side));
+        .filter_map(|side| stored_side_error(providers, claim, eval, rs, side, side, &again));
     let mut first = errors.next()?;
     for e in errors {
         first.message.push_str("; ");
@@ -217,9 +219,12 @@ fn unresolved_error_with(
     index: usize,
     anchor: &Anchor,
     r: &Resolved,
-    new: bool,
+    // For a stored side: the `hibi reanchor` command that a remediation
+    // builds on, and the claim's id. `None` for a new anchor.
+    stored: Option<(&str, &ClaimId)>,
     by_content: Option<&Candidates>,
 ) -> Option<Error> {
+    let new = stored.is_none();
     let (state, reason) = r.failure()?;
     let detail = r
         .failure_message_with(by_content, (!new).then_some(anchor))
@@ -264,14 +269,17 @@ fn unresolved_error_with(
                 Code::SideUnavailable,
                 format!("{what} cannot be evaluated ({reason}): {detail}"),
             );
-            match side_remediation(reason, Some(&detail), anchor.loc.scheme()) {
+            match (
+                side_remediation(reason, Some(&detail), anchor.loc.scheme()),
+                stored,
+            ) {
                 // A stored side whose resource cannot be evaluated: the
                 // remediation also says how to go on without it.
-                Some(fix) if !new && super::types::blocks_the_resource(reason) => {
-                    e.with_remediation(fix + &super::types::blocked_choice(index))
+                (Some(fix), Some((again, id))) if super::types::blocks_the_resource(reason) => {
+                    e.with_remediation(fix + &super::types::blocked_choice(again, id, index))
                 }
-                Some(fix) => e.with_remediation(fix),
-                None => e.without_remediation(),
+                (Some(fix), _) => e.with_remediation(fix),
+                (None, _) => e.without_remediation(),
             }
         }
     })
@@ -451,7 +459,7 @@ fn tracks_text_note(index: usize, asked: &Anchor, unit: &Unit) -> Option<String>
 
 /// The write checks of `claim` step 2 for a new anchor: first that applies.
 fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r Unit, Error> {
-    if let Some(e) = unresolved_error(index, anchor, r, true) {
+    if let Some(e) = unresolved_error(index, anchor, r) {
         return Err(e);
     }
     let unit = r.unit().expect("no failure means one unit");
@@ -558,22 +566,42 @@ fn resolve_claim_id<'a>(ledger: &'a Ledger, arg: &str) -> Result<&'a Claim, Erro
         .ok_or_else(|| Error::internal(format!("claim {id} disappeared from the ledger")))
 }
 
-/// `claim_retired` for a write on a retired claim. The remediation names
-/// the claim that replaced it when there is one, and otherwise shows the
-/// retired claim's record.
+/// The claim that replaced the retired claim `id`, when its retirement
+/// names one: a claim leaves the list by `hibi retire`, which is a
+/// decision, or by `hibi reanchor`, which puts another claim in its place.
+fn replacement_of(ledger: &Ledger, id: &ClaimId) -> Option<ClaimId> {
+    ledger
+        .retirements_of(id)
+        .find_map(|r| r.replaced_by.clone())
+}
+
+/// `was retired` or `was replaced by <id>`, for a message about the retired
+/// claim `id`.
+fn how_it_ended(ledger: &Ledger, id: &ClaimId) -> String {
+    match replacement_of(ledger, id) {
+        Some(new) => format!("was replaced by {new}"),
+        None => "was retired".to_owned(),
+    }
+}
+
+/// `claim_retired` for a write on a retired claim. The message says which
+/// it was. The remediation names the claim that replaced it when there is
+/// one, and otherwise shows the retired claim's record.
 fn retired_error(ledger: &Ledger, claim: &Claim, what: &str) -> Error {
-    let replacement = ledger
-        .retirements_of(&claim.id)
-        .find_map(|r| r.replaced_by.clone());
-    let e = Error::new(
-        Code::ClaimRetired,
-        format!("the claim {} is retired and cannot be {what}", claim.id),
-    );
-    match replacement {
-        Some(new) => e.with_remediation(format!(
+    let id = &claim.id;
+    match replacement_of(ledger, id) {
+        Some(new) => Error::new(
+            Code::ClaimRetired,
+            format!("the claim {id} was replaced by {new} and cannot be {what}"),
+        )
+        .with_remediation(format!(
             "The claim was replaced by {new}: run hibi status {new}"
         )),
-        None => e.with_remediation(format!("hibi list {}", claim.id)),
+        None => Error::new(
+            Code::ClaimRetired,
+            format!("the claim {id} was retired and cannot be {what}"),
+        )
+        .with_remediation(format!("hibi list {id}")),
     }
 }
 
@@ -945,21 +973,32 @@ fn claim_elements(
         let target = &target;
         let marked = (|| -> Result<Mark, Error> {
             if let Some(retired) = retired {
+                // A claim that another one replaced: the replacement is the
+                // claim to look at, and a new note is not offered.
+                if let Some(new) = replacement_of(&ledger, retired) {
+                    return Err(Error::new(
+                        Code::ClaimRetired,
+                        format!(
+                            "the claim {retired}, with this statement, this note and its sides on the same units, was replaced by {new}"
+                        ),
+                    )
+                    .with_remediation(format!(
+                        "The claim was replaced by {new}: run hibi status {new}"
+                    )));
+                }
                 let e = Error::new(
                     Code::ClaimRetired,
                     format!(
-                        "the claim {retired}, with this statement, this note and its sides on the same units, is retired"
+                        "the claim {retired}, with this statement, this note and its sides on the same units, was retired"
                     ),
                 );
                 // In a batch the note is a field of the element, not an
                 // option.
-                return Err(if indexed {
-                    e.with_remediation(
-                        "To record the same statement and anchors again, give the element a different \"note\".",
-                    )
+                return Err(e.with_remediation(if indexed {
+                    "The claim was retired, and that stands. A different \"note\" in the element records the statement and anchors again as a new claim."
                 } else {
-                    e
-                });
+                    "The claim was retired, and that stands. A different --note records the statement and anchors again as a new claim."
+                }));
             }
             let anchors: Vec<Anchor> = target.sides().cloned().collect();
             let units: Vec<&Unit> = target_resolved.iter().filter_map(Resolved::unit).collect();
@@ -1204,8 +1243,11 @@ fn reanchor_with_note(old: &ClaimId, input: &ReanchorInput) -> String {
 /// `with_note` is false only where the remediation is to give another note.
 fn reanchor_again(old: &ClaimId, input: &ReanchorInput, with_note: bool) -> String {
     let mut cmd = format!("hibi reanchor {old}");
+    // A value that starts with `-` is joined to its flag with `=`: after a
+    // space the parser would read it as another flag.
     let mut arg = |flag: &str, value: &str| {
-        cmd.push_str(&format!(" {flag} {}", sh_quote(value)));
+        let join = if value.starts_with('-') { '=' } else { ' ' };
+        cmd.push_str(&format!(" {flag}{join}{}", sh_quote(value)));
     };
     if let Some(s) = &input.statement {
         arg("--statement", s);
@@ -1335,7 +1377,7 @@ pub fn reanchor(
         &old_resolved,
         now,
     )?;
-    let before = accepted(old, &old_eval, &old_resolved);
+    let mut before = accepted(old, &old_eval, &old_resolved);
 
     // Step 3.
     // A kept side has the old claim's stored anchor: `once` gives it the
@@ -1358,10 +1400,14 @@ pub fn reanchor(
     // They join the others when a side needs an anchor; alone, the first
     // one is reported with its own remediation, which says the cause.
     let mut blocked: Vec<(usize, Error, Error)> = Vec::new();
+    // What a remediation builds on: the command as the caller gave it.
+    let again = reanchor_again(&old.id, input, true);
     for (((anchor, new), r), n) in plan.iter().zip(&resolved).zip(numbers.iter().copied()) {
         if *new {
             units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, r, e))?);
-        } else if let Some(e) = stored_side_error(providers, old, &old_eval, &old_resolved, n, n) {
+        } else if let Some(e) =
+            stored_side_error(providers, old, &old_eval, &old_resolved, n, n, &again)
+        {
             // A kept side that no longer resolves to one unit has to be
             // replaced, with an anchor the caller chooses. `n` is its
             // position in the old claim, and `r` is that side's resolution.
@@ -1376,11 +1422,13 @@ pub fn reanchor(
                 // choice the caller has.
                 Some((_, reason)) if super::types::blocks_the_resource(reason) => {
                     let choice = if n == 0 {
-                        " (re-point the subject to another resource, or retire the claim)"
-                            .to_owned()
+                        format!(
+                            " (in the fix command, give the subject an anchor on another resource, or run hibi retire {} instead)",
+                            old.id
+                        )
                     } else {
                         format!(
-                            " (give evidence {n} an anchor on another resource, or drop it with --drop-evidence {n})"
+                            " (in the fix command, give evidence {n} an anchor on another resource, or put --drop-evidence {n} in its place)"
                         )
                     };
                     let joined = Error::new(e.code, e.message.clone() + &choice);
@@ -1411,7 +1459,7 @@ pub fn reanchor(
             .join("; ");
         // The caller's own arguments are repeated: the command to run next
         // is the one that was run, with an anchor for each of these sides.
-        let mut command = reanchor_again(&old.id, input, true);
+        let mut command = again;
         for (n, _) in &need_anchor {
             if *n == 0 {
                 command.push_str(" --subject <anchor>");
@@ -1420,6 +1468,17 @@ pub fn reanchor(
             }
         }
         return Err(Error::new(code, message).with_remediation(command));
+    }
+
+    // What the write accepted for each side of the old claim that was not
+    // `same`: the unit the new claim has for it. A replaced side shows the
+    // unit of its new anchor, and a dropped side shows nothing.
+    let from_old = plan.len() - input.add_evidence.len();
+    for side in &mut before.sides {
+        side.text = numbers[..from_old]
+            .iter()
+            .position(|n| *n == side.index)
+            .and_then(|at| units[at].text.clone());
     }
 
     // Step 4.
@@ -1452,8 +1511,10 @@ pub fn reanchor(
         return Err(Error::new(
             Code::ClaimRetired,
             format!(
-                "re-anchoring {} would produce the retired claim {}",
-                old.id, new.id
+                "re-anchoring {} would produce the claim {}, which {}",
+                old.id,
+                new.id,
+                how_it_ended(&ledger, &new.id)
             ),
         )
         .with_remediation(reanchor_with_note(&old.id, input)));
@@ -1508,8 +1569,10 @@ pub fn reanchor(
                 return Err(Error::new(
                     Code::ClaimRetired,
                     format!(
-                        "re-anchoring {} would produce the retired claim {}: the same statement and note, with its sides on the same units",
-                        old.id, retired.id
+                        "re-anchoring {} would produce the claim {}, which {}: the same statement and note, with its sides on the same units",
+                        old.id,
+                        retired.id,
+                        how_it_ended(&ledger, &retired.id)
                     ),
                 )
                 .with_remediation(reanchor_with_note(&old.id, input)));

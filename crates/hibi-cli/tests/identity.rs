@@ -511,7 +511,7 @@ fn the_same_claim_does_not_depend_on_how_its_anchors_are_written() {
     assert_eq!(e["code"], "claim_retired");
     assert_eq!(
         e["remediation"],
-        "To record the same statement and anchors again, give the element a different \"note\"."
+        "The claim was retired, and that stands. A different \"note\" in the element records the statement and anchors again as a new claim."
     );
     for evidence in [by_name, by_quote] {
         let e = repo.fail(&["claim", "s", "--subject", subject, "--evidence", evidence]);

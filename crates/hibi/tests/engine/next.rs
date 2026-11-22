@@ -293,11 +293,10 @@ fn a_side_that_cannot_be_evaluated_says_what_the_provider_said() {
     );
     assert_eq!(
         side.remediation.as_deref(),
-        // An evidence side whose resource cannot be evaluated: the
-        // remediation also says how to go on without it.
-        Some(
-            "src/a.rs does not parse as Rust: line 3. Run the command again once that is fixed. To move on without that: give this side an anchor on another resource with hibi reanchor --evidence 1=<anchor>, or drop it with --drop-evidence 1."
-        )
+        // The cause may pass (`resource_unavailable` is also a file list
+        // that cannot be read now), so nothing is said about dropping the
+        // side or retiring the claim.
+        Some("src/a.rs does not parse as Rust: line 3. Run the command again once that is fixed.")
     );
     // `mark` fails with the same remediation and writes nothing.
     let before = f.store.counts();
@@ -871,7 +870,7 @@ fn identical_twins_are_listed_without_an_anchor() {
     // The twins are plain notes of an external resource: no enclosing
     // declaration, so only the whole resource is named.
     assert!(
-        message.ends_with("Units that are identical where they stand cannot be anchored one by one. Anchor the whole resource u:b instead."),
+        message.ends_with("Units that are identical where they stand cannot be anchored one by one. Anchor the whole resource instead: u:b"),
         "{message}"
     );
     assert!(!message.contains(r#""quote":"the same text""#), "{message}");

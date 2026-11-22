@@ -41,6 +41,13 @@ pub struct Candidates {
     /// fingerprint. It makes the count of a merged list exact when only
     /// the first units are kept.
     pub by_fp: HashMap<crate::model::Fingerprint, usize>,
+    /// The declaration that holds every shown unit that no anchor selects
+    /// alone, when there is one: its key and the anchor that selects it.
+    /// It is read from the unit list of the resource
+    /// ([`Candidates::find_enclosing`]) and never from the text of a
+    /// symbol: `Id.fmt` is a method of an `impl` block, and `#Id` is the
+    /// struct, which holds no method.
+    pub enclosing: Option<(String, String)>,
 }
 
 impl Candidates {
@@ -83,6 +90,7 @@ impl Candidates {
             anchors,
             total: first.total + second.total - twice,
             by_fp,
+            enclosing: first.enclosing.clone().or_else(|| second.enclosing.clone()),
         })
     }
 
@@ -105,43 +113,79 @@ impl Candidates {
         })
     }
 
+    /// The shown units that no anchor selects alone.
+    fn twins(&self) -> Vec<&Unit> {
+        self.selectable()
+            .filter(|(_, anchor)| anchor.is_none())
+            .map(|(u, _)| u)
+            .collect()
+    }
+
+    /// The key of the unit that is the parent of every one of the
+    /// [`twins`](Self::twins), when they have one and the same parent.
+    fn twins_parent(&self) -> Option<&str> {
+        let twins = self.twins();
+        let parent = twins.first()?.parent.as_deref()?;
+        twins
+            .iter()
+            .all(|u| u.parent.as_deref() == Some(parent))
+            .then_some(parent)
+    }
+
+    /// Set [`enclosing`](Self::enclosing) from `all`, the unit list of the
+    /// resource. A declaration is named only when it is there to anchor:
+    /// the parent of every twin is one unit, that unit has a symbol and is
+    /// not the unit of the whole file, and its printed selector selects it
+    /// alone (two `interface Props` blocks do not).
+    pub(crate) fn find_enclosing(&mut self, all: &[Unit]) {
+        let Some(parent) = self.twins_parent() else {
+            return;
+        };
+        let Some(decl) = all.iter().find(|u| u.key == parent) else {
+            return;
+        };
+        if decl.parent.is_none()
+            || decl.sel.symbol.is_none()
+            || !selects_its_unit(decl)
+            || all.iter().filter(|u| u.sel == decl.sel).count() != 1
+        {
+            return;
+        }
+        let anchor = printed_anchor(&self.loc, is_compact(&self.loc), decl);
+        self.enclosing = Some((decl.key.clone(), anchor));
+    }
+
     /// What to do, for a claim, about shown units that no anchor selects
     /// alone; `None` when every shown unit has an anchor. Such units cannot
     /// be anchored one by one: a longer quote reaches outside the unit or
     /// matches both again, and an exclusion in a scope plays no part in
     /// resolving a claim. What works is the unit that contains them. That
     /// is the whole file, and in code also the declaration that encloses
-    /// them, when they have one: units of markdown, prose and text have no
-    /// names, and declarations at the top of a file have nothing around
-    /// them but the file.
+    /// all of them, when [`find_enclosing`](Self::find_enclosing) found
+    /// one. Nothing follows a locator in the sentence, so that it can be
+    /// copied as it stands.
     pub fn twins_remedy(&self) -> Option<String> {
-        let twins: Vec<&Unit> = self
-            .selectable()
-            .filter(|(_, anchor)| anchor.is_none())
-            .map(|(u, _)| u)
-            .collect();
-        let first = twins.first()?;
-        let enclosing = |u: &Unit| -> Option<String> {
-            match (&u.sel.symbol, u.sel.within.as_deref()) {
-                (Some(symbol), _) => symbol.rsplit_once('.').map(|(outer, _)| outer.to_owned()),
-                (None, Some([name])) if u.fp.profile() == "ast-v1" => Some(name.clone()),
-                _ => None,
-            }
-        };
-        let name =
-            enclosing(first).filter(|n| twins.iter().all(|u| enclosing(u).as_ref() == Some(n)));
+        if self.twins().is_empty() {
+            return None;
+        }
         let loc = &self.loc;
         let whole = if loc.is_file_or_repo() {
             "the whole file"
         } else {
             "the whole resource"
         };
-        Some(match name {
-            Some(name) => format!(
-                "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration {loc}#{name}, or {whole} {loc}."
+        let parent = self.twins_parent();
+        let declaration = self
+            .enclosing
+            .as_ref()
+            .filter(|(key, _)| parent == Some(key.as_str()))
+            .map(|(_, anchor)| anchor);
+        Some(match declaration {
+            Some(anchor) => format!(
+                "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration {anchor} or {whole} {loc}"
             ),
             None => format!(
-                "Units that are identical where they stand cannot be anchored one by one. Anchor {whole} {loc} instead."
+                "Units that are identical where they stand cannot be anchored one by one. Anchor {whole} instead: {loc}"
             ),
         })
     }
@@ -438,49 +482,53 @@ pub(crate) fn failed_from_error(e: &ProviderError) -> Resolved {
     Resolved::failed(state, reason, message)
 }
 
-/// The anchor strings of the first [`MAX_CANDIDATES`] of `units`, all of
-/// resource `loc`. A symbol is used alone only when the provider's unit
-/// list of the resource holds it once; `listing` caches that list per
-/// resource for one resolve pass.
-fn candidates_of(loc: &Locator, units: Vec<Unit>) -> Candidates {
-    // Compact syntax has no escapes: a locator or symbol with a control
-    // character is given as JSON.
-    let compact = loc.is_file_or_repo()
+/// True when an anchor on `loc` can be written in compact syntax. Compact
+/// syntax has no escapes: a locator with a control character, a `#` or a
+/// `::` in its path is given as JSON.
+fn is_compact(loc: &Locator) -> bool {
+    loc.is_file_or_repo()
         && !loc.as_str().contains('#')
         && !loc.as_str().chars().any(char::is_control)
         && {
             // After the scheme, `::` would end the locator in compact syntax.
             let path = loc.as_str().split_once(':').map_or("", |(_, rest)| rest);
             !path.replacen("//", "", 1).contains("::")
-        };
+        }
+}
+
+/// The provider's printed anchor of `u` (section 6.7) as text to give
+/// back: a symbol alone is written compactly, anything else as JSON.
+fn printed_anchor(loc: &Locator, compact: bool, u: &Unit) -> String {
+    let sel = &u.sel;
+    let only_symbol = sel.quote.is_none()
+        && sel.prefix.is_none()
+        && sel.suffix.is_none()
+        && sel.within.is_none()
+        && sel.count.is_none()
+        && sel.key.is_none();
+    let symbol = u.sel.symbol.as_deref().filter(|symbol| {
+        only_symbol
+            && compact
+            && !symbol.chars().any(char::is_control)
+            && !symbol.contains('#')
+            && !symbol.contains("::")
+    });
+    match symbol {
+        Some(symbol) => format!("{loc}#{symbol}"),
+        None => super::types::escape_controls(
+            &serde_json::to_string(&Anchor::new(loc.clone(), u.sel.clone())).unwrap_or_default(),
+        ),
+    }
+}
+
+/// The candidates `units`, all of resource `loc`, with the anchor strings
+/// of the first [`MAX_CANDIDATES`] of them.
+fn candidates_of(loc: &Locator, units: Vec<Unit>) -> Candidates {
+    let compact = is_compact(loc);
     let anchors = units
         .iter()
         .take(MAX_CANDIDATES)
-        .map(|u| {
-            // The provider's printed anchor (section 6.7): a symbol alone
-            // is written compactly, anything else as JSON.
-            let sel = &u.sel;
-            let only_symbol = sel.quote.is_none()
-                && sel.prefix.is_none()
-                && sel.suffix.is_none()
-                && sel.within.is_none()
-                && sel.count.is_none()
-                && sel.key.is_none();
-            let symbol = u.sel.symbol.as_deref().filter(|symbol| {
-                only_symbol
-                    && compact
-                    && !symbol.chars().any(char::is_control)
-                    && !symbol.contains('#')
-                    && !symbol.contains("::")
-            });
-            match symbol {
-                Some(symbol) => format!("{loc}#{symbol}"),
-                None => super::types::escape_controls(
-                    &serde_json::to_string(&Anchor::new(loc.clone(), u.sel.clone()))
-                        .unwrap_or_default(),
-                ),
-            }
-        })
+        .map(|u| printed_anchor(loc, compact, u))
         .collect();
     let total = units.len();
     let mut by_fp: HashMap<crate::model::Fingerprint, usize> = HashMap::new();
@@ -495,6 +543,7 @@ fn candidates_of(loc: &Locator, units: Vec<Unit>) -> Candidates {
         anchors,
         total,
         by_fp,
+        enclosing: None,
     }
 }
 
@@ -579,6 +628,29 @@ pub fn resolve_with(provider: &mut dyn Provider, anchors: &[&Anchor]) -> Vec<Res
                     },
                 });
             }
+            // Units that no anchor selects alone, with one parent: the unit
+            // list of the resource says whether that parent can be
+            // anchored. One `units` call per such resource.
+            if info.capabilities.units {
+                let mut listing: HashMap<Locator, Option<Vec<Unit>>> = HashMap::new();
+                for (r, anchor) in out.iter_mut().zip(&unique) {
+                    let (Resolved::Several(c) | Resolved::NotExact(c)) = r else {
+                        continue;
+                    };
+                    if c.twins_parent().is_none() {
+                        continue;
+                    }
+                    let all = listing.entry(anchor.loc.clone()).or_insert_with(|| {
+                        provider
+                            .units(&anchor.loc, None)
+                            .ok()
+                            .filter(|units| validate_units(&info, units).is_ok())
+                    });
+                    if let Some(all) = all {
+                        c.find_enclosing(all);
+                    }
+                }
+            }
             out
         }
     };
@@ -637,7 +709,9 @@ pub fn content_candidates(
                     }
                 }
             }
-            Some(candidates_of(&anchor.loc, same))
+            let mut found = candidates_of(&anchor.loc, same);
+            found.find_enclosing(all);
+            Some(found)
         })
         .collect()
 }

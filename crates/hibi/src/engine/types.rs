@@ -140,10 +140,10 @@ pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
             "The message says what is missing. A sibling repository needs its alias declared under [repos] in .hibi/hibi.toml, its directory registered with a [[repo]] entry in the user config, and a git that hibi can run. hibi providers lists what is declared and registered."
         }
         Reason::TooLarge => {
-            "The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
+            "The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; in a scope, add an exclusion for the resource."
         }
         Reason::NotText => {
-            "The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
+            "The resource is not UTF-8 text, so it has no units. Anchor a text file; in a scope, add an exclusion for the resource."
         }
         Reason::SelectorRefused => {
             "The stored anchor is no longer accepted for this resource. Give the side another anchor with hibi reanchor, or retire the claim."
@@ -152,7 +152,7 @@ pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
             "Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim."
         }
         Reason::ProviderError => {
-            "The provider gave an answer hibi cannot use. Run hibi providers --check <scheme> to see what it gets wrong; for a claim that exists, retire it if the resource is gone for good."
+            "The provider gave an answer hibi cannot use. Run hibi providers --check <scheme> to see what it gets wrong."
         }
         _ => return None,
     })
@@ -178,26 +178,33 @@ pub fn escape_controls(json: &str) -> String {
 }
 
 /// True for a reason that no anchor on the same resource can fix: the
-/// resource itself cannot be evaluated. An evidence side in that state
-/// blocks every write on its claim until it is given an anchor on another
-/// resource or dropped; a subject has to be re-pointed, or the claim
-/// retired.
+/// resource is too large, is not text, or its provider answers wrongly. An
+/// evidence side in that state blocks every write on its claim until it is
+/// given an anchor on another resource or dropped; a subject has to be
+/// re-pointed, or the claim retired. `resource_unavailable` is not one of
+/// them: it is also given for a cause that passes (a file list that cannot
+/// be read now), where another anchor fails the same way and retiring would
+/// lose a claim.
 pub fn blocks_the_resource(reason: Reason) -> bool {
     matches!(
         reason,
-        Reason::TooLarge | Reason::NotText | Reason::ResourceUnavailable | Reason::ProviderError
+        Reason::TooLarge | Reason::NotText | Reason::ProviderError
     )
 }
 
 /// What a stored side that [`blocks_the_resource`] adds to its
-/// remediation: the choice the caller has in `hibi reanchor`. `index` is 0
-/// for the subject.
-pub fn blocked_choice(index: usize) -> String {
+/// remediation: the commands the caller can run instead, whole, so that
+/// each can be copied. `again` is the `hibi reanchor <id>` command they
+/// start with, with the caller's own arguments when it comes from
+/// `reanchor`; `index` is 0 for the subject.
+pub fn blocked_choice(again: &str, id: &crate::model::ClaimId, index: usize) -> String {
     if index == 0 {
-        " To move on without that: re-point the subject to another resource with hibi reanchor --subject <anchor>, or retire the claim.".to_owned()
+        format!(
+            " To move on without that: {again} --subject <anchor> re-points the subject to another resource, and hibi retire {id} retires the claim."
+        )
     } else {
         format!(
-            " To move on without that: give this side an anchor on another resource with hibi reanchor --evidence {index}=<anchor>, or drop it with --drop-evidence {index}."
+            " To move on without that: {again} --evidence {index}=<anchor> gives this side an anchor on another resource, and {again} --drop-evidence {index} drops it."
         )
     }
 }
@@ -235,10 +242,10 @@ pub fn side_remediation(reason: Reason, message: Option<&str>, scheme: &str) -> 
         // The command names the scheme, so that it can be run as it is. The
         // built-in schemes have no provider command to check.
         return Some(if matches!(scheme, "file" | "repo") {
-            "hibi's own provider for this scheme gave an answer hibi cannot use; that is a fault in hibi. For a claim that exists, retire it if the resource is gone for good.".to_owned()
+            "hibi's own provider for this scheme gave an answer hibi cannot use; that is a fault in hibi.".to_owned()
         } else {
             format!(
-                "The provider gave an answer hibi cannot use. Run hibi providers --check {scheme} to see what it gets wrong; for a claim that exists, retire it if the resource is gone for good."
+                "The provider gave an answer hibi cannot use. Run hibi providers --check {scheme} to see what it gets wrong."
             )
         });
     }
@@ -462,9 +469,12 @@ pub struct AcceptedSide {
     pub state: SideState,
     #[schemars(with = "Nullable<Reason>")]
     pub reason: Option<Reason>,
-    /// Present for a side that was `changed`: the unit's whole text as the
-    /// write marked it. It is what the caller accepted, so none of it is
-    /// left out.
+    /// The whole text of the unit the write marked for this side: what the
+    /// caller accepted, so none of it is left out. From `claim` and `mark`
+    /// it is present for a side that was `changed`. From `reanchor` it is
+    /// the unit the new claim has for the side, whatever the side's state
+    /// was, and absent for a side that was dropped: never the text of a
+    /// unit that the new claim no longer points at.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
 }

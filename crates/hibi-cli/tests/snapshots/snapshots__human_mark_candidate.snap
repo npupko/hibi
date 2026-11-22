@@ -36,6 +36,8 @@ exit status: 0
 c1-50f8z81fqkasb0v2kvve is retired and replaced by the new claim c1-p150g38rxh3fp7221jkf
   mark m1-6z5wjrjxgnkj85vh56jn, retirement r1-wmtewwc2vd26ce92k3qr
   was stale: subject file:docs/ops.md missing (not_exact); now marked: make sure you re-checked it
+    subject is now:
+    | Workers are restarted every night.
   subject file:docs/ops.md (sentence "Workers are restarted every night.", line 3)
     {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted every night.","prefix":"","suffix":"","within":["Operations","Workers are restarted every night."]}}
 ---- standard error ----

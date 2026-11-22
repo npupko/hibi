@@ -29,7 +29,7 @@ exit status: 1
 ---- standard output ----
 (empty)
 ---- standard error ----
-error: claim_retired: the claim c1-h11mnkp70sgmegp55r2g is retired and cannot be re-anchored
+error: claim_retired: the claim c1-h11mnkp70sgmegp55r2g was replaced by c1-33e9bj0vctbmsrj0k9hr and cannot be re-anchored
   fix: The claim was replaced by c1-33e9bj0vctbmsrj0k9hr: run hibi status c1-33e9bj0vctbmsrj0k9hr
 
 $ hibi status c1-h11mnkp70sgmegp55r2g

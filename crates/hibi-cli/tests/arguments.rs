@@ -198,7 +198,7 @@ fn selector_advice_comes_from_the_provider() {
         // Only what works for a claim, by what the units are: sentences
         // of a markdown file have no enclosing declaration, so the whole
         // file is the unit that contains them.
-        "Units that are identical where they stand cannot be anchored one by one. Anchor the whole file file:docs/twins.md instead."
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the whole file instead: file:docs/twins.md"
     );
     // Twins inside a declaration: the enclosing declaration is named, and
     // anchoring it works.
@@ -210,7 +210,7 @@ fn selector_advice_comes_from_the_provider() {
     assert_eq!(e["code"], "side_ambiguous", "{e}");
     assert_eq!(
         e["remediation"],
-        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration file:src/t.py#K, or the whole file file:src/t.py.",
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration file:src/t.py#K or the whole file file:src/t.py",
         "{e}"
     );
     let v = repo.json(&["claim", "S", "--subject", "file:src/t.py#K"]);
@@ -266,4 +266,88 @@ fn selector_advice_comes_from_the_provider() {
         e["remediation"],
         "Use only the selector keys this provider accepts: key, quote."
     );
+}
+
+/// Section 15.3: the twin sentence names a declaration only when one unit
+/// of the resource holds every listed twin and its own anchor selects it
+/// alone. The name is never read off the symbol: `Id.fmt` is a method of an
+/// `impl` block, and `#Id` is the struct, which holds no method. Nothing
+/// follows a locator in the sentence, so each can be copied as it stands.
+#[test]
+fn the_twin_sentence_names_a_declaration_only_when_one_holds_the_twins() {
+    const WHOLE: &str = "Units that are identical where they stand cannot be anchored one by one. Anchor the whole file instead: ";
+    let repo = Repo::new();
+    repo.write("docs/a.md", "# A\n\nText.\n");
+    // Rust: two `impl` blocks for one struct, each with the same `fmt`.
+    let impls = "impl fmt::Display for Id {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"id-{}\", self.0)\n    }\n}\n\nimpl fmt::Debug for Id {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"id-{}\", self.0)\n    }\n}\n";
+    repo.write(
+        "src/id.rs",
+        &format!("use std::fmt;\n\npub struct Id(pub u64);\n\n{impls}"),
+    );
+    // The same, with the struct declared in another file.
+    repo.write("src/other.rs", "pub struct Key(pub u64);\n");
+    repo.write(
+        "src/fmt.rs",
+        &format!("use std::fmt;\nuse crate::other::Id;\n\n{impls}"),
+    );
+    // TypeScript: a merged interface, the same member in both parts.
+    repo.write(
+        "src/p.ts",
+        "export interface Props {\n  onClose(): void;\n}\n\nexport interface Props {\n  onClose(): void;\n}\n",
+    );
+    // Go: two methods of one type; the type does not hold them.
+    repo.write(
+        "src/g.go",
+        "package g\n\ntype S struct{}\n\nfunc (s S) M() int {\n\treturn 1\n}\n\nfunc (s S) M() int {\n\treturn 1\n}\n",
+    );
+    // TypeScript: two members of one class. The class holds both.
+    repo.write(
+        "src/n.ts",
+        "export class Box {\n  get size(): number {\n    return 1;\n  }\n  get size(): number {\n    return 1;\n  }\n}\n",
+    );
+    for (anchor, file) in [
+        ("file:src/id.rs#Id.fmt", "file:src/id.rs"),
+        ("file:src/fmt.rs#Id.fmt", "file:src/fmt.rs"),
+        ("file:src/p.ts#Props.onClose", "file:src/p.ts"),
+        ("file:src/g.go#S.M", "file:src/g.go"),
+    ] {
+        let e = repo.fail(&["claim", "S", "--subject", anchor]);
+        assert_eq!(e["code"], "side_ambiguous", "{anchor}: {e}");
+        assert_eq!(
+            e["remediation"],
+            format!("{WHOLE}{file}").as_str(),
+            "{anchor}"
+        );
+        let message = e["message"].as_str().unwrap();
+        assert!(!message.contains("enclosing declaration"), "{message}");
+        assert!(message.ends_with(&format!("{WHOLE}{file}")), "{message}");
+    }
+    // What the old sentence named for the Rust file is the struct, which
+    // stays fresh when an `impl` changes: it is not offered.
+    let v = repo.json(&["claim", "S", "--subject", "file:src/id.rs#Id"]);
+    assert_eq!(
+        v["claims"][0]["claim"]["sides"][0]["unit"]["kind"],
+        "struct"
+    );
+    // The whole file, as the sentence says, does hold the twins.
+    let v = repo.json(&["claim", "whole", "--subject", "file:src/id.rs"]);
+    let whole = v["claims"][0]["claim"]["id"].as_str().unwrap().to_owned();
+    repo.write(
+        "src/id.rs",
+        &format!(
+            "use std::fmt;\n\npub struct Id(pub u64);\n\n{}",
+            impls.replacen("id-{}", "Id({})", 1)
+        ),
+    );
+    assert_eq!(repo.state(&whole), "stale");
+
+    // One class holds both twins: it is named, and anchoring it works.
+    let e = repo.fail(&["claim", "S", "--subject", "file:src/n.ts#Box.size"]);
+    assert_eq!(
+        e["remediation"],
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration file:src/n.ts#Box or the whole file file:src/n.ts",
+        "{e}"
+    );
+    let v = repo.json(&["claim", "box", "--subject", "file:src/n.ts#Box"]);
+    assert_eq!(v["claims"][0]["claim"]["sides"][0]["unit"]["kind"], "class");
 }

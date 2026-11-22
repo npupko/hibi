@@ -478,7 +478,8 @@ pub fn claim_view(
                     (SideState::Unavailable, Some(reason)) => {
                         side_remediation(*reason, said, anchor.loc.scheme()).map(|fix| {
                             if super::types::blocks_the_resource(*reason) {
-                                fix + &super::types::blocked_choice(index)
+                                let again = format!("hibi reanchor {}", claim.id);
+                                fix + &super::types::blocked_choice(&again, &claim.id, index)
                             } else {
                                 fix
                             }

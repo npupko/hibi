@@ -90,7 +90,7 @@
           "$ref": "#/$defs/SideState"
         },
         "text": {
-          "description": "Present for a side that was `changed`: the unit's whole text as the\nwrite marked it. It is what the caller accepted, so none of it is\nleft out.",
+          "description": "The whole text of the unit the write marked for this side: what the\ncaller accepted, so none of it is left out. From `claim` and `mark`\nit is present for a side that was `changed`. From `reanchor` it is\nthe unit the new claim has for the side, whatever the side's state\nwas, and absent for a side that was dropped: never the text of a\nunit that the new claim no longer points at.",
           "type": [
             "string",
             "null"

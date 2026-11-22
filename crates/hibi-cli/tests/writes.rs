@@ -640,8 +640,9 @@ fn a_too_large_or_binary_file_says_the_limit_and_the_way_out() {
         assert!(text(&e["message"]).contains(reason), "{e}");
         let fix = text(&e["remediation"]);
         assert!(fix.starts_with(says), "{fix}");
+        // A new anchor has no claim to retire: the fix says what to anchor.
         assert!(
-            fix.contains("retire it") && fix.contains("add an exclusion"),
+            !fix.contains("retire") && fix.contains("add an exclusion"),
             "{fix}"
         );
 
