@@ -965,9 +965,12 @@ compact = locator                       ; any scheme, selector {}
 
 Parsing, for a locator whose scheme is `file` or `repo`: split at the first
 `::`; the right part, if any, is the quote, taken verbatim. Split the left part
-at the first `#`; the right part, if any, is the symbol. A path that contains
-`#` or `::` cannot be written in compact form and MUST be given as a JSON
-anchor, as an argument (below) or on
+at the first `#`; the right part, if any, is the symbol. Because the split
+at `::` comes first, a symbol that contains `::` cannot be written in
+compact form either: `file:src/id.rs#impl fmt::Debug for Id` is read as the
+symbol `impl fmt` with the quote `Debug for Id`. So an anchor whose path
+contains `#` or `::`, or whose symbol contains `::`, MUST be given as a
+JSON anchor, as an argument (below) or on
 standard input. For any other scheme the whole argument is the locator and the
 selector is `{}`; other selectors for external schemes are given as JSON.
 
@@ -1040,7 +1043,7 @@ segment counts: `dir.md/file` is `text`, `a.d.ts` is `typescript`,
 A file of a code class whose parse tree has an error (the root node's
 `has_error()` is true), or that the grammar returns no tree for, has no
 units: `resolve` with any selector, new or stored, the empty selector
-included, `units` and `render` fail with `unavailable` (section 6.7,
+included, `units` and `render` fail with `unparsable` (section 6.7,
 error 6). There is no fallback to `block` units for a code class: block
 units belong to the class `text` only (section 6.5). A side on such a file
 is `unavailable` with reason `resource_unavailable`, `cover` lists the file
@@ -5857,25 +5860,45 @@ The error object is the one of section 15.1; these rules fix its
   anchor selects alone is written
   `<unit>: identical to another one, no anchor selects it alone`,
   and a list that holds one ends with
-  `. Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration <anchor> or the whole file <loc>`
+  `. Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration <anchor> or the whole file <file>`
   when one declaration holds them, and otherwise by
-  `. Units that are identical where they stand cannot be anchored one by one. Anchor the whole file instead: <loc>`
-  Nothing follows a locator or an anchor in the sentence, not even a full
-  stop, so that each can be copied as it stands. A declaration is named
-  only when it is there to anchor: every listed unit that no anchor selects
-  alone has the same `parent` (section 6.2), that parent is a unit of the
-  resource with a symbol and is not the `file` unit, and its printed
-  selector selects it alone; `<anchor>` is its printed anchor, `<loc>#<symbol>`
-  or JSON as for a candidate. hibi reads this from the provider's unit list
-  of the resource, with one `units` call, and never from the text of a
-  symbol: the methods `Id.fmt` of two Rust `impl` blocks have two parents,
-  and `#Id` is the struct, which holds neither; two methods of one Go type
-  have no parent but the file; the two parts of a merged TypeScript
-  interface are themselves units no anchor selects alone. In all three only
-  the whole file is named. Units of markdown, prose and text have the
-  `file` unit as their parent, so only the whole file is named there too.
-  For a scheme other than `file` and `repo` the sentence says
-  `the whole resource`.
+  `. Units that are identical where they stand cannot be anchored one by one. Anchor the whole file instead: <file>`
+  Nothing follows an anchor in the sentence, not even a full stop, and
+  both are anchors that can be given back as they stand. `<file>` is the
+  anchor on the whole resource: the locator alone, or, when the locator
+  alone would be read as something else (a path with `#` or `::`, section
+  5.5), the JSON anchor with the empty selector,
+  `{"loc":"<loc>","sel":{}}`. `<anchor>` is the declaration's printed
+  anchor, `<loc>#<symbol>` or JSON as for a candidate.
+
+  The twins of this rule are not the listed candidates. They are every
+  unit of the resource that cannot be told apart from a unit of the
+  provider's answer that no anchor selects alone: the units of the
+  provider's unit list that carry the same printed selector as such a
+  unit. The answer is taken whole, also beyond the `MAX_CANDIDATES` that
+  are shown. A declaration is named only when it is there to anchor: each
+  such selector is carried by two or more units of the list, all those
+  units have the same `parent` (section 6.2), and that parent is a unit of
+  the resource with a symbol, is not the `file` unit, and has a printed
+  selector that selects it alone. hibi reads this from the provider's unit
+  list of the resource, with one `units` call, and never from the text of
+  a symbol or from the candidates alone. In every other case, and when the
+  provider cannot list units or the list does not hold the twins, only the
+  whole file is named. So:
+  - the methods `Id.fmt` of two Rust `impl` blocks have two parents, and
+    `#Id` is the struct, which holds neither: the whole file. This holds
+    also when only one of the two is a candidate, as after the body of
+    one was edited to equal the other: the other twin is in the unit list;
+  - an anchor that matches twenty-one same methods of class `A` and two of
+    class `B` shows twenty candidates, all in `A`: the twins in `B` count,
+    and the whole file is named;
+  - two methods of one Go type have no parent but the file, and the two
+    parts of a merged TypeScript interface are themselves units no anchor
+    selects alone: the whole file;
+  - two same methods of one Python class: the class is named.
+  Units of markdown, prose and text have the `file` unit as their parent,
+  so only the whole file is named there too. For a scheme other than
+  `file` and `repo` the sentence says `the whole resource`.
   The sentence names only what works for a claim. An exclusion in a scope
   is not offered here: scopes play no part in resolving a claim, so the
   side would stay ambiguous. (`cover` has its own hint, section 15.3.)
@@ -6018,35 +6041,45 @@ The error object is the one of section 15.1; these rules fix its
   the full id of the old claim: it names the one side the error is about,
   and `<anchor>` is written literally. A kept side that is `unavailable`
   fails with `side_unavailable` and the remediation above.
-- `claim_retired`. The message says how the claim ended: `was retired`
-  when no retirement of the claim has `replacedBy`, and
-  `was replaced by <new>` when one has, where `<new>` is the full id in
-  `replacedBy`. When several retirements of the claim have one, the first
-  of them in the order the store gives its retirements is used.
+- `claim_retired`. The message says how the claim ended, in the words
+  `<ended>`. A retirement with `replacedBy` is followed: when the claim
+  named there is itself retired, its own `replacedBy` is followed, and so
+  on to the last claim of the chain, which is either live or retired
+  without a replacement. (When several retirements of a claim have a
+  `replacedBy`, the first of them in the order the store gives its
+  retirements is used. A chain that comes back to a claim it passed ends
+  at the claim before.) `<ended>` is:
+  - `was retired` when no retirement of the claim has `replacedBy`;
+  - `was replaced by <new>` when the claim that replaced it is live;
+  - `was replaced, and the last claim of that chain is <last>` when the
+    chain is longer and its last claim is live;
+  - `was replaced, and the last claim of that chain, <last>, was retired`
+    when the last claim of the chain was retired without a replacement.
+  A claim is pointed at only when it is live. The commands:
   - From `mark`, and from `reanchor` when the old claim is retired, the
-    message is `the claim <id> was retired and cannot be marked` or
-    `the claim <id> was replaced by <new> and cannot be marked`
+    message is `the claim <id> <ended> and cannot be marked`
     (`re-anchored` in `reanchor`). No command makes a retired claim
     writable, so the `remediation` points at where to look instead:
-    `The claim was replaced by <new>: run hibi status <new>` for a replaced
-    claim, and otherwise `hibi list <id>`, with the full id of the retired
-    claim, which shows its record and history.
+    `The claim was replaced by <last>: run hibi status <last>` when the
+    chain ends in a live claim; `hibi list <last>` when it ends in a
+    retired one; and `hibi list <id>` for a claim that was retired, which
+    shows its record and history.
   - From `claim`, the message is
-    `the claim <id>, with this statement, this note and its sides on the same units, was retired`
-    or the same with `was replaced by <new>`. A retired claim was a
-    decision, and the remediation says so and how to record the claim
-    again:
+    `the claim <id>, with this statement, this note and its sides on the same units, <ended>`.
+    A retired claim was a decision, and so was the retirement that ended
+    a chain; the remediation says so and how to record the claim again:
     `The claim was retired, and that stands. A different --note records the statement and anchors again as a new claim.`
     For an element of a standard-input batch it is
     `The claim was retired, and that stands. A different "note" in the element records the statement and anchors again as a new claim.`
-    A replaced claim has a claim that stands for it: the remediation is
-    `The claim was replaced by <new>: run hibi status <new>`, and the note
+    A chain that ends in a live claim has a claim that stands for it: the
+    remediation is
+    `The claim was replaced by <last>: run hibi status <last>`, and the note
     is not offered.
   - From `reanchor` step 5 the message is
-    `re-anchoring <old> would produce the claim <id>, which was retired`
-    or `..., which was replaced by <new>`, and the remediation is the
-    command of that step in both cases: the claim that replaced `<id>` is
-    often the one being re-anchored, so there is nowhere else to point.
+    `re-anchoring <old> would produce the claim <id>, which <ended>`, and
+    the remediation is the command of that step in every case: the claim
+    that replaced `<id>` is often the one being re-anchored, so there is
+    nowhere else to point.
 - `usage` found after the arguments were parsed, for example an evidence
   number that does not exist in `reanchor`: the `remediation` is
   `hibi <command> --help` with the name of the command that was run, for
@@ -6552,11 +6585,11 @@ and the remediation is the `hibi reanchor` template with `<anchor>`
 (section 15.2). For `claim_retired`, in `mark` and for a
 retired old claim in `reanchor`, the message says whether the claim was
 retired or replaced, and the remediation points to where it went: a
-retired claim cannot be marked or re-anchored. When a retirement of the
-claim has a `replacedBy`, the remediation is
-`The claim was replaced by <new id>: run hibi status <new id>`, with the
-`replacedBy` of the first such retirement in the store's order; otherwise it
-is `hibi list <id>`, which shows the retired claim's record.
+retired claim cannot be marked or re-anchored. When the replacements of the
+claim end in a live claim, the remediation is
+`The claim was replaced by <last id>: run hibi status <last id>`; otherwise
+it is `hibi list` with the id of the claim whose retirement ended it, which
+shows that record (section 15.2).
 
 Naming the same claim twice, as arguments or as elements, gives one entry of
 `marks` per mention. Two of them with the same `by` and `note` build the same
@@ -7273,7 +7306,7 @@ every other unit its printed anchor. Its cases pin:
 - the errors `invalid_selector` for a symbol on markdown and text and for a
   selector with `key`, and `not_found` for a missing resource;
 - a code file that does not parse (`broken.py` and inline text, cases named
-  `python with a syntax error: ...`): `unavailable` for a symbol, a symbol
+  `python with a syntax error: ...`): `unparsable` for a symbol, a symbol
   with a quote, a stored quote inside a declaration (with `within`), a
   stored top-level quote, a whole-file anchor and a new quote; and recovery:
   on the same text with the error removed, each of those stored selectors
@@ -7538,7 +7571,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 123 | At most `MAX_CANDIDATES` (20) candidates are shown, with `candidatesTotal`. Candidate text is cut to 240 characters, and is whole with `--detail`. A candidate's anchor is `<loc>#<symbol>` only when the symbol is unique in the whole resource, and a JSON anchor otherwise. `next` uses the `<anchor>` placeholder and never a candidate. | Bounded output; an anchor that is offered must select one unit; the caller chooses. |
 | 124 | Sides carry `detail` and `remediation`. | The JSON holds what the human output prints. |
 | 125 | Provider error `unavailable` maps to the side reason `resource_unavailable`, with `next` `null` and the provider's message as remediation. Provider errors `invalid_selector` and `invalid_locator` map to `selector_refused` for a stored anchor and to the CLI error `invalid_anchor` for a new one. | The resource exists and cannot be read, or the anchor is wrong for the resource; neither is a broken provider. |
-| 126 | A symbol on a resource class that has no symbols is `invalid_selector`. A symbol on a code file that does not parse is `unavailable`, naming the first error line; since decision 144 every selector is. | A symbol anchor must not be resolved against text blocks while the file is broken. |
+| 126 | A symbol on a resource class that has no symbols is `invalid_selector`. A symbol on a code file that does not parse is `unavailable`, naming the first error line; since decision 144 every selector is, and since decision 153 the code is `unparsable`. | A symbol anchor must not be resolved against text blocks while the file is broken. |
 | 127 | `reanchor` applies the same-claim rule and reports `merged`; `claim_retired` and `no_change` are checked first, and a kept side is not compared by quote. | Re-anchoring onto a claim that already exists must not create a second one. |
 | 128 | Unit building stops as soon as the count passes `MAX_UNITS_PER_RESOURCE`; the message gives the limit, not a count. | The work is bounded as well as the result. |
 | 129 | A side that is not exact covers no unit, and a claim with such a side is not sent to the judge and is listed first. | It has no resolved unit. |
@@ -7556,13 +7589,13 @@ Each row is a choice the plan left open or marked illustrative.
 | 141 | Superseded by decisions 142 and 143: no fingerprint is evidence of identity. | The rule let a claim follow an identical copy once the original was edited. |
 | 142 | Identity of a stored anchor (section 6.7): a side is resolved only by its symbol and the number of declarations it named (`count`), or by its quote with in-unit windows (`prefix`, `suffix` cut inside the unit) in its container (`within`: a heading path and piece name, or a declaration). Everything else is a candidate. Stored selectors hold no default quotes and no `pos`; printed anchors select their unit alone; `identity: "symbol"` marks a unit its symbol names after its stored quote is gone; `quote_not_distinguishable` refuses a new anchor whose completed selector would not select its unit. Supersedes decisions 132, 138 and 139 and the corroboration of decision 141, and removes `contextChanged`. | A claim could follow an identical copy silently: a fingerprint equal to a mark was taken as identity, and duplicated symbols re-bound. Context windows that reached into neighbouring units changed with unrelated edits, and position chose between equal hits. The rule was designed with the verifier until no scenario could make a candidate resolve. |
 | 143 | The engine adds no identity rule to the provider's answer. A unit resolved by its symbol alone, the stored quote gone, is `changed`, asks for a new anchor, and is refused by `mark`. Candidates and ambiguity lists print the provider's printed anchor; units with the same printed anchor are listed as a group without an anchor. The same claim, and repeated evidence, are decided by the units the sides resolve to. A quote that cannot be told apart is `quote_not_distinguishable`. A bare quote inside a declaration gets a note. | Identity belongs to one place; a mark must not keep a stale quote; what cannot be selected must not be offered; two ways to write an anchor name one side. |
-| 144 | A file of a code class that does not parse is `unavailable` for `resolve` with any selector, for `units` and for `render`, with the line of the first error; there is no fallback to `block` units for a code class, and the cache stores no row for such a file. Its sides are `unavailable` (`resource_unavailable`) and come back unchanged when it parses; `cover` lists it under `unavailable`. A file the pinned grammar cannot parse cannot be anchored: exclude it from the scope. Supersedes decision 3. | The text fallback produced half-states: a quote stored with `within` became `not_exact` with a text block as its candidate, and re-anchoring to it tied the claim to broken text; a top-level quote became `profile_mismatch` with `next: hibi mark`, which would record a `prose-v1` fingerprint of code. |
+| 144 | A file of a code class that does not parse is `unavailable` (since decision 153: `unparsable`) for `resolve` with any selector, for `units` and for `render`, with the line of the first error; there is no fallback to `block` units for a code class, and the cache stores no row for such a file. Its sides are `unavailable` (`resource_unavailable`) and come back unchanged when it parses; `cover` lists it under `unavailable`. A file the pinned grammar cannot parse cannot be anchored: exclude it from the scope. Supersedes decision 3. | The text fallback produced half-states: a quote stored with `within` became `not_exact` with a text block as its candidate, and re-anchoring to it tied the claim to broken text; a top-level quote became `profile_mismatch` with `next: hibi mark`, which would record a `prose-v1` fingerprint of code. |
 | 145 | An exclusion without `unit` takes whole resources out of a scope: they are not read and not listed under `unavailable`, and its `matched` counts resources. An exclusion with `unit` counts units. | Excluding a file is the remedy for a file that cannot be read or parsed; reading it again only reported it again. |
 | 146 | One same-claim rule, by resolved units, against live claims, retired claims and the elements of one batch; a stored side resolved by name alone still counts as its unit, and the write then fails. Units that cannot be told apart get no anchor anywhere (lists, `cover`) and the advice says what works. Cut text says that it is cut. `candidatesTotal` is exact. | A spelling of an anchor must not make a duplicate or bring a retired claim back; advice that cannot work is worse than none. |
 | 147 | A printed remedy must work when it is followed. At claim time the twin remedy names only the containing unit; `cover` names only the exclusion, one per unit. `reanchor` names every failing kept side in one error and repeats the caller's arguments. A failed provider points at its check, a refused stored key at a new anchor. The judge, store and indistinguishable-quote remedies say what is true for the command and the provider. An accepted side's text is whole. | Remedies that looped, dropped arguments or led nowhere were followed literally by the reader they are written for. |
 | 148 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
 | 149 | Rulings on section 6.7 (round 5): for a stored selector a hit inside a comment is not a hit in P either; the line of the first parse error is where parsing failed, not the start of the error node that holds it; a refresh keeps the stored `within` and `count`; a printed anchor of a unit in a multi-unit piece below a heading is also tried with its section alone; the unit cache key adds `UNIT_RULES_REVISION` to the hibi version; the count of containers a `within` names is two lookups. | A quote commented out stayed `changed` and could be marked; error lines pointed at line 1; a refresh could widen a side's scope; a unit selectable by its section was marked; two builds of one version shared rows and printed old anchors; counting by listing made `cover` quadratic on near-identical units. |
-| 150 | `status --since` also lists a stale claim made in the range. `next` and the `reanchor` error name every side that blocks the write; a side that no anchor on the same resource can fix is one with `too_large`, `not_text` or `provider_error`, or a resource that does not parse (a resource that cannot be read now, such as an unreadable file list, is not one: another anchor fails the same way and retiring loses a claim). The commands offered for such a side are whole, with the claim id and, in a `reanchor` error, the caller's arguments. The twin sentence names an enclosing declaration only when one unit of the resource holds every twin and selects alone, read from the unit list and not from a symbol's text, and nothing follows a locator in it. The `reanchor` fix line keeps `--note` and writes a value that starts with `-` as `--flag=value`. After `reanchor` the accepted text of a side is the unit the new claim has. `claim_retired` says whether the claim was retired or replaced. | The check an agent runs before finishing must show what its own branch broke, and a printed command must be able to succeed. |
+| 150 | `status --since` also lists a stale claim made in the range. `next` and the `reanchor` error name every side that blocks the write; a side that no anchor on the same resource can fix is one with `too_large`, `not_text` or `provider_error`, or a resource that does not parse (a resource that cannot be read now, such as an unreadable file list, is not one: another anchor fails the same way and retiring loses a claim). The commands offered for such a side are whole, with the claim id and, in a `reanchor` error, the caller's arguments. The twin sentence names an enclosing declaration only when one unit of the resource holds every twin and selects alone, read from the unit list and not from a symbol's text, and nothing follows a locator in it. The `reanchor` fix line keeps `--note` and writes a value that starts with `-` as `--flag=value`. After `reanchor` the accepted text of a side is the unit the new claim has. `claim_retired` says whether the claim was retired or replaced, following a chain of replacements to its last claim and pointing only at a live one. The twins of the twin sentence are taken from the provider's whole unit list, not from the candidates shown, and the whole file is printed as an anchor that parses. | The check an agent runs before finishing must show what its own branch broke, and a printed command must be able to succeed. |
 | 151 | Rulings on section 6.7 (round 6): in a resource with a parse tree the in-unit windows read every comment as one space; heading keys keep a run of `_` between two letters or digits (CommonMark: intraword `_` is not emphasis) and drop markup inside a link's text too; the parse-error message says "near line" (since decision 152, "the parser reports its first error at line"); `cover` reading the file once per listed item is a stated limit. | A comment edit next to a quote turned the side into a candidate although comments never make a side stale; `max_retries` and `maxretries` were one section; the parser's error line can be away from the mistake for unclosed strings and comments. |
 | 152 | The parse-error message says "the parser reports its first error at line <n>", which is true by construction; the spec says the mistake can be before or after that line and by many lines. `UNIT_RULES_REVISION` is 2, for the rules of decision 151, and a test pins it with a digest of the cache rows of a few texts, so a rules change without a new revision fails. | "near line" was false in 15 of 47 measured shapes; revision 1 was kept after decision 151 changed keys and printed anchors, so a newer binary read rows an older one wrote and printed anchors that did not select. |
 | 153 | A resource that is there and whose content cannot be split into units is the provider error `unparsable`, a new code of section 13.4 that any provider may return; the file provider returns it for a code file that does not parse, where decisions 126 and 144 say `unavailable`. It maps to the same side reason, `resource_unavailable`, so the reason list and a side's JSON do not change; hibi keeps which code was sent, and only that decides whether the side is offered a way on without its resource. `PROTOCOL_VERSION` stays 1: nothing of this version is released. | A file that never parses (a grammar that does not know new syntax) needs a printed way out, and an unreadable file list must not get one; with one code for both, only the message text could tell them apart. |
@@ -8321,7 +8354,7 @@ Each of these has a test, named in parentheses.
   `resource_unavailable`. (`every_provider_error_code_maps_by_the_table`,
   `cases/freshness.json`.)
 - R126. A symbol on a markdown, prose or text file is `invalid_selector`. A
-  code file with a syntax error is `unavailable` for every selector, new or
+  code file with a syntax error is `unparsable` for every selector, new or
   stored, for `units` and for `render`, with the line of the first error;
   no cache row is written for it; `cover` lists it under `unavailable` with
   `resource_unavailable`; and every stored anchor resolves to its unit
@@ -8592,10 +8625,14 @@ Each of these has a test, named in parentheses.
   every failing side in one error. The `reanchor` fix line repeats every
   argument, `--note` included, and joins a value that starts with `-` to
   its flag with `=`. The twin sentence names an enclosing declaration only
-  when one unit holds every twin and selects alone. After `reanchor` the
+  when one unit holds every twin and selects alone, the twins being every
+  unit of the resource that cannot be told apart from a listed one, shown
+  or not; its whole-file anchor is JSON for a path that compact syntax
+  cannot hold. After `reanchor` the
   accepted text of a side is the unit the new claim has for it.
-  `claim_retired` says whether the claim was retired or replaced, and
-  offers another note only for a retired one. With no HTTP answer and
+  `claim_retired` says whether the claim was retired or replaced, follows
+  a chain of replacements to its last claim, and offers another note only
+  when nothing live stands for the claim. With no HTTP answer and
   `HIBI_JEV_URL` set, `judge_failed` names it. A bare `#name` candidate for
   a stored `#name::<line>` says that the line is not carried over, and
   `--detail` gives a candidate's whole text.
@@ -8606,6 +8643,10 @@ Each of these has a test, named in parentheses.
   `a_fix_line_keeps_a_value_that_starts_with_a_dash`,
   `reanchor_names_every_failing_kept_side_in_one_error_and_one_command`,
   `the_twin_sentence_names_a_declaration_only_when_one_holds_the_twins`,
+  `a_single_listed_twin_does_not_name_the_declaration_it_stands_in`,
+  `the_twin_sentence_counts_the_twins_that_are_not_shown`,
+  `the_twin_sentence_prints_the_whole_file_as_an_anchor_that_parses`,
+  `claim_retired_names_the_last_claim_of_a_chain_of_replacements`,
   `selector_advice_comes_from_the_provider`,
   `identical_twins_are_listed_without_an_anchor`,
   `reanchor_shows_the_text_of_the_unit_the_new_claim_has`,
