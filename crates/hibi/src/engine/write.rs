@@ -275,7 +275,7 @@ fn unresolved_error_with(
             ) {
                 // A stored side whose resource cannot be evaluated: the
                 // remediation also says how to go on without it.
-                (Some(fix), Some((again, id))) if super::types::blocks_the_resource(reason) => {
+                (Some(fix), Some((again, id))) if r.blocks_the_resource() => {
                     e.with_remediation(fix + &super::types::blocked_choice(again, id, index))
                 }
                 (Some(fix), _) => e.with_remediation(fix),
@@ -1420,7 +1420,7 @@ pub fn reanchor(
                 // The resource itself cannot be evaluated: no anchor on it
                 // helps. The side is named with the others, with the
                 // choice the caller has.
-                Some((_, reason)) if super::types::blocks_the_resource(reason) => {
+                Some(_) if r.blocks_the_resource() => {
                     let choice = if n == 0 {
                         format!(
                             " (in the fix command, give the subject an anchor on another resource, or run hibi retire {} instead)",

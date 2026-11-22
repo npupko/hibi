@@ -289,6 +289,12 @@ pub enum Resolved {
         state: SideState,
         reason: Reason,
         message: String,
+        /// The provider said `unparsable` (section 13.4): the resource is
+        /// there and its content cannot be split into units. The reason
+        /// is `resource_unavailable` as for a resource that cannot be
+        /// read now; this tells the two apart, by the provider's code and
+        /// not by its message.
+        unparsable: bool,
     },
 }
 
@@ -419,6 +425,34 @@ impl Resolved {
             state,
             reason,
             message: message.into(),
+            unparsable: false,
+        }
+    }
+
+    /// True for a side that no anchor on the same resource can fix: it is
+    /// `unavailable` with `too_large`, `not_text` or `provider_error`, or
+    /// its resource does not parse. An evidence side in that state blocks
+    /// every write on its claim until it is given an anchor on another
+    /// resource or dropped; a subject has to be re-pointed, or the claim
+    /// retired. A resource that cannot be reached now (the other cause of
+    /// `resource_unavailable`, such as a file list that cannot be read) is
+    /// not one: another anchor fails the same way, and retiring would lose
+    /// a claim over a cause that passes.
+    pub fn blocks_the_resource(&self) -> bool {
+        match self {
+            Resolved::Failed {
+                state: SideState::Unavailable,
+                reason,
+                unparsable,
+                ..
+            } => {
+                *unparsable
+                    || matches!(
+                        reason,
+                        Reason::TooLarge | Reason::NotText | Reason::ProviderError
+                    )
+            }
+            _ => false,
         }
     }
 }
@@ -454,8 +488,10 @@ pub fn side_of_error(code: ProviderErrorCode) -> (SideState, Reason) {
         C::TooLarge => (SideState::Unavailable, Reason::TooLarge),
         C::RepoNotFound => (SideState::Unavailable, Reason::RepoNotFound),
         C::RepoNotAllowed => (SideState::Unavailable, Reason::RepoNotAllowed),
-        // The resource exists but cannot be read now.
-        C::Unavailable => (SideState::Unavailable, Reason::ResourceUnavailable),
+        // The resource exists but cannot be read now, or it can be read
+        // and does not parse. One reason for both; `Resolved::Failed` keeps
+        // which it was.
+        C::Unavailable | C::Unparsable => (SideState::Unavailable, Reason::ResourceUnavailable),
         // The provider refuses the anchor: the anchor is wrong for this
         // resource, the provider did not fail.
         C::InvalidLocator | C::InvalidSelector => (SideState::Unavailable, Reason::SelectorRefused),
@@ -478,8 +514,12 @@ pub(crate) fn failed_from_error(e: &ProviderError) -> Resolved {
     // The message is the provider's own sentence, without the error code:
     // the side's `reason` already names the kind, and `detail`, the
     // remediation and the error message quote the sentence as it is.
-    let message = e.message.clone();
-    Resolved::failed(state, reason, message)
+    Resolved::Failed {
+        state,
+        reason,
+        message: e.message.clone(),
+        unparsable: e.code == ProviderErrorCode::Unparsable,
+    }
 }
 
 /// True when an anchor on `loc` can be written in compact syntax. Compact

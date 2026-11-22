@@ -635,7 +635,7 @@ impl Doc {
             format!(" (the parser reports its first error at line {l})")
         });
         Err(ProviderError::new(
-            ProviderErrorCode::Unavailable,
+            ProviderErrorCode::Unparsable,
             format!(
                 "{loc} does not parse as {}{at}, so its units cannot be read; fix the syntax error",
                 self.class.name()

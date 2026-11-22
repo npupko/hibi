@@ -67,8 +67,8 @@ pub(crate) use types::Nullable;
 pub use types::{
     Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Envelope,
     ErrorEnvelope, NEXT_NOTE, Reason, Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, Warning,
-    WarningCode, blocked_choice, blocks_the_resource, cut_text, escape_controls, excerpt, sh_quote,
-    side_remediation, unavailable_remediation,
+    WarningCode, blocked_choice, cut_text, escape_controls, excerpt, sh_quote, side_remediation,
+    unavailable_remediation,
 };
 pub use write::{
     ClaimOutput, ClaimResult, MarkOutput, MarkResult, ReanchorOutput, RetireOutput, RetireResult,

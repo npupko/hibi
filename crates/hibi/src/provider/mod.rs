@@ -225,6 +225,9 @@ pub enum ProviderErrorCode {
     RepoNotAllowed,
     UnknownUnit,
     Unavailable,
+    /// The resource is there and can be read, and its content cannot be
+    /// split into units: a code file that does not parse.
+    Unparsable,
     Internal,
     /// Produced only by `CommandProvider`, never on the wire: the process
     /// could not be started, timed out, broke the protocol or was killed.
@@ -233,7 +236,7 @@ pub enum ProviderErrorCode {
 
 impl ProviderErrorCode {
     /// The codes that may appear on the wire, in the order of section 13.4.
-    pub const WIRE: [ProviderErrorCode; 13] = [
+    pub const WIRE: [ProviderErrorCode; 14] = [
         ProviderErrorCode::InvalidRequest,
         ProviderErrorCode::UnknownMethod,
         ProviderErrorCode::UnsupportedProtocol,
@@ -246,6 +249,7 @@ impl ProviderErrorCode {
         ProviderErrorCode::RepoNotAllowed,
         ProviderErrorCode::UnknownUnit,
         ProviderErrorCode::Unavailable,
+        ProviderErrorCode::Unparsable,
         ProviderErrorCode::Internal,
     ];
 
@@ -263,6 +267,7 @@ impl ProviderErrorCode {
             ProviderErrorCode::RepoNotAllowed => "repo_not_allowed",
             ProviderErrorCode::UnknownUnit => "unknown_unit",
             ProviderErrorCode::Unavailable => "unavailable",
+            ProviderErrorCode::Unparsable => "unparsable",
             ProviderErrorCode::Internal => "internal",
             ProviderErrorCode::Failed => "failed",
         }

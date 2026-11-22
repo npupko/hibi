@@ -78,6 +78,7 @@
         "repo_not_allowed",
         "unknown_unit",
         "unavailable",
+        "unparsable",
         "internal"
       ]
     }

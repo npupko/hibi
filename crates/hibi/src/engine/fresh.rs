@@ -85,6 +85,9 @@ pub struct Evaluation<'m> {
     /// anchor: a mark would keep the stale quote for good. Empty for a
     /// retired claim.
     pub quote_gone: Vec<bool>,
+    /// Per side: true when no anchor on the side's resource can fix it
+    /// ([`Resolved::blocks_the_resource`]). Empty for a retired claim.
+    pub blocked: Vec<bool>,
 }
 
 impl Evaluation<'_> {
@@ -92,6 +95,11 @@ impl Evaluation<'_> {
     /// stored quote is gone from the unit its symbol names.
     pub fn quote_gone(&self, index: usize) -> bool {
         self.quote_gone.get(index).copied().unwrap_or(false)
+    }
+
+    /// True when no anchor on the resource of side `index` can fix it.
+    pub fn blocked(&self, index: usize) -> bool {
+        self.blocked.get(index).copied().unwrap_or(false)
     }
 }
 
@@ -175,6 +183,7 @@ pub fn evaluate<'m>(
             expires_at: None,
             sides: Vec::new(),
             quote_gone: Vec::new(),
+            blocked: Vec::new(),
         });
     }
     if resolved.len() != claim.side_count() {
@@ -265,6 +274,7 @@ pub fn evaluate<'m>(
         expires_at,
         sides,
         quote_gone,
+        blocked: resolved.iter().map(Resolved::blocks_the_resource).collect(),
     })
 }
 
@@ -327,9 +337,7 @@ pub fn next_command(claim: &Claim, eval: &Evaluation<'_>) -> Option<String> {
         .any(|(i, (state, reason))| needs_anchor(i, state, reason));
     let mut reanchor = String::new();
     for (i, (state, reason)) in eval.sides.iter().enumerate() {
-        let blocked = *state == SideState::Unavailable
-            && reason.is_some_and(super::types::blocks_the_resource);
-        if needs_anchor(i, state, reason) || (any && blocked) {
+        if needs_anchor(i, state, reason) || (any && eval.blocked(i)) {
             if i == 0 {
                 reanchor.push_str(" --subject <anchor>");
             } else {
@@ -477,7 +485,7 @@ pub fn claim_view(
                 remediation: match (state, reason) {
                     (SideState::Unavailable, Some(reason)) => {
                         side_remediation(*reason, said, anchor.loc.scheme()).map(|fix| {
-                            if super::types::blocks_the_resource(*reason) {
+                            if r.blocks_the_resource() {
                                 let again = format!("hibi reanchor {}", claim.id);
                                 fix + &super::types::blocked_choice(&again, &claim.id, index)
                             } else {

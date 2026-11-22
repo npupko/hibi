@@ -2378,10 +2378,14 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable() {
     assert!(said.contains("file:report.py does not parse"), "{said}");
     assert!(said.contains("line 5"), "{said}");
     // The provider says the cause and the fix; hibi adds when to run the
-    // command again, once.
+    // command again, once. The file may never parse (a grammar that does
+    // not know new syntax), so the stored side also says how to go on
+    // without it, with whole commands.
     assert_eq!(
         s(&side["remediation"]),
-        "file:report.py does not parse as python (the parser reports its first error at line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed."
+        format!(
+            "file:report.py does not parse as python (the parser reports its first error at line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: hibi reanchor {id} --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor {id} --drop-evidence 1 drops it."
+        )
     );
 
     // The stored anchor: `mark` is refused with the same remediation.
@@ -3457,6 +3461,72 @@ fn claim_retired_says_whether_the_claim_was_retired_or_replaced() {
         s(&e["message"]),
         format!("re-anchoring {new} would produce the claim {old}, which was replaced by {new}")
     );
+}
+
+/// Section 15.2: a file that does not parse is a side that no anchor on
+/// the same resource can fix, by the provider's own code for it and not by
+/// its message. Beside a missing subject, `next` has a placeholder for
+/// both sides, the evidence says how to go on without it, and the command
+/// with the evidence dropped goes through. (An unreadable file list has the
+/// same reason and gets neither:
+/// `an_unreadable_git_file_list_is_resource_unavailable_without_repetition`.)
+#[test]
+fn a_file_that_does_not_parse_beside_a_missing_side_has_a_way_out() {
+    let repo = seeded();
+    repo.write("src/limits.ts", "export const RETRIES = 5;\n");
+    let id = repo.claim("Retries", RETRY_SUBJECT, &["file:src/limits.ts#RETRIES"]);
+    repo.write(
+        "docs/a.md",
+        &DOC.replace("The retry count is 3.", "Retries: three."),
+    );
+    repo.write(
+        "src/limits.ts",
+        "export const RETRIES = 5\nexport function f( {\n",
+    );
+
+    let view = repo.view(&id);
+    assert_eq!(view["sides"][0]["state"], "missing");
+    assert_eq!(view["sides"][1]["state"], "unavailable");
+    // The reason is the one of every resource that cannot be evaluated
+    // now: the JSON of the side does not change with the cause.
+    assert_eq!(view["sides"][1]["reason"], "resource_unavailable");
+    assert_eq!(
+        s(&view["next"]),
+        format!("hibi reanchor {id} --subject <anchor> --evidence 1=<anchor>")
+    );
+    let fix = s(&view["sides"][1]["remediation"]);
+    assert!(
+        fix.starts_with("file:src/limits.ts does not parse as typescript "),
+        "{fix}"
+    );
+    assert!(
+        fix.ends_with(&format!("fix the syntax error. Run the command again once that is fixed. To move on without that: hibi reanchor {id} --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor {id} --drop-evidence 1 drops it.")),
+        "{fix}"
+    );
+    // The fix line of `reanchor` names both sides too.
+    let e = refused(&repo, &["reanchor", &id]);
+    assert_eq!(
+        s(&e["remediation"]),
+        format!("hibi reanchor {id} --subject <anchor> --evidence 1=<anchor>")
+    );
+    assert!(
+        s(&e["message"]).ends_with("(in the fix command, give evidence 1 an anchor on another resource, or put --drop-evidence 1 in its place)"),
+        "{e}"
+    );
+    // `next` with the drop in place of the second placeholder.
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &[
+            "reanchor",
+            &id,
+            "--subject",
+            "file:docs/a.md::Retries: three.",
+            "--drop-evidence",
+            "1",
+        ],
+    );
+    assert_eq!(v["claim"]["state"], "fresh");
 }
 
 /// R55: the same anchor when another line of the function is edited: the

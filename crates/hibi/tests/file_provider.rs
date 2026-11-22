@@ -123,6 +123,17 @@ fn one(p: &mut dyn Provider, l: &str, s: Value) -> Unit {
 /// that the command can be run again (ruling on section 9.2).
 fn assert_unavailable_ending(e: &ProviderError, fix: &str) {
     assert_eq!(e.code, ProviderErrorCode::Unavailable, "{}", e.message);
+    assert_message_ends_at_the_fix(e, fix);
+}
+
+/// An `unparsable` error (section 13.4: the file is there and can be read,
+/// and its content cannot be split into units), with the same message rule.
+fn assert_unparsable_ending(e: &ProviderError, fix: &str) {
+    assert_eq!(e.code, ProviderErrorCode::Unparsable, "{}", e.message);
+    assert_message_ends_at_the_fix(e, fix);
+}
+
+fn assert_message_ends_at_the_fix(e: &ProviderError, fix: &str) {
     assert!(e.message.ends_with(fix), "{}", e.message);
     assert!(!e.message.contains("again"), "{}", e.message);
 }
@@ -536,10 +547,7 @@ fn completed_selectors_are_fixed_points() {
             Ok(units) => units,
             // A fixture of a code class that does not parse has no units
             // (section 6.1).
-            Err(e)
-                if e.code == ProviderErrorCode::Unavailable
-                    && e.message.contains("does not parse") =>
-            {
+            Err(e) if e.code == ProviderErrorCode::Unparsable => {
                 continue;
             }
             Err(e) => panic!("{path}: {e}"),
@@ -714,10 +722,7 @@ fn default_quotes_are_never_in_comments_and_round_trip() {
             Ok(u) => u,
             // A fixture of a code class that does not parse has no units
             // (section 6.1).
-            Err(e)
-                if e.code == ProviderErrorCode::Unavailable
-                    && e.message.contains("does not parse") =>
-            {
+            Err(e) if e.code == ProviderErrorCode::Unparsable => {
                 continue;
             }
             Err(e) => panic!("{path}: {e}"),
@@ -2097,7 +2102,7 @@ fn a_code_file_that_does_not_parse_is_unavailable_for_every_request() {
         .map(|(w, _, s)| (*w, s.clone()))
         .chain(new_anchors);
     let check = |e: &ProviderError, what: &str| {
-        assert_unavailable_ending(e, "; fix the syntax error");
+        assert_unparsable_ending(e, "; fix the syntax error");
         assert!(
             e.message.contains("does not parse as python") && e.message.contains("line 8"),
             "{what}: {}",

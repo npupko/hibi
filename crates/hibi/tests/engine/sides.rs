@@ -89,6 +89,8 @@ fn every_provider_error_code_maps_by_the_table() {
         (C::InvalidSelector, S::Unavailable, R::SelectorRefused),
         (C::UnknownUnit, S::Unavailable, R::ProviderError),
         (C::Unavailable, S::Unavailable, R::ResourceUnavailable),
+        // The same reason: a side's JSON does not tell the two apart.
+        (C::Unparsable, S::Unavailable, R::ResourceUnavailable),
         (C::Internal, S::Unavailable, R::ProviderError),
         // Section 13.4: the provider is unusable.
         (C::UnsupportedProtocol, S::Unavailable, R::ProviderFailed),

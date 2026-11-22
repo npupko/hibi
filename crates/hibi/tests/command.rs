@@ -602,6 +602,11 @@ fn every_wire_error_code_reaches_the_caller() {
         lines.push(error_answer(c.as_str()));
         want.push(c);
     }
+    // `unparsable` is one of them: a command provider may say that a
+    // resource is there and cannot be split into units, and the caller
+    // gets that code and not `unavailable` or `internal`.
+    assert!(want.contains(&ProviderErrorCode::Unparsable));
+    assert_eq!(ProviderErrorCode::Unparsable.as_str(), "unparsable");
     // An unknown code, and `failed` on the wire, are `internal`.
     lines.push(error_answer("weird"));
     want.push(ProviderErrorCode::Internal);

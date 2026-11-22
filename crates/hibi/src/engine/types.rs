@@ -177,22 +177,8 @@ pub fn escape_controls(json: &str) -> String {
     out
 }
 
-/// True for a reason that no anchor on the same resource can fix: the
-/// resource is too large, is not text, or its provider answers wrongly. An
-/// evidence side in that state blocks every write on its claim until it is
-/// given an anchor on another resource or dropped; a subject has to be
-/// re-pointed, or the claim retired. `resource_unavailable` is not one of
-/// them: it is also given for a cause that passes (a file list that cannot
-/// be read now), where another anchor fails the same way and retiring would
-/// lose a claim.
-pub fn blocks_the_resource(reason: Reason) -> bool {
-    matches!(
-        reason,
-        Reason::TooLarge | Reason::NotText | Reason::ProviderError
-    )
-}
-
-/// What a stored side that [`blocks_the_resource`] adds to its
+/// What a stored side that no anchor on its resource can fix
+/// ([`Resolved::blocks_the_resource`](super::Resolved::blocks_the_resource)) adds to its
 /// remediation: the commands the caller can run instead, whole, so that
 /// each can be copied. `again` is the `hibi reanchor <id>` command they
 /// start with, with the caller's own arguments when it comes from

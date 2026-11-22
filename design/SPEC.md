@@ -1545,7 +1545,7 @@ is reported:
    longer than `MAX_CODE_FILE_BYTES` (section 6.1): `too_large`.
 5. The file is not valid UTF-8: `not_text`.
 6. The resource is of a code class and does not parse (section 6.1):
-   `unavailable`, for every selector. The message is
+   `unparsable` (section 13.4), for every selector. The message is
    `<loc> does not parse as <class> (the parser reports its first error at line <n>), so its units cannot be read; fix the syntax error`.
    `<n>` is the 1-based line where the parser reports its first error:
    going down the parse tree in source order to the first error node or
@@ -1573,7 +1573,7 @@ is reported:
 
 Errors 1 to 6 are errors of the resource, so they win over errors 7 to 9 of
 the selector: a selector with a `key` on an absent file is `not_found`, and
-on a code file that does not parse `unavailable`. `units` and `render`
+on a code file that does not parse `unparsable`. `units` and `render`
 report errors 1 to 6 in the same order. In a batch each anchor gets its own
 result or error.
 
@@ -2409,7 +2409,7 @@ fingerprints with different profiles are never compared: the side reports
 effect of a profile mismatch. It happens when a later hibi ships a new profile
 version, and when a file's class changes. A code file that does not parse
 is not a profile mismatch: it has no units, every side on it fails with the
-provider error `unavailable` before any fingerprint is compared (section 6.7,
+provider error `unparsable` before any fingerprint is compared (section 6.7,
 error 6), and it reports `unavailable` with reason `resource_unavailable`.
 
 ### 8.3 `prose-v1`
@@ -2677,7 +2677,7 @@ and every engine-side check appears once.
 | Provider | Error `too_large` | `unavailable` | `too_large` |
 | Provider | Error `repo_not_found` | `unavailable` | `repo_not_found` |
 | Provider | Error `repo_not_allowed` | `unavailable` | `repo_not_allowed` |
-| Provider | Error `unavailable` | `unavailable` | `resource_unavailable` |
+| Provider | Error `unavailable` or `unparsable` | `unavailable` | `resource_unavailable` |
 | Provider | Error `invalid_selector` or `invalid_locator` | `unavailable` | `selector_refused` |
 | Provider | Any other error code | `unavailable` | `provider_error` |
 | Engine | A `resolve` call returns a number of answers other than the number of anchors sent. This holds for every anchor of the call. | `unavailable` | `provider_error` |
@@ -2694,6 +2694,14 @@ section 13.4 that have no row of their own (`invalid_request`,
 `unavailable` means that the resource exists and cannot be read now
 (section 13.4). It maps to `resource_unavailable`, and the side carries the
 provider's message in `detail` and `remediation` (section 15.2).
+`unparsable` means that the resource is there and can be read, and that its
+content cannot be split into units. It maps to `resource_unavailable` too,
+with the provider's message in the same places, so the reason list stays
+as it is and the JSON of a side is the same for both codes. hibi keeps
+which of the two the provider sent, and that decides one thing: a side on a
+resource that does not parse is a side that no anchor on the same resource
+can fix (section 15.2), and a side on a resource that cannot be read now is
+not. The provider's code decides this, never the text of its message.
 `invalid_selector` and `invalid_locator` mean that the provider refuses the
 anchor for this resource: the anchor is wrong, the provider did not fail.
 For a stored anchor they map to `selector_refused`, with the provider's
@@ -4520,18 +4528,29 @@ is the side result of a `resolve` that fails with the code (section 9.2).
 | `repo_not_allowed` | File provider only, section 11.1 | `unavailable`, `repo_not_allowed` |
 | `unknown_unit` | `render` only | none: the side cannot be rendered (section 14.5) |
 | `unavailable` | The resource exists but cannot be read now | `unavailable`, `resource_unavailable` |
+| `unparsable` | The resource exists and can be read, and its content cannot be split into units | `unavailable`, `resource_unavailable` |
 | `internal` | Anything else | `unavailable`, `provider_error` |
 
 An unknown code is treated as `internal`. `failed` is not a wire code
 (section 2.5): a provider that sends the code `failed` is read as having sent
 `internal`.
 
-For `unavailable` the `message` of the error is what the user is shown: the
+For `unavailable` and `unparsable` the `message` of the error is what the user is shown: the
 side's `detail` is the message cut to 500 characters, and its `remediation`
 is that cut message without trailing `.` and spaces, followed by
 `. Run the command again once that is fixed.` (section 15.2). A provider SHOULD therefore write the message of an
-`unavailable` error as one sentence that names the resource, the cause and
-what to fix.
+`unavailable` or `unparsable` error as one sentence that names the resource,
+the cause and what to fix.
+
+Any provider may return `unparsable`, for a resource whose content it has
+read and cannot split into units: a file with a syntax error, a document in
+a version of a format it does not know. It is the code to use when waiting
+does not help and the content has to change. `unavailable` is for a
+resource that cannot be reached or read now. The two give the same side
+reason; they differ in what hibi offers the caller (section 9.2). The file
+provider returns `unparsable` for a file of a code class that does not
+parse, resolved with any selector, listed or rendered (section 6.1,
+section 6.7, error 6), and for nothing else.
 
 Three codes are also produced by hibi itself, without an error on the wire:
 
@@ -4545,8 +4564,6 @@ Three codes are also produced by hibi itself, without an error on the wire:
 returns it when a resource cannot be read for a reason that is neither
 absence nor size nor encoding:
 
-- a file of a code class that does not parse is resolved with any selector,
-  listed or rendered (section 6.1, section 6.7, error 6);
 - reading a file of the working tree fails with an input or output error
   other than "no such file" or "not a directory" (those two are `not_found`);
 - a resource is read at a revision (`--since`, section 10.3) and git is not
@@ -5530,21 +5547,25 @@ Rules for the Side keys:
   this side. It is `null` only when the claim has no reference mark. It is
   set also when the side is `missing`, `ambiguous` or `unavailable`.
 - `remediation` is set for a side whose state is `unavailable`, by its
-  reason, as the table below gives it. For a side whose reason is one of
-  the three that no anchor on the same resource can fix (`too_large`,
-  `not_text`, `provider_error`) the sentence of the table is followed by
-  the commands the caller can run instead, each whole, with the full claim
-  id as `<id>`: for evidence `<n>`,
+  reason, as the table below gives it. A side that no anchor on the same
+  resource can fix is one that is `unavailable` with `too_large`,
+  `not_text` or `provider_error`, or whose resource does not parse (the
+  provider error `unparsable`, section 13.4; its reason is
+  `resource_unavailable`). For such a side the sentence of the table is
+  followed by the commands the caller can run instead, each whole, with
+  the full claim id as `<id>`: for evidence `<n>`,
   ` To move on without that: hibi reanchor <id> --evidence <n>=<anchor> gives this side an anchor on another resource, and hibi reanchor <id> --drop-evidence <n> drops it.`;
   for the subject,
   ` To move on without that: hibi reanchor <id> --subject <anchor> re-points the subject to another resource, and hibi retire <id> retires the claim.`
   In the error of a `reanchor` call, `hibi reanchor <id>` in these
   sentences is followed by every argument the caller gave, as in the fix
   line of section 15.3, so that a command taken from the sentence loses
-  none of them. `resource_unavailable` is not one of the three: it is also
-  the reason when the file list of the root cannot be read, a cause that
-  passes, where another anchor fails the same way and retiring would lose
-  the claim. Such a side has only the sentence of the table.
+  none of them. A side that is `resource_unavailable` because its resource
+  cannot be read now (the provider error `unavailable`: a file list that
+  cannot be read, a failed read) is not such a side: the cause passes,
+  another anchor fails the same way, and retiring would lose the claim. It
+  has only the sentence of the table. The two are told apart by the
+  provider's error code, not by its message.
   It is also set for a `missing` or `ambiguous` side that lists a unit no
   anchor selects alone: the sentence for such units (section 15.3). It is
   `null` for every other side, where the claim's `next` says what to do.
@@ -5689,7 +5710,7 @@ in the run.
 | Condition | `next` |
 |---|---|
 | `fresh` or `retired` | `null` |
-| A side is `missing` or `ambiguous`, or `unavailable` with `selector_refused`, or `changed` with its unit resolved by its symbol alone because the stored quote is gone (`identity: "symbol"`, section 9.2; the side's `detail` says so) | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side, in side order. When at least one side needs an anchor in this way, the command also has a placeholder for every side that is `unavailable` with `too_large`, `not_text` or `provider_error`: no anchor on the same resource can fix such a side, it would stop the `reanchor` too, and its `remediation` says that it can be given an anchor on another resource or dropped (a subject: re-pointed, or the claim retired). Sides that are `unavailable` for a reason of configuration (`provider_not_registered`, `provider_failed`, `repo_not_allowed`, `scheme_not_declared`, `repo_not_found`), and sides with `resource_unavailable`, are not added |
+| A side is `missing` or `ambiguous`, or `unavailable` with `selector_refused`, or `changed` with its unit resolved by its symbol alone because the stored quote is gone (`identity: "symbol"`, section 9.2; the side's `detail` says so) | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side, in side order. When at least one side needs an anchor in this way, the command also has a placeholder for every side that no anchor on the same resource can fix (`too_large`, `not_text`, `provider_error`, and a resource that does not parse): no anchor on the same resource can fix such a side, it would stop the `reanchor` too, and its `remediation` says that it can be given an anchor on another resource or dropped (a subject: re-pointed, or the claim retired). Sides that are `unavailable` for a reason of configuration (`provider_not_registered`, `provider_failed`, `repo_not_allowed`, `scheme_not_declared`, `repo_not_found`), and sides whose resource cannot be read now (`resource_unavailable` from the provider error `unavailable`), are not added |
 | A side is `unavailable` with `provider_not_registered` or `repo_not_allowed` | `hibi providers` |
 | A side is `unavailable` with `provider_failed` | `hibi providers --check <scheme>` for the first such side, or `hibi providers` for a built-in scheme |
 | A side is `unavailable` with `scheme_not_declared`, `repo_not_found`, `not_text`, `too_large`, `provider_error` or `resource_unavailable`, and no side needs an anchor | `null` |
@@ -6627,8 +6648,9 @@ Builds a new claim from the old one:
    POSIX shell, and as `<flag>=<value>` when the value starts with `-`:
    after a space such a value would be read as another option
    (`--statement='-1 means no limit.'`). A kept
-   side that is `unavailable` with `too_large`, `not_text` or
-   `provider_error` is named in the same error
+   side that no anchor on the same resource can fix (`too_large`,
+   `not_text`, `provider_error`, and a resource that does not parse) is
+   named in the same error
    when another kept side needs an anchor: its message ends with
    ` (in the fix command, give evidence <n> an anchor on another resource, or put --drop-evidence <n> in its place)`
    or, for the subject,
@@ -6637,8 +6659,8 @@ Builds a new claim from the old one:
    side that fails, the error is its own `side_unavailable`, whose
    remediation is the side's (section 15.2), with the caller's arguments
    in its commands. A kept side that is `unavailable` for another reason,
-   `resource_unavailable` included, fails alone with its own remediation
-   and gets no placeholder.
+   a resource that cannot be read now included, fails alone with its own
+   remediation and gets no placeholder.
    `mark`, and `claim` on a claim that exists, likewise name every side
    that stops them: the messages of the failing sides are joined with `; `,
    and the code is that of the first.
@@ -7540,9 +7562,10 @@ Each row is a choice the plan left open or marked illustrative.
 | 147 | A printed remedy must work when it is followed. At claim time the twin remedy names only the containing unit; `cover` names only the exclusion, one per unit. `reanchor` names every failing kept side in one error and repeats the caller's arguments. A failed provider points at its check, a refused stored key at a new anchor. The judge, store and indistinguishable-quote remedies say what is true for the command and the provider. An accepted side's text is whole. | Remedies that looped, dropped arguments or led nowhere were followed literally by the reader they are written for. |
 | 148 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
 | 149 | Rulings on section 6.7 (round 5): for a stored selector a hit inside a comment is not a hit in P either; the line of the first parse error is where parsing failed, not the start of the error node that holds it; a refresh keeps the stored `within` and `count`; a printed anchor of a unit in a multi-unit piece below a heading is also tried with its section alone; the unit cache key adds `UNIT_RULES_REVISION` to the hibi version; the count of containers a `within` names is two lookups. | A quote commented out stayed `changed` and could be marked; error lines pointed at line 1; a refresh could widen a side's scope; a unit selectable by its section was marked; two builds of one version shared rows and printed old anchors; counting by listing made `cover` quadratic on near-identical units. |
-| 150 | `status --since` also lists a stale claim made in the range. `next` and the `reanchor` error name every side that blocks the write; the three reasons no anchor on the resource can fix are `too_large`, `not_text` and `provider_error` (`resource_unavailable` is not one: it is also a file list that cannot be read now, where another anchor fails the same way and retiring loses a claim). The commands offered for such a side are whole, with the claim id and, in a `reanchor` error, the caller's arguments. The twin sentence names an enclosing declaration only when one unit of the resource holds every twin and selects alone, read from the unit list and not from a symbol's text, and nothing follows a locator in it. The `reanchor` fix line keeps `--note` and writes a value that starts with `-` as `--flag=value`. After `reanchor` the accepted text of a side is the unit the new claim has. `claim_retired` says whether the claim was retired or replaced. | The check an agent runs before finishing must show what its own branch broke, and a printed command must be able to succeed. |
+| 150 | `status --since` also lists a stale claim made in the range. `next` and the `reanchor` error name every side that blocks the write; a side that no anchor on the same resource can fix is one with `too_large`, `not_text` or `provider_error`, or a resource that does not parse (a resource that cannot be read now, such as an unreadable file list, is not one: another anchor fails the same way and retiring loses a claim). The commands offered for such a side are whole, with the claim id and, in a `reanchor` error, the caller's arguments. The twin sentence names an enclosing declaration only when one unit of the resource holds every twin and selects alone, read from the unit list and not from a symbol's text, and nothing follows a locator in it. The `reanchor` fix line keeps `--note` and writes a value that starts with `-` as `--flag=value`. After `reanchor` the accepted text of a side is the unit the new claim has. `claim_retired` says whether the claim was retired or replaced. | The check an agent runs before finishing must show what its own branch broke, and a printed command must be able to succeed. |
 | 151 | Rulings on section 6.7 (round 6): in a resource with a parse tree the in-unit windows read every comment as one space; heading keys keep a run of `_` between two letters or digits (CommonMark: intraword `_` is not emphasis) and drop markup inside a link's text too; the parse-error message says "near line" (since decision 152, "the parser reports its first error at line"); `cover` reading the file once per listed item is a stated limit. | A comment edit next to a quote turned the side into a candidate although comments never make a side stale; `max_retries` and `maxretries` were one section; the parser's error line can be away from the mistake for unclosed strings and comments. |
 | 152 | The parse-error message says "the parser reports its first error at line <n>", which is true by construction; the spec says the mistake can be before or after that line and by many lines. `UNIT_RULES_REVISION` is 2, for the rules of decision 151, and a test pins it with a digest of the cache rows of a few texts, so a rules change without a new revision fails. | "near line" was false in 15 of 47 measured shapes; revision 1 was kept after decision 151 changed keys and printed anchors, so a newer binary read rows an older one wrote and printed anchors that did not select. |
+| 153 | A resource that is there and whose content cannot be split into units is the provider error `unparsable`, a new code of section 13.4 that any provider may return; the file provider returns it for a code file that does not parse, where decisions 126 and 144 say `unavailable`. It maps to the same side reason, `resource_unavailable`, so the reason list and a side's JSON do not change; hibi keeps which code was sent, and only that decides whether the side is offered a way on without its resource. `PROTOCOL_VERSION` stays 1: nothing of this version is released. | A file that never parses (a grammar that does not know new syntax) needs a printed way out, and an unreadable file list must not get one; with one code for both, only the message text could tell them apart. |
 
 ---
 
@@ -7925,7 +7948,7 @@ Verification section in order.
 - R49. A file longer than `MAX_FILE_BYTES`, or a file of a code class longer
   than `MAX_CODE_FILE_BYTES`, reports `too_large` in both sources and is not
   parsed. A source file nested 100,000 levels deep is processed, or reported
-  `unavailable` as a file that does not parse, without a crash.
+  `unparsable` as a file that does not parse, without a crash.
   (`r49_size_cap`, `code_files_have_a_lower_size_cap`,
   `r49_deep_nesting_does_not_overflow`.)
 - R50. A provider that returns a `sel` with an unknown key, an invalid
@@ -8559,11 +8582,13 @@ Each of these has a test, named in parentheses.
   and same-bodied functions, top-level statements.
   (`printed_anchors_of_near_identical_units_cost_linear_work`.)
 - R161. `next` names every side that blocks the write: a placeholder for
-  each side that needs an anchor and, with them, for each side that is
-  `unavailable` with `too_large`, `not_text` or `provider_error`, whose
-  remediation gives the whole commands that drop it or give it an anchor on
-  another resource; such a side alone keeps `next` `null`, and a
-  `resource_unavailable` side gets neither. `mark` and `reanchor` name
+  each side that needs an anchor and, with them, for each side that no
+  anchor on the same resource can fix (`too_large`, `not_text`,
+  `provider_error`, and a resource that does not parse, which the provider
+  says with the error code `unparsable`), whose remediation gives the whole
+  commands that drop it or give it an anchor on another resource; such a
+  side alone keeps `next` `null`, and a side whose resource cannot be read
+  now gets neither. `mark` and `reanchor` name
   every failing side in one error. The `reanchor` fix line repeats every
   argument, `--note` included, and joins a value that starts with `-` to
   its flag with `=`. The twin sentence names an enclosing declaration only
@@ -8575,6 +8600,8 @@ Each of these has a test, named in parentheses.
   a stored `#name::<line>` says that the line is not carried over, and
   `--detail` gives a candidate's whole text.
   (`next_names_every_side_that_blocks_the_write`,
+  `a_file_that_does_not_parse_beside_a_missing_side_has_a_way_out`,
+  `every_wire_error_code_reaches_the_caller`,
   `the_reanchor_fix_line_repeats_every_argument_the_caller_gave`,
   `a_fix_line_keeps_a_value_that_starts_with_a_dash`,
   `reanchor_names_every_failing_kept_side_in_one_error_and_one_command`,

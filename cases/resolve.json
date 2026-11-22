@@ -1285,7 +1285,7 @@
       }
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
@@ -1300,7 +1300,7 @@
       }
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
@@ -1313,7 +1313,7 @@
       "sel": {}
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
@@ -1328,7 +1328,7 @@
       }
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
@@ -1348,7 +1348,7 @@
       }
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
@@ -1365,7 +1365,7 @@
       }
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
@@ -1380,7 +1380,7 @@
       }
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
@@ -1393,7 +1393,7 @@
       "sel": {}
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
@@ -1408,7 +1408,7 @@
       }
     },
     "expected": {
-      "error": "unavailable"
+      "error": "unparsable"
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"

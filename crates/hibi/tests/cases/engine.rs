@@ -32,6 +32,7 @@ fn failed(state: SideState, reason: Reason) -> Resolved {
         state,
         reason,
         message: "case".to_owned(),
+        unparsable: false,
     }
 }
 
