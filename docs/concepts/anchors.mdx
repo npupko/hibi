@@ -79,7 +79,7 @@ the declaration instead:
 
 ```text output
 $ hibi claim 'The delay doubles each time.' --subject 'file:docs/errors.md::The log keeps every attempt.' --evidence 'file:src/backoff.py::BASE_MS * 2 ** n'
-c1-xhtwpvbhz6139jcwdjw2  created  m1-bg4art717ccfr4e0hg3s  subject file:docs/errors.md (sentence "The log keeps every attempt.", line 4); evidence 1 file:src/backoff.py (function "delay", lines 3-4)
+c1-xhtwpvbhz6139jcwdjw2  created  m1-9f5zchjvzadr6hngx02f  subject file:docs/errors.md (sentence "The log keeps every attempt.", line 4); evidence 1 file:src/backoff.py (function "delay", lines 3-4)
   note: evidence 1 (file:src/backoff.py) tracks the quoted text in its place. To follow the declaration delay instead, anchor file:src/backoff.py#delay::BASE_MS * 2 ** n
 ```
 
@@ -133,8 +133,8 @@ of them alone. The error says so instead of printing an anchor:
 
 ```text output
 $ hibi claim 'The tests run twice.' --subject 'file:docs/twins.md::Run the tests.'
-error: side_ambiguous: the subject (file:docs/twins.md): the anchor matches 2 units that cannot be told apart: sentence "Run the tests.", line 3: identical to another one, no anchor selects it alone; sentence "Run the tests.", line 3: identical to another one, no anchor selects it alone. Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file.
-  fix: Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file.
+error: side_ambiguous: the subject (file:docs/twins.md): the anchor matches 2 units that cannot be told apart: sentence "Run the tests.", line 3: identical to another one, no anchor selects it alone; sentence "Run the tests.", line 3: identical to another one, no anchor selects it alone. Units that are identical where they stand cannot be anchored one by one. Anchor the whole file file:docs/twins.md instead.
+  fix: Units that are identical where they stand cannot be anchored one by one. Anchor the whole file file:docs/twins.md instead.
 ```
 
 Identical units are reported this way, as `side_ambiguous` with each unit
@@ -211,7 +211,7 @@ $ hibi status c1-ywv7
 2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
 
 c1-ywv7p0f3s3cac76pdkkk  stale  Each attempt times out after 30 seconds.
-  marked 2026-11-21T12:40:36Z (m1-z984de120ny99v3e4n95)
+  marked 2026-11-22T20:58:46Z (m1-dtk9cvdb235wdd1qy4an)
   subject  file:docs/timeouts.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "30 s"
@@ -235,7 +235,7 @@ $ hibi status c1-e3q2
 3 claims: 0 fresh, 3 stale, 0 expired, 0 retired
 
 c1-e3q2sbq694y144250gf3  stale  Retries stop after the fifth failure.
-  marked 2026-11-21T12:40:36Z (m1-f2raw4w3ndthdgpqexfe)
+  marked 2026-11-22T20:58:46Z (m1-8gyha8n6cfjnxxss42tj)
   subject  file:docs/errors.md  changed (fingerprint_differs)  sentence "Retries stop after the fifth failed attempt, and the error …", line 3
     | Retries stop after the fifth failed attempt, and the error that the last attempt returned is passed on to the caller unchanged, with no wrapping at all.
   next: hibi mark c1-e3q2sbq694y144250gf3
@@ -255,7 +255,7 @@ $ hibi status c1-7sf7
 2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
 
 c1-7sf7sk1725e0bwb1wk47  stale  Retries stop after the fifth failure.
-  marked 2026-11-21T12:40:36Z (m1-y9n1e0j02xzj4nw94q7s)
+  marked 2026-11-22T20:58:46Z (m1-f353566d3a4xtzegfs9b)
   subject  file:docs/timeouts.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "Retries stop after the fifth failed attempt"
@@ -276,7 +276,7 @@ $ hibi status c1-tskx
 5 claims: 1 fresh, 4 stale, 0 expired, 0 retired
 
 c1-tskxsxpgvbthdkkfsmze  stale  The queue holds 100 jobs.
-  marked 2026-11-21T12:40:36Z (m1-pv6qj9338r17eydvxevb)
+  marked 2026-11-22T20:58:47Z (m1-apscp17qbpyd78k4admm)
   subject  file:docs/limits.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "The queue holds 100 jobs."
@@ -302,7 +302,7 @@ $ hibi status c1-gd94
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-gd94qm5hqa779nq5ncz0  stale  The client retries 3 times.
-  marked 2026-11-21T12:40:37Z (m1-y91x565p4ycbd4vgzz37)
+  marked 2026-11-22T20:58:48Z (m1-chpgzdj7r90v1qat5bmd)
   subject  file:docs/guide.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "The client retries 3 times."
@@ -322,7 +322,7 @@ two:
 ```text output
 $ hibi reanchor c1-gd94 --subject 'file:docs/guide.md::The client retries 3 times.'
 c1-gd94qm5hqa779nq5ncz0 is retired and replaced by the new claim c1-3am3dkrjz6bk46bbbkpb
-  mark m1-0hk0a2rzfxj48s837c0d, retirement r1-0xk67wa78sh1cj9z6rn5
+  mark m1-7bdfvred143zakner3jt, retirement r1-qk67nsxjfd4pgxyeqkke
   was stale: subject file:docs/guide.md missing (not_exact); now marked: make sure you re-checked it
   subject file:docs/guide.md (sentence "The client retries 3 times.", line 5)
     {"loc":"file:docs/guide.md","sel":{"quote":"The client retries 3 times.","prefix":"","suffix":"","within":["Retries","Example"],"count":2}}
@@ -340,7 +340,7 @@ $ hibi status c1-2j05
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
 
 c1-2j05z5twy3zdwzw6gct4  stale  Downloads time out after 30 seconds.
-  marked 2026-11-21T12:40:38Z (m1-fhgnm9gskphz55wcnvhc)
+  marked 2026-11-22T20:58:48Z (m1-wxbf4a8n3b208g0q8jnr)
   subject  file:docs/limits.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "Downloads time out after 30 s."
@@ -366,7 +366,7 @@ $ hibi status c1-2j05
 3 claims: 2 fresh, 0 stale, 0 expired, 1 retired
 
 c1-2j05z5twy3zdwzw6gct4  fresh  Downloads time out after 30 seconds.
-  marked 2026-11-21T12:40:38Z (m1-fhgnm9gskphz55wcnvhc)
+  marked 2026-11-22T20:58:48Z (m1-wxbf4a8n3b208g0q8jnr)
 ```
 
 `status` cannot show this. `hibi cover` does: the edited original is listed
@@ -385,7 +385,7 @@ $ hibi status c1-xhtw
 8 claims: 2 fresh, 5 stale, 0 expired, 1 retired
 
 c1-xhtwpvbhz6139jcwdjw2  stale  The delay doubles each time.
-  marked 2026-11-21T12:40:37Z (m1-bg4art717ccfr4e0hg3s)
+  marked 2026-11-22T20:58:47Z (m1-9f5zchjvzadr6hngx02f)
   evidence 1  file:src/backoff.py  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "BASE_MS * 2 ** n"
@@ -409,7 +409,7 @@ $ hibi status c1-4zg3
 6 claims: 1 fresh, 5 stale, 0 expired, 0 retired
 
 c1-4zg3720m08zgd08ssq7z  stale  The client waits between attempts.
-  marked 2026-11-21T12:40:36Z (m1-kstyh9vacfydqeyx2zdv)
+  marked 2026-11-22T20:58:47Z (m1-y7x3etb4ab0y0hjf5tzx)
   evidence 1  file:src/wait.py  changed (fingerprint_differs)  function "wait", lines 3-5
     the stored quote is no longer in this unit
     stored: symbol wait, quote "time.sleep(BACKOFF_SECONDS * 2 ** n)"
@@ -435,24 +435,25 @@ hibi reanchor c1-4zg3 --evidence '1=file:src/wait.py#wait::time.sleep(BACKOFF_SE
 
 When the line moves into another declaration, the name and the quoted text
 point to different units. Both are candidates, the declaration with the
-name first:
+name first. Each candidate's anchor is the name alone, and the note after it
+says to add `::<line>` again:
 
 ```text output
 $ hibi status c1-6dt3
 11 claims: 4 fresh, 6 stale, 0 expired, 1 retired
 
 c1-6dt3nyqbmd889g7v7z00  stale  wait sleeps first.
-  marked 2026-11-21T12:40:37Z (m1-nzp3zbs4kstwaz263q1h)
+  marked 2026-11-22T20:58:48Z (m1-7vqpk5mj2zvkmzh0epx8)
   evidence 1  file:src/w2.py  missing (not_exact)
     the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text
     stored: symbol wait, quote "time.sleep(BACKOFF)"
     2 candidates; each is a guess, read it before you anchor to it:
     - function "wait", line 3
       | def wait(n): return n
-      anchor: file:src/w2.py#wait
+      anchor: file:src/w2.py#wait  (the name alone: the stored line quote is not carried over; add ::<line> to anchor a line again)
     - function "retry", line 6
       | def retry(n): time.sleep(BACKOFF) return n
-      anchor: file:src/w2.py#retry
+      anchor: file:src/w2.py#retry  (the name alone: the stored line quote is not carried over; add ::<line> to anchor a line again)
   next: hibi reanchor c1-6dt3nyqbmd889g7v7z00 --evidence 1=<anchor>
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
@@ -471,7 +472,7 @@ $ hibi status --detail c1-p48c
 4 claims: 2 fresh, 2 stale, 0 expired, 0 retired
 
 c1-p48cbmnzaq2e1hbc0n3h  stale  The queue holds 100 jobs.
-  marked 2026-11-21T12:40:35Z (m1-hxjc383tw72ybe959hvx)
+  marked 2026-11-22T20:58:46Z (m1-6165my6wx3ajpvqkv6nq)
   subject  file:README.md  same  sentence "The limit is applied per worker.", line 5
     | The limit is applied per worker.
   evidence 1  file:src/queue.py  ambiguous (several_units)
@@ -504,7 +505,7 @@ $ hibi status c1-mr16
 3 claims: 2 fresh, 1 stale, 0 expired, 0 retired
 
 c1-mr16t1770q4fk2e1fvd4  stale  Parsing an int gives an int.
-  marked 2026-11-21T12:40:35Z (m1-h6m3rv09w54hvw5qpcv2)
+  marked 2026-11-22T20:58:45Z (m1-kb7zxaxfbd70vt7q3q7k)
   evidence 1  file:src/parse.py  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: symbol parse, quote "def parse(x: int) -> int: ..."
@@ -565,17 +566,18 @@ only it holds. That can be wider than the words the claim was about, or
 another line of the declaration. When the claim is about particular words,
 such as a number or one line of code, anchor the candidate with a quote of
 your own instead (`<loc>::<words>` or `<loc>#<name>::<line>`). Units that are identical where they
-stand have no such anchor: they are listed together, without one, followed
-by what to do. Here the sentence was copied, unchanged, inside its own
-paragraph:
+stand have no such anchor: they are listed without one, and a line under
+the side says what to do instead. Here the sentence was copied, unchanged,
+inside its own paragraph:
 
 ```text output
 $ hibi status c1-d55y
 10 claims: 3 fresh, 6 stale, 0 expired, 1 retired
 
 c1-d55y4047ex5fw3w2d52y  stale  Old entries are evicted first.
-  marked 2026-11-21T12:40:37Z (m1-026e1wd3fcrsxc2yfmgw)
+  marked 2026-11-22T20:58:47Z (m1-er22760h3597bxx47nda)
   subject  file:docs/evict.md  ambiguous (several_units)
+    Units that are identical where they stand cannot be anchored one by one. Anchor the whole file file:docs/evict.md instead.
     stored: quote "Old entries are evicted first."
     2 candidates; the stored anchor matches each of them:
     - sentence "Old entries are evicted first.", line 3; same content as at the reference mark
@@ -584,7 +586,6 @@ c1-d55y4047ex5fw3w2d52y  stale  Old entries are evicted first.
     - sentence "Old entries are evicted first.", line 3; same content as at the reference mark
       | line 3 of the resource
       cannot be told apart from another unit: no anchor selects it alone
-    Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file.
   next: hibi reanchor c1-d55y4047ex5fw3w2d52y --subject <anchor>
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
@@ -596,8 +597,10 @@ listed, with the count of all of them.
 In the text output, each candidate's `|` line shows its text on one line,
 cut to 100 characters. When two candidates would show the same line, each
 shows a line that no other candidate shows, or its place in the file.
-`--detail` prints the whole text, up to 240 characters. Text that is cut
-ends with `… (<n> characters)`, the length of the whole text.
+`--detail` prints a candidate's whole text, in the text output and in
+JSON. Without it, a candidate's JSON `text` is cut to 240 characters, and
+text that is cut ends with `… (<n> characters)`, the length of the whole
+text.
 
 A new anchor whose symbol names several declarations is `ambiguous` and
 lists every one. Two Python functions with the same name give JSON anchors:
@@ -637,12 +640,16 @@ that states them; other pages link here.
   declarations that share a symbol: Java and TypeScript overloads, a Python
   function defined twice, and Rust `impl Display for Id` and
   `impl Debug for Id`, which both define `Id.fmt`. Headings are compared
-  without inline markup, so a heading with `max_retries` in backticks reads
-  the same as one with maxretries.
+  without inline markup: a link or image counts as its text, and backticks,
+  `*`, `~` and every run of `_` except one between two letters or digits
+  are dropped, also inside a link's text. So `**Retries**` and `Retries`
+  read the same, but `max_retries` and `maxretries` are two sections.
 - Inside one scope a copy is followed. A sentence, list item, table row or
   line of code copied in the scope, with the same text around it inside its
-  unit, takes the claim when the original is then edited, also for
-  `#name::<line>`. With overloads or a function defined twice, the copy can
+  unit (the same 48 characters on each side, or the same start or end of
+  the unit), takes the claim when the original is then edited, also for
+  `#name::<line>`. In code that text is read with every comment as one
+  space, so editing a comment next to a quote changes nothing. With overloads or a function defined twice, the copy can
   be in another declaration of the same name. The side is then `changed`
   with `next: hibi mark`, shows the same name and only other line numbers,
   and the mark is accepted, so read the line. A Python claim can end up on
@@ -668,14 +675,17 @@ that states them; other pages link here.
   its key: a claim on the containing unit does not cover them.
 - Plain text, a one-sentence paragraph above the first heading and code
   outside every declaration have no container. Identical units there cannot
-  be claimed, and when a unit is copied and the original is then edited, the
-  copy takes the claim.
+  be claimed: a quote of one is `side_ambiguous`, and no anchor is offered
+  for either. When a unit there is copied and the original is then edited,
+  the copy takes the claim.
 - A renamed or deleted heading, paragraph or declaration makes its claims
   candidates until they are re-anchored, unless another container then has
   the old name: a section or function renamed to it, or a pasted copy
   (above). Then the claims follow that name.
 - A function renamed while its claim names it alone shows no candidate.
   Find it yourself, as in [renames](#renames).
+- `cover` reads a file once for each item it lists, so a single file with
+  many thousands of units is slow.
 - An external provider decides by itself which unit an anchor identifies.
   See [external providers](/providers/external#identity).
 
@@ -761,7 +771,7 @@ and can be anchored:
 
 ```text output
 $ hibi claim "Jobs run at most 3 times." --subject "file:src/jobs.py#Job::Jobs run at most 3 times" --evidence "file:src/jobs.py#Job.retries"
-c1-v78ang0ag8ks41t5fdpb  created  m1-fg3qy8zq44jnpcjk2dw8  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
+c1-v78ang0ag8ks41t5fdpb  created  m1-qbkx3hagg847zjn28twr  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
 ```
 
 ## Renames
@@ -777,13 +787,13 @@ $ hibi status
 3 claims: 1 fresh, 2 stale, 0 expired, 0 retired
 
 c1-80hy5a7k2p7j8zb9y6k7  stale  The queue holds 100 jobs.
-  marked 2026-11-21T12:40:33Z (m1-2751as8bk6g2wn2z2xxr)
+  marked 2026-11-22T20:58:44Z (m1-dhxrzneg8p7yae26we6n)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
     stored: symbol limit
   next: hibi reanchor c1-80hy5a7k2p7j8zb9y6k7 --evidence 1=<anchor>
 
 c1-v848jxj1f7b5scyn9gv9  stale  limit returns 100.
-  marked 2026-11-21T12:40:33Z (m1-6m9w75vrkemjfj1jhp0a)
+  marked 2026-11-22T20:58:44Z (m1-xy9gv7qxymz324e9a28q)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
     stored: symbol limit
   next: hibi reanchor c1-v848jxj1f7b5scyn9gv9 --evidence 1=<anchor>
@@ -797,7 +807,7 @@ and the statement still holds, anchor to it:
 ```text output
 $ hibi reanchor c1-v848 --statement 'queue_limit returns 100.' --evidence 1=file:src/jobs.py#queue_limit
 c1-v848jxj1f7b5scyn9gv9 is retired and replaced by the new claim c1-vfgr71xf7tynknj8b0rb
-  mark m1-9c7y63v6tdcssvpa6959, retirement r1-r7xsxpyparqbx0nt7231
+  mark m1-ebkytkas17gr1dy9hd3v, retirement r1-5t2g7597jagk7jc83aef
   was stale: evidence 1 file:src/jobs.py missing (selector_not_found); now marked: make sure you re-checked it
   subject file:README.md (sentence "The limit is applied per worker.", line 5)
     {"loc":"file:README.md","sel":{"quote":"The limit is applied per worker.","prefix":"","suffix":"","within":["Jobs","A job runs at most 3 times."]}}
@@ -818,7 +828,7 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-796bxye5q996vzq2w0y9  stale  The request timeout is stored in whole seconds.
-  marked 2026-11-21T12:40:30Z (m1-hcgv9ew3zsk7ncmm47q9)
+  marked 2026-11-22T20:58:38Z (m1-vrvcwpvfd669hyt2656p)
   evidence 1  file:src/config.rs  missing (selector_not_found)
     stored: symbol Config.timeout_secs
     1 candidate; each is a guess, read it before you anchor to it:

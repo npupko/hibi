@@ -55,7 +55,8 @@ Ask the user before each of these steps; they change the repository.
   no claim; `hibi list --loc 'file:docs/x.md'` tells the two apart.
 - After you changed code or docs: `hibi status` lists what your edit made stale.
 - After you wrote or verified a statement: record it with `hibi claim`.
-- Before finishing a branch: `hibi status --since main...` and
+- Before finishing a branch: `hibi status --since main...` (the claims the
+  branch made stale, and stale claims made on the branch) and
   `hibi cover --since main...`, then plain `hibi status`, which is the
   complete check (after copying text, plain `hibi cover` too; see step 7).
   Then commit `.hibi/` with the change.
@@ -120,8 +121,8 @@ Ask the user before each of these steps; they change the repository.
    | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
    | `several_units` | The anchor matches several units, listed in `candidates`, for example a name that now has a second declaration. Choose the one the statement is about and re-anchor to its `anchor`. A candidate with `anchor: null` is identical, where it stands, to another one, and cannot be anchored alone: anchor the unit that contains them (the `#name` of the enclosing declaration, or the whole file). While a pasted template is only partly edited, its sentences are twins of the original's: finish editing the copy first, then run `hibi status`, instead of anchoring the whole file, which would widen precise claims. |
    | `selector_refused` | The provider refuses the stored anchor, or no longer allows one of its selector keys; `detail` says which. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
-   | `resource_unavailable` | The resource cannot be read now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses. Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
-   | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. |
+   | `resource_unavailable` | The resource cannot be read now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses; the line named is where the parser first reported an error, which can be after the mistake (an unclosed string or comment). Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
+   | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. For these, `resource_unavailable` and `provider_error`, the `remediation` also says how to move on: anchor an evidence side to another resource or drop it, re-point or retire a subject. When such a side and a missing side block a claim, `next` and the `reanchor` error name both. |
    | `profile_mismatch` | The fingerprint profile changed, for example after an external provider renamed its profile, or after a hibi upgrade. Re-check and mark. |
    | `provider_failed` | `next` is `hibi providers --check <scheme>`, which starts the provider and reports what fails. Tell the user, and run it when they ask. Do not mark. |
    | `provider_not_registered`, `repo_not_allowed` | `next` is `hibi providers`. Run it and tell the user: providers and sibling repositories are set up in their user config. |

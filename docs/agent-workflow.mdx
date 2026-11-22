@@ -111,8 +111,8 @@ when it cannot decide.
     hibi status
     ```
 
-    The first lists the claims that the branch made stale; plain
-    `hibi status` is the complete check. Resolve what they list, then commit
+    The first lists the claims that the branch made stale, and stale claims
+    made on the branch; plain `hibi status` is the complete check. Resolve what they list, then commit
     `.hibi/` with the change.
   </Step>
 </Steps>
@@ -148,7 +148,7 @@ c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
   next: hibi mark c1-xqhbms40kkesq10rxjen
 
 c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T12:40:28Z (m1-jcq1fhhy4f6xn0em3gbb)
+  marked 2026-11-22T20:58:37Z (m1-vj1eaq9n4m0e22tqrqmb)
   subject  file:docs/retry.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "The delay between attempts doubles each time, starting at 200 ms."
@@ -176,7 +176,7 @@ sentence; your own quote keeps the words the claim is about:
 ```text output
 $ hibi reanchor c1-xwck --subject 'file:docs/retry.md::doubles every time'
 c1-xwck2bdefbx39g56m7dn is retired and replaced by the new claim c1-2axv59jx0ztvfjd1adn9
-  mark m1-zng89ryhx5s01mec96h1, retirement r1-5exchqb2x3a6hhv66ra9
+  mark m1-v2rd93kcvyfg2bps04e7, retirement r1-5qk6rzvvfqm9qkn19x7g
   was stale: subject file:docs/retry.md missing (not_exact); now marked: make sure you re-checked it
   subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
     {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"The delay between attempts","suffix":", starting at 200 ms.","within":["Retries","The client retries a failed download."]}}
@@ -207,7 +207,7 @@ prints one JSON object. The fields an agent reads from `status`:
 | `summary` | Counts of every claim in the store by state, before any filter |
 | `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
 | `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `unit`, `fp`, `markedFp`, `remediation` and `detail`; `candidates` and `candidatesTotal` for a side that is missing (`not_exact`) or ambiguous; `text` with `--detail` |
-| `claims[].sides[].candidates[]` | A unit the anchor could mean: `key`, `kind`, `label`, `line`, `endLine`, `text` (at most 240 characters; cut text ends with `… (<n> characters)`), `anchor` and `sameFingerprint`. `anchor` is a string that selects that unit alone, or `null` when no anchor selects the unit alone, because it is identical, where it stands, to another unit. At most 20 are listed; `candidatesTotal` counts all of them. |
+| `claims[].sides[].candidates[]` | A unit the anchor could mean: `key`, `kind`, `label`, `line`, `endLine`, `text` (whole with `--detail`, otherwise at most 240 characters; cut text ends with `… (<n> characters)`), `anchor` and `sameFingerprint`. `anchor` is a string that selects that unit alone, or `null` when no anchor selects the unit alone, because it is identical, where it stands, to another unit. At most 20 are listed; `candidatesTotal` counts all of them. |
 | `claims[].sides[].detail` | For an unavailable side: the message that says why, from the provider or from hibi. For a `not_exact` side: why nothing resolved, "the stored anchor no longer identifies one unit", or "the name and the quoted text now point to different units: ..." when a `#name::<line>` anchor's line moved into another declaration. For a changed side whose stored line is gone from its declaration: "the stored quote is no longer in this unit". Otherwise `null` |
 | `claims[].sides[].remediation` | For a side that cannot be evaluated: the limit or the cause and what you can do, otherwise `null` |
 | `claims[].next` | The command to run after a successful re-check, or `null` |

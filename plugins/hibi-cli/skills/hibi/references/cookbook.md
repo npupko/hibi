@@ -46,7 +46,7 @@ hibi claim "The client gives up after 5 attempts." \
 ```
 
 ```text output
-c1-c5dm2jvhr8hb36rx5rgm  created  m1-0hqbq51r390qjdneacqa  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-c5dm2jvhr8hb36rx5rgm  created  m1-w0g0tq30s3g55jh2v15g  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 ## 3. Start of a session: a statement is no longer true
@@ -59,7 +59,7 @@ hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-c5dm2jvhr8hb36rx5rgm  stale  The client gives up after 5 attempts.
-  marked 2026-11-21T12:40:27Z (m1-0hqbq51r390qjdneacqa)
+  marked 2026-11-22T20:58:36Z (m1-w0g0tq30s3g55jh2v15g)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
     | pub const MAX_ATTEMPTS: u32 = 3;
   next: hibi mark c1-c5dm2jvhr8hb36rx5rgm
@@ -80,7 +80,7 @@ hibi reanchor c1-c5dm \
 
 ```text output
 c1-c5dm2jvhr8hb36rx5rgm is retired and replaced by the new claim c1-2kfx78rwbb7wyxwst92f
-  mark m1-htnvrx6fg3hpjds35qq7, retirement r1-cdbr4cb1y91mdnc653kj
+  mark m1-95b2tp4kdy36dgm55b35, retirement r1-365nxe6vj23pykbztb01
   was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
     evidence 1 is now:
     | pub const MAX_ATTEMPTS: u32 = 3;
@@ -116,7 +116,7 @@ EOF
 ```
 
 ```text output
-c1-xwck2bdefbx39g56m7dn  created  m1-60kt6fewdpc75tbp0gjt  subject file:docs/retry.md (sentence "The delay between attempts doubles each time, starting at 2…", line 5); evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
+c1-xwck2bdefbx39g56m7dn  created  m1-v66kb21vc5krgmb58dxy  subject file:docs/retry.md (sentence "The delay between attempts doubles each time, starting at 2…", line 5); evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
 ```
 
 If any element fails, nothing is written and each failure carries its index:
@@ -135,10 +135,10 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base a43533ffb938a08e3810f6b3883af45ed6a686eb)
+since main (base 349f6cbd3c7e07728ee13f01608a9bf0f04df1e3)
 
 c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T12:40:28Z (m1-60kt6fewdpc75tbp0gjt)
+  marked 2026-11-22T20:58:37Z (m1-v66kb21vc5krgmb58dxy)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
     | pub fn delay_ms(n: u32) -> u64 {
     |     200 << n
@@ -155,7 +155,7 @@ hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 ```text output
-c1-xwck2bdefbx39g56m7dn  marked  m1-jcq1fhhy4f6xn0em3gbb
+c1-xwck2bdefbx39g56m7dn  marked  m1-vj1eaq9n4m0e22tqrqmb
   was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked it
     evidence 1 is now:
     | pub fn delay_ms(n: u32) -> u64 {
@@ -172,7 +172,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base a43533ffb938a08e3810f6b3883af45ed6a686eb)
+since main (base 349f6cbd3c7e07728ee13f01608a9bf0f04df1e3)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -224,7 +224,7 @@ hibi claim "The client gives up after 3 attempts." \
 ```
 
 ```text output
-c1-2kfx78rwbb7wyxwst92f  marked  m1-2d4tdd6a8aj1s6g6w1fq  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-2kfx78rwbb7wyxwst92f  marked  m1-x6pvvtsz0y5r2bdzna36  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 This works only while the existing claim's sides resolve. After its
@@ -251,7 +251,7 @@ c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
   next: hibi mark c1-xqhbms40kkesq10rxjen
 
 c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T12:40:28Z (m1-jcq1fhhy4f6xn0em3gbb)
+  marked 2026-11-22T20:58:37Z (m1-vj1eaq9n4m0e22tqrqmb)
   subject  file:docs/retry.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "The delay between attempts doubles each time, starting at 200 ms."
@@ -286,7 +286,7 @@ hibi reanchor c1-xwck --subject 'file:docs/retry.md::doubles every time'
 
 ```text output
 c1-xwck2bdefbx39g56m7dn is retired and replaced by the new claim c1-2axv59jx0ztvfjd1adn9
-  mark m1-zng89ryhx5s01mec96h1, retirement r1-5exchqb2x3a6hhv66ra9
+  mark m1-v2rd93kcvyfg2bps04e7, retirement r1-5qk6rzvvfqm9qkn19x7g
   was stale: subject file:docs/retry.md missing (not_exact); now marked: make sure you re-checked it
   subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
     {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"The delay between attempts","suffix":", starting at 200 ms.","within":["Retries","The client retries a failed download."]}}
@@ -306,7 +306,7 @@ hibi status
 5 claims: 1 fresh, 1 stale, 1 expired, 2 retired
 
 c1-2kfx78rwbb7wyxwst92f  stale  The client gives up after 3 attempts.
-  marked 2026-11-21T12:40:29Z (m1-2d4tdd6a8aj1s6g6w1fq)
+  marked 2026-11-22T20:58:37Z (m1-x6pvvtsz0y5r2bdzna36)
   subject  file:docs/retry.md  missing (selector_not_found)
     stored: quote "gives up after 3 attempts"
   next: hibi reanchor c1-2kfx78rwbb7wyxwst92f --subject <anchor>
@@ -326,7 +326,7 @@ hibi retire c1-2kfx --note "The docs no longer state the attempt limit."
 ```
 
 ```text output
-c1-2kfx78rwbb7wyxwst92f  retired  r1-p4wh4hstqg7tzr7j01h1
+c1-2kfx78rwbb7wyxwst92f  retired  r1-bqs63n3wpexaw3nb47s1
 ```
 
 ## 10. Anchor to a struct field, not its doc comment
@@ -344,7 +344,7 @@ Anchor the field itself by its symbol:
 
 ```text output
 $ hibi claim "The request timeout is stored in whole seconds." --subject "file:README.md::stored in whole seconds" --evidence "file:src/config.rs#Config.timeout_secs"
-c1-796bxye5q996vzq2w0y9  created  m1-hcgv9ew3zsk7ncmm47q9  subject file:README.md (sentence "The request timeout is stored in whole seconds.", line 4); evidence 1 file:src/config.rs (field "Config.timeout_secs", line 5)
+c1-796bxye5q996vzq2w0y9  created  m1-vrvcwpvfd669hyt2656p  subject file:README.md (sentence "The request timeout is stored in whole seconds.", line 4); evidence 1 file:src/config.rs (field "Config.timeout_secs", line 5)
 ```
 
 A Python docstring is a string and can be quoted:
@@ -361,7 +361,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-kh88fbb9hctgd1v08923  created  m1-wc25v6d80291f5ymsse1  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-kh88fbb9hctgd1v08923  created  m1-stka2mczxbj0rc8wya3j  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 Without the user's registration the side is unavailable and nothing runs.
@@ -369,7 +369,7 @@ Tell the user; do not edit their config unasked:
 
 ```text output
 c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T12:41:24Z (m1-wc25v6d80291f5ymsse1)
+  marked 2026-11-22T20:58:39Z (m1-stka2mczxbj0rc8wya3j)
   subject  ref:notes  unavailable (provider_not_registered)
     the user config has no provider command for scheme ref
   next: hibi providers
@@ -387,8 +387,8 @@ c1-c5dm2jvhr8hb36rx5rgm
   subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
   evidence 1: {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
 1 mark:
-  m1-0hqbq51r390qjdneacqa  2026-11-21T12:40:27Z
+  m1-w0g0tq30s3g55jh2v15g  2026-11-22T20:58:36Z
     file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
     file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
-retired: r1-cdbr4cb1y91mdnc653kj  2026-11-21T12:40:28Z  replaced by c1-2kfx78rwbb7wyxwst92f
+retired: r1-365nxe6vj23pykbztb01  2026-11-22T20:58:36Z  replaced by c1-2kfx78rwbb7wyxwst92f
 ```

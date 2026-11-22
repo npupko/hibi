@@ -35,8 +35,10 @@ deletion and an addition. `--since` needs git.
 Lists the stale claims that the range caused: a claim is listed when it is
 stale and at least one of its `file:` sides is in a changed file, resolved to
 exactly one unit at the base, and now resolves differently or to a unit with
-a different fingerprint. A claim that was already stale at the base for
-another reason is not listed, and expired claims are never listed.
+a different fingerprint. A stale claim made in the range, whose id is not
+in the store at the base, is listed too. A claim that was already stale at
+the base for another reason is not listed, and expired claims are never
+listed.
 
 On the branch `tidy-retry`, `delay_ms` was rewritten from `200 * 2u64.pow(n)`
 to `200 << n`:
@@ -47,10 +49,10 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base a43533ffb938a08e3810f6b3883af45ed6a686eb)
+since main (base 349f6cbd3c7e07728ee13f01608a9bf0f04df1e3)
 
 c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T12:40:28Z (m1-60kt6fewdpc75tbp0gjt)
+  marked 2026-11-22T20:58:37Z (m1-v66kb21vc5krgmb58dxy)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
     | pub fn delay_ms(n: u32) -> u64 {
     |     200 << n
@@ -83,7 +85,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base a43533ffb938a08e3810f6b3883af45ed6a686eb)
+since main (base 349f6cbd3c7e07728ee13f01608a9bf0f04df1e3)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -94,7 +96,7 @@ are not evaluated with `--since`, and say so:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
-since main (base 06aa0bc2c6d93a36695cc33bb595ebf5527a5792)
+since main (base a794b4b713a0cf06d566f0feda1b8c5e8fc0958a)
 notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
   not evaluated: --since works only for scopes on scheme "file"
 ```
