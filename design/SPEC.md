@@ -5503,7 +5503,7 @@ Candidate, one unit that the stored anchor of the side could mean:
 | Key | Type |
 |---|---|
 | `key`, `kind`, `label`, `line`, `endLine` | as in UnitRef |
-| `text` | the unit text cut to 240 characters, or `null` when the provider returned the unit without text. Text that is cut ends with `… (<n> characters)`, where `<n>` is the length of the whole text; the same holds for every `text` that an output cuts to 240 characters (a `changed` side, an AcceptedSide, a `cover` item, a `triage` item) |
+| `text` | the unit text, or `null` when the provider returned the unit without text: whole with `--detail`, cut to 240 characters without it. Text that is cut ends with `… (<n> characters)`, where `<n>` is the length of the whole text; the same holds for every `text` that an output cuts to 240 characters (a `changed` side, an AcceptedSide, a `cover` item, a `triage` item) |
 | `anchor` | string or `null`: the anchor the provider printed for this unit (section 6.7), as an argument to give back: `<loc>#<symbol>` when the selector is a symbol alone, and the anchor as JSON otherwise. `null` when no anchor selects the unit alone: the provider returned it with `refuse: quote_not_distinguishable`, or another listed candidate carries the same printed anchor. The same rule gives `anchor: null` to an item of `cover`, `triage` and `suggest-evidence` |
 | `sameFingerprint` | boolean |
 
@@ -7448,7 +7448,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 120 | Similarity proposes, it never resolves. A unit a provider returns with `approx: true` never resolves a side: the side is `missing` with reason `not_exact`, and the approximate units are `candidates`. A claim is fresh only when every side resolves exactly. `mark` and a kept `reanchor` side fail with `side_missing`. Sides have no `approx` field, and there are no drifted claims. This supersedes decisions 5, 7, 47, 52, 65 and 99 where they let an approximate unit stand for a side, and the earlier rule that `mark` accepts approximate sides. | The earlier flow, followed exactly, could re-point a claim at an unrelated unit: an approximate match was marked, its fingerprint became the claim's, and the claim then never went stale. |
 | 121 | An answer that holds any approximate unit is `not_exact`, also when it holds exact units as well. | A mix means the selector did not identify one unit. |
 | 122 | In the file provider a stored symbol that names no declaration makes every unit the quote finds approximate, exact ties included; a quote found only by the fuzzy step is approximate; a unique symbol, and an exact or whitespace-equal quote hit, are exact. Superseded in part by decision 142: an exact quote hit resolves only where section 6.7 says, and is otherwise a candidate. | The symbol was the identity; without it the quote is only a guess at where the declaration went. |
-| 123 | At most `MAX_CANDIDATES` (20) candidates are shown, with `candidatesTotal`. Candidate text is cut to 240 characters. A candidate's anchor is `<loc>#<symbol>` only when the symbol is unique in the whole resource, and a JSON anchor otherwise. `next` uses the `<anchor>` placeholder and never a candidate. | Bounded output; an anchor that is offered must select one unit; the caller chooses. |
+| 123 | At most `MAX_CANDIDATES` (20) candidates are shown, with `candidatesTotal`. Candidate text is cut to 240 characters, and is whole with `--detail`. A candidate's anchor is `<loc>#<symbol>` only when the symbol is unique in the whole resource, and a JSON anchor otherwise. `next` uses the `<anchor>` placeholder and never a candidate. | Bounded output; an anchor that is offered must select one unit; the caller chooses. |
 | 124 | Sides carry `detail` and `remediation`. | The JSON holds what the human output prints. |
 | 125 | Provider error `unavailable` maps to the side reason `resource_unavailable`, with `next` `null` and the provider's message as remediation. Provider errors `invalid_selector` and `invalid_locator` map to `selector_refused` for a stored anchor and to the CLI error `invalid_anchor` for a new one. | The resource exists and cannot be read, or the anchor is wrong for the resource; neither is a broken provider. |
 | 126 | A symbol on a resource class that has no symbols is `invalid_selector`. A symbol on a code file that does not parse is `unavailable`, naming the first error line; since decision 144 every selector is. | A symbol anchor must not be resolved against text blocks while the file is broken. |
@@ -8207,7 +8207,7 @@ Each of these has a test, named in parentheses.
   anchors it; nothing in the old file is taken for it.
   (`a_function_moved_to_another_file_is_missing_until_the_caller_anchors_it`.)
 - R121. A side shows at most 20 candidates and the total. The text of a
-  candidate is cut to 240 characters.
+  candidate is cut to 240 characters without `--detail` and whole with it.
   (`a_side_shows_at_most_twenty_candidates_and_the_total`,
   `at_most_twenty_candidates_are_shown_with_the_total`,
   `the_text_of_a_candidate_is_cut_to_240_characters`.)
