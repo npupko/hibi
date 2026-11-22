@@ -442,7 +442,12 @@ fn suggest_evidence_in_errors_say_what_to_do() {
         e["message"],
         "--in \"repo:api//src/**\": alias api is not declared under [repos] in .hibi/hibi.toml"
     );
-    assert_eq!(e["remediation"], "hibi providers");
+    // `hibi providers` alone shows nothing about an alias that is not
+    // declared: the steps are named.
+    assert_eq!(
+        e["remediation"],
+        "The message says what is missing. A sibling repository needs its alias declared under [repos] in .hibi/hibi.toml, its directory registered with a [[repo]] entry in the user config, and a git that hibi can run. hibi providers lists what is declared and registered."
+    );
     assert_eq!(server.recorded().len(), 0);
 }
 

@@ -151,7 +151,7 @@ Arguments:
 
 Options:
 
-- `--since <range>`: List only the stale claims that the changes since a commit caused. The range is A, A.. or A..HEAD (since commit A), or A... or A...HEAD (since the merge base of A and HEAD). The compared end is always the working tree. Cannot be combined with --state or with ids.
+- `--since <range>`: List only the stale claims that the changes since a commit caused: claims of that commit whose anchored text or code changed since, and stale claims that were made after it. The range is A, A.. or A..HEAD (since commit A), or A... or A...HEAD (since the merge base of A and HEAD). The compared end is always the working tree. Cannot be combined with --state or with ids.
 - `--loc <glob>`: Keep a claim only when the locator of one of its sides matches this glob, for example 'file:src/**'. Repeat for several.
 - `--state <state>`: List claims in this state. Repeat for several [default: stale and expired] Values: `fresh` (Some mark matches the current content and is recent enough), `stale` (No mark matches the current content), `expired` (A mark matches the content, but the recheck period has passed), `retired` (The claim was retired).
 - `--detail`: Include the current text of every side.
