@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use crate::model::{Anchor, Locator, SelectorKey};
+use crate::model::{Anchor, Locator, Selector, SelectorKey};
 use crate::provider::{
     NoProvider, Provider, ProviderError, ProviderErrorCode, ProviderInfo, Providers, Unit,
     check_units,
@@ -41,13 +41,30 @@ pub struct Candidates {
     /// fingerprint. It makes the count of a merged list exact when only
     /// the first units are kept.
     pub by_fp: HashMap<crate::model::Fingerprint, usize>,
-    /// The declaration that holds every shown unit that no anchor selects
-    /// alone, when there is one: its key and the anchor that selects it.
-    /// It is read from the unit list of the resource
+    /// The printed selectors of the units that no anchor selects alone,
+    /// among all the units the provider returned and not only the first
+    /// [`MAX_CANDIDATES`]: each once. Units that are identical where they
+    /// stand carry the same selector, so this stays small when the answer
+    /// is large.
+    pub twin_sels: Vec<Selector>,
+    /// What holds the units that no anchor selects alone.
+    pub enclosing: Enclosing,
+}
+
+/// What holds the units of an answer that no anchor selects alone, for the
+/// sentence that says what to anchor instead.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Enclosing {
+    /// The answer has no such unit.
+    NoTwins,
+    /// Only the whole file is known to hold all of them.
+    WholeFile,
+    /// One declaration holds all of them: the anchor that selects it. It
+    /// is read from the unit list of the resource
     /// ([`Candidates::find_enclosing`]) and never from the text of a
     /// symbol: `Id.fmt` is a method of an `impl` block, and `#Id` is the
     /// struct, which holds no method.
-    pub enclosing: Option<(String, String)>,
+    Declaration(String),
 }
 
 impl Candidates {
@@ -90,7 +107,22 @@ impl Candidates {
             anchors,
             total: first.total + second.total - twice,
             by_fp,
-            enclosing: first.enclosing.clone().or_else(|| second.enclosing.clone()),
+            twin_sels: {
+                let mut sels = first.twin_sels.clone();
+                for sel in &second.twin_sels {
+                    if !sels.contains(sel) {
+                        sels.push(sel.clone());
+                    }
+                }
+                sels
+            },
+            // A declaration is named for the merged list only when it
+            // holds the twins of both lists.
+            enclosing: match (&first.enclosing, &second.enclosing) {
+                (Enclosing::NoTwins, other) | (other, Enclosing::NoTwins) => other.clone(),
+                (a, b) if a == b => a.clone(),
+                _ => Enclosing::WholeFile,
+            },
         })
     }
 
@@ -121,38 +153,57 @@ impl Candidates {
             .collect()
     }
 
-    /// The key of the unit that is the parent of every one of the
-    /// [`twins`](Self::twins), when they have one and the same parent.
-    fn twins_parent(&self) -> Option<&str> {
-        let twins = self.twins();
-        let parent = twins.first()?.parent.as_deref()?;
-        twins
-            .iter()
-            .all(|u| u.parent.as_deref() == Some(parent))
-            .then_some(parent)
-    }
-
-    /// Set [`enclosing`](Self::enclosing) from `all`, the unit list of the
-    /// resource. A declaration is named only when it is there to anchor:
-    /// the parent of every twin is one unit, that unit has a symbol and is
-    /// not the unit of the whole file, and its printed selector selects it
-    /// alone (two `interface Props` blocks do not).
+    /// Set [`enclosing`](Self::enclosing) to a declaration when `all`, the
+    /// unit list of the resource, shows that one holds every twin.
+    ///
+    /// The twins are taken from `all` and not from the shown candidates:
+    /// every unit of the resource that carries the printed selector of a
+    /// unit of the answer that no anchor selects alone. One listed twin has
+    /// a twin that is not listed (the other `fmt` of two `impl` blocks, when
+    /// only one of them is a candidate), and an answer of more than
+    /// [`MAX_CANDIDATES`] units has twins that are not shown. A declaration
+    /// is named only when it is there to anchor: each such selector is
+    /// carried by two or more units of `all`, all those units have one and
+    /// the same parent, and that parent has a symbol, is not the unit of
+    /// the whole file, and its own printed selector selects it alone (two
+    /// `interface Props` blocks do not). In every other case the whole
+    /// file stays the answer.
     pub(crate) fn find_enclosing(&mut self, all: &[Unit]) {
-        let Some(parent) = self.twins_parent() else {
+        if self.twin_sels.is_empty() {
+            return;
+        }
+        let mut count: HashMap<&Selector, usize> = HashMap::new();
+        for u in all {
+            *count.entry(&u.sel).or_default() += 1;
+        }
+        // A twin without a second unit in the list: the list and the answer
+        // do not agree, so the set is not known.
+        if self
+            .twin_sels
+            .iter()
+            .any(|sel| count.get(sel).copied().unwrap_or(0) < 2)
+        {
+            return;
+        }
+        let mut twins = all.iter().filter(|u| self.twin_sels.contains(&u.sel));
+        let Some(parent) = twins.next().and_then(|u| u.parent.as_deref()) else {
             return;
         };
+        if !twins.all(|u| u.parent.as_deref() == Some(parent)) {
+            return;
+        }
         let Some(decl) = all.iter().find(|u| u.key == parent) else {
             return;
         };
         if decl.parent.is_none()
             || decl.sel.symbol.is_none()
             || !selects_its_unit(decl)
-            || all.iter().filter(|u| u.sel == decl.sel).count() != 1
+            || count.get(&decl.sel) != Some(&1)
         {
             return;
         }
-        let anchor = printed_anchor(&self.loc, is_compact(&self.loc), decl);
-        self.enclosing = Some((decl.key.clone(), anchor));
+        self.enclosing =
+            Enclosing::Declaration(printed_anchor(&self.loc, is_compact(&self.loc), decl));
     }
 
     /// What to do, for a claim, about shown units that no anchor selects
@@ -162,30 +213,25 @@ impl Candidates {
     /// resolving a claim. What works is the unit that contains them. That
     /// is the whole file, and in code also the declaration that encloses
     /// all of them, when [`find_enclosing`](Self::find_enclosing) found
-    /// one. Nothing follows a locator in the sentence, so that it can be
-    /// copied as it stands.
+    /// one. Both are written as anchors that can be given back as they
+    /// stand: nothing follows them in the sentence, and a locator that
+    /// compact syntax cannot hold is written as JSON.
     pub fn twins_remedy(&self) -> Option<String> {
         if self.twins().is_empty() {
             return None;
         }
-        let loc = &self.loc;
-        let whole = if loc.is_file_or_repo() {
+        let whole = if self.loc.is_file_or_repo() {
             "the whole file"
         } else {
             "the whole resource"
         };
-        let parent = self.twins_parent();
-        let declaration = self
-            .enclosing
-            .as_ref()
-            .filter(|(key, _)| parent == Some(key.as_str()))
-            .map(|(_, anchor)| anchor);
-        Some(match declaration {
-            Some(anchor) => format!(
-                "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration {anchor} or {whole} {loc}"
+        let file = whole_anchor(&self.loc);
+        Some(match &self.enclosing {
+            Enclosing::Declaration(anchor) => format!(
+                "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration {anchor} or {whole} {file}"
             ),
-            None => format!(
-                "Units that are identical where they stand cannot be anchored one by one. Anchor {whole} instead: {loc}"
+            Enclosing::NoTwins | Enclosing::WholeFile => format!(
+                "Units that are identical where they stand cannot be anchored one by one. Anchor {whole} instead: {file}"
             ),
         })
     }
@@ -526,14 +572,32 @@ pub(crate) fn failed_from_error(e: &ProviderError) -> Resolved {
 /// syntax has no escapes: a locator with a control character, a `#` or a
 /// `::` in its path is given as JSON.
 fn is_compact(loc: &Locator) -> bool {
-    loc.is_file_or_repo()
-        && !loc.as_str().contains('#')
-        && !loc.as_str().chars().any(char::is_control)
-        && {
-            // After the scheme, `::` would end the locator in compact syntax.
-            let path = loc.as_str().split_once(':').map_or("", |(_, rest)| rest);
-            !path.replacen("//", "", 1).contains("::")
-        }
+    loc.is_file_or_repo() && is_plain(loc)
+}
+
+/// True when `loc` alone, as text, is read back as an anchor on the whole
+/// resource: it has no control character, no `#`, and no `::` after its
+/// scheme.
+fn is_plain(loc: &Locator) -> bool {
+    !loc.as_str().contains('#') && !loc.as_str().chars().any(char::is_control) && {
+        // After the scheme, `::` would end the locator in compact syntax.
+        let path = loc.as_str().split_once(':').map_or("", |(_, rest)| rest);
+        !path.replacen("//", "", 1).contains("::")
+    }
+}
+
+/// The anchor on the whole resource `loc`, as text to give back: the
+/// locator alone, or JSON with the empty selector when the locator alone
+/// would be read as something else (a path with `#` or `::`).
+fn whole_anchor(loc: &Locator) -> String {
+    if is_plain(loc) {
+        loc.to_string()
+    } else {
+        super::types::escape_controls(
+            &serde_json::to_string(&Anchor::new(loc.clone(), Selector::empty()))
+                .unwrap_or_default(),
+        )
+    }
 }
 
 /// The provider's printed anchor of `u` (section 6.7) as text to give
@@ -575,6 +639,24 @@ fn candidates_of(loc: &Locator, units: Vec<Unit>) -> Candidates {
     for u in &units {
         *by_fp.entry(u.fp.clone()).or_default() += 1;
     }
+    // The units no anchor selects alone, in the whole answer: the provider
+    // says so, or another unit of the answer has the same printed selector.
+    let mut by_sel: HashMap<&Selector, usize> = HashMap::new();
+    for u in &units {
+        *by_sel.entry(&u.sel).or_default() += 1;
+    }
+    let mut twin_sels: Vec<Selector> = Vec::new();
+    let mut listed: std::collections::HashSet<&Selector> = std::collections::HashSet::new();
+    for u in &units {
+        if (!selects_its_unit(u) || by_sel[&u.sel] > 1) && listed.insert(&u.sel) {
+            twin_sels.push(u.sel.clone());
+        }
+    }
+    let enclosing = if twin_sels.is_empty() {
+        Enclosing::NoTwins
+    } else {
+        Enclosing::WholeFile
+    };
     let mut units = units;
     units.truncate(MAX_CANDIDATES);
     Candidates {
@@ -583,7 +665,8 @@ fn candidates_of(loc: &Locator, units: Vec<Unit>) -> Candidates {
         anchors,
         total,
         by_fp,
-        enclosing: None,
+        twin_sels,
+        enclosing,
     }
 }
 
@@ -668,16 +751,17 @@ pub fn resolve_with(provider: &mut dyn Provider, anchors: &[&Anchor]) -> Vec<Res
                     },
                 });
             }
-            // Units that no anchor selects alone, with one parent: the unit
-            // list of the resource says whether that parent can be
-            // anchored. One `units` call per such resource.
+            // Units that no anchor selects alone: the unit list of the
+            // resource says which units they are and whether one
+            // declaration holds them all. One `units` call per such
+            // resource.
             if info.capabilities.units {
                 let mut listing: HashMap<Locator, Option<Vec<Unit>>> = HashMap::new();
                 for (r, anchor) in out.iter_mut().zip(&unique) {
                     let (Resolved::Several(c) | Resolved::NotExact(c)) = r else {
                         continue;
                     };
-                    if c.twins_parent().is_none() {
+                    if c.twin_sels.is_empty() {
                         continue;
                     }
                     let all = listing.entry(anchor.loc.clone()).or_insert_with(|| {

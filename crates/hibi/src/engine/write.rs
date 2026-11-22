@@ -575,33 +575,80 @@ fn replacement_of(ledger: &Ledger, id: &ClaimId) -> Option<ClaimId> {
         .find_map(|r| r.replaced_by.clone())
 }
 
-/// `was retired` or `was replaced by <id>`, for a message about the retired
-/// claim `id`.
-fn how_it_ended(ledger: &Ledger, id: &ClaimId) -> String {
-    match replacement_of(ledger, id) {
-        Some(new) => format!("was replaced by {new}"),
-        None => "was retired".to_owned(),
+/// How a retired claim ended, following its replacements to the last one.
+enum Ended {
+    /// No retirement of the claim names a replacement.
+    Retired,
+    /// The claim was replaced, directly or through others, and the last
+    /// claim of that chain is live. `direct` is true when that claim is
+    /// the one that replaced it.
+    Replaced { last: ClaimId, direct: bool },
+    /// The claim was replaced, and the last claim of that chain was itself
+    /// retired without a replacement.
+    ReplacedThenRetired { last: ClaimId },
+}
+
+impl Ended {
+    /// The retired claim `id`. A replacement that is itself replaced is
+    /// followed, so that the claim named is one that stands, or the one
+    /// whose retirement ended the chain. A chain that comes back to a claim
+    /// it already passed ends there.
+    fn of(ledger: &Ledger, id: &ClaimId) -> Ended {
+        let Some(first) = replacement_of(ledger, id) else {
+            return Ended::Retired;
+        };
+        let mut passed = vec![id.clone()];
+        let mut last = first.clone();
+        loop {
+            if ledger.retirements_of(&last).next().is_none() {
+                return Ended::Replaced {
+                    direct: last == first,
+                    last,
+                };
+            }
+            match replacement_of(ledger, &last) {
+                Some(next) if !passed.contains(&next) && next != last => {
+                    passed.push(last);
+                    last = next;
+                }
+                _ => return Ended::ReplacedThenRetired { last },
+            }
+        }
+    }
+
+    /// `was retired`, `was replaced by <id>`, or what became of the chain:
+    /// the words a message puts after the claim.
+    fn said(&self) -> String {
+        match self {
+            Ended::Retired => "was retired".to_owned(),
+            Ended::Replaced { last, direct: true } => format!("was replaced by {last}"),
+            Ended::Replaced { last, .. } => {
+                format!("was replaced, and the last claim of that chain is {last}")
+            }
+            Ended::ReplacedThenRetired { last } => {
+                format!("was replaced, and the last claim of that chain, {last}, was retired")
+            }
+        }
     }
 }
 
-/// `claim_retired` for a write on a retired claim. The message says which
-/// it was. The remediation names the claim that replaced it when there is
-/// one, and otherwise shows the retired claim's record.
+/// `claim_retired` for a write on a retired claim. The message says how it
+/// ended. The remediation names the live claim at the end of its
+/// replacements when there is one, and otherwise shows the record of the
+/// claim whose retirement ended it.
 fn retired_error(ledger: &Ledger, claim: &Claim, what: &str) -> Error {
     let id = &claim.id;
-    match replacement_of(ledger, id) {
-        Some(new) => Error::new(
-            Code::ClaimRetired,
-            format!("the claim {id} was replaced by {new} and cannot be {what}"),
-        )
-        .with_remediation(format!(
-            "The claim was replaced by {new}: run hibi status {new}"
+    let ended = Ended::of(ledger, id);
+    let e = Error::new(
+        Code::ClaimRetired,
+        format!("the claim {id} {} and cannot be {what}", ended.said()),
+    );
+    match ended {
+        Ended::Replaced { last, .. } => e.with_remediation(format!(
+            "The claim was replaced by {last}: run hibi status {last}"
         )),
-        None => Error::new(
-            Code::ClaimRetired,
-            format!("the claim {id} was retired and cannot be {what}"),
-        )
-        .with_remediation(format!("hibi list {id}")),
+        Ended::ReplacedThenRetired { last } => e.with_remediation(format!("hibi list {last}")),
+        Ended::Retired => e.with_remediation(format!("hibi list {id}")),
     }
 }
 
@@ -973,25 +1020,23 @@ fn claim_elements(
         let target = &target;
         let marked = (|| -> Result<Mark, Error> {
             if let Some(retired) = retired {
-                // A claim that another one replaced: the replacement is the
-                // claim to look at, and a new note is not offered.
-                if let Some(new) = replacement_of(&ledger, retired) {
-                    return Err(Error::new(
-                        Code::ClaimRetired,
-                        format!(
-                            "the claim {retired}, with this statement, this note and its sides on the same units, was replaced by {new}"
-                        ),
-                    )
-                    .with_remediation(format!(
-                        "The claim was replaced by {new}: run hibi status {new}"
-                    )));
-                }
+                // A claim that another one replaced, with a live claim at
+                // the end of the replacements: that claim is the one to look
+                // at, and a new note is not offered. A chain that ends in a
+                // retired claim ended by a decision, as a retired claim did.
+                let ended = Ended::of(&ledger, retired);
                 let e = Error::new(
                     Code::ClaimRetired,
                     format!(
-                        "the claim {retired}, with this statement, this note and its sides on the same units, was retired"
+                        "the claim {retired}, with this statement, this note and its sides on the same units, {}",
+                        ended.said()
                     ),
                 );
+                if let Ended::Replaced { last, .. } = &ended {
+                    return Err(e.with_remediation(format!(
+                        "The claim was replaced by {last}: run hibi status {last}"
+                    )));
+                }
                 // In a batch the note is a field of the element, not an
                 // option.
                 return Err(e.with_remediation(if indexed {
@@ -1514,7 +1559,7 @@ pub fn reanchor(
                 "re-anchoring {} would produce the claim {}, which {}",
                 old.id,
                 new.id,
-                how_it_ended(&ledger, &new.id)
+                Ended::of(&ledger, &new.id).said()
             ),
         )
         .with_remediation(reanchor_with_note(&old.id, input)));
@@ -1572,7 +1617,7 @@ pub fn reanchor(
                         "re-anchoring {} would produce the claim {}, which {}: the same statement and note, with its sides on the same units",
                         old.id,
                         retired.id,
-                        how_it_ended(&ledger, &retired.id)
+                        Ended::of(&ledger, &retired.id).said()
                     ),
                 )
                 .with_remediation(reanchor_with_note(&old.id, input)));

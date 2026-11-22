@@ -3529,6 +3529,145 @@ fn a_file_that_does_not_parse_beside_a_missing_side_has_a_way_out() {
     assert_eq!(v["claim"]["state"], "fresh");
 }
 
+/// Section 15.3: one listed twin has a twin that is not listed. A claim
+/// quotes the body of `fmt` in `impl fmt::Debug for Id`; the body is edited
+/// to equal the one in `impl fmt::Display for Id`. The one candidate is
+/// Display's `fmt`, which cannot be told apart from Debug's. No declaration
+/// holds both, so `status`, `mark` and `reanchor` name the whole file and
+/// never the Display `impl`, on which the claim would stay fresh when Debug
+/// changes.
+#[test]
+fn a_single_listed_twin_does_not_name_the_declaration_it_stands_in() {
+    const WHOLE: &str = "Units that are identical where they stand cannot be anchored one by one. Anchor the whole file instead: file:src/id.rs";
+    let repo = seeded();
+    let source = "use std::fmt;\n\npub struct Id(pub u64);\n\nimpl fmt::Display for Id {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"id-{}\", self.0)\n    }\n}\n\nimpl fmt::Debug for Id {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"Id({})\", self.0)\n    }\n}\n";
+    repo.write("src/id.rs", source);
+    let id = repo.claim(
+        "Debug output of Id is Id(N)",
+        "file:src/id.rs::write!(f, \"Id({})\", self.0)",
+        &[],
+    );
+    repo.write("src/id.rs", &source.replace("Id({})", "id-{}"));
+
+    let view = repo.view(&id);
+    let side = &view["sides"][0];
+    assert_eq!(side["state"], "missing", "{view}");
+    assert_eq!(side["candidatesTotal"], 1, "{view}");
+    assert_eq!(side["candidates"][0]["anchor"], Value::Null, "{view}");
+    assert_eq!(s(&side["remediation"]), WHOLE);
+    for command in ["mark", "reanchor"] {
+        let e = refused(&repo, &[command, &id]);
+        let message = s(&e["message"]);
+        assert!(message.ends_with(WHOLE), "{command}: {message}");
+        assert!(
+            !message.contains("enclosing declaration"),
+            "{command}: {message}"
+        );
+    }
+    let human = repo.human(&["--now", NOW, "status"]);
+    assert!(human.stdout.contains(WHOLE), "{}", human.stdout);
+    assert!(
+        !human.stdout.contains("impl fmt::Display for Id\"}"),
+        "{}",
+        human.stdout
+    );
+
+    // The whole file, as printed, notices a change of the Debug impl.
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &["reanchor", &id, "--subject", "file:src/id.rs"],
+    );
+    let new = id_of(&v["new"], "c1-");
+    repo.write("src/id.rs", &source.replace("Id({})", "Id<{}>"));
+    assert_eq!(repo.state(&new), "stale");
+}
+
+/// Section 15.2: `claim_retired` follows the replacements of a claim to the
+/// last one. A live claim at the end is the one to look at; a chain that
+/// ends in a retired claim says so and is treated as a retired claim.
+#[test]
+fn claim_retired_names_the_last_claim_of_a_chain_of_replacements() {
+    let repo = seeded();
+    let again = [
+        "claim",
+        "Requests time out.",
+        "--subject",
+        TIMEOUT_SUBJECT,
+        "--evidence",
+        "file:src/a.rs#timeout",
+    ];
+    let first = repo.claim(
+        "Requests time out.",
+        TIMEOUT_SUBJECT,
+        &["file:src/a.rs#timeout"],
+    );
+    let v = j(
+        &repo,
+        &["reanchor", &first, "--add-evidence", "file:src/a.rs#limit"],
+    );
+    let second = id_of(&v["new"], "c1-");
+    let v = j(
+        &repo,
+        &[
+            "reanchor",
+            &second,
+            "--statement",
+            "Requests time out after 30 seconds.",
+        ],
+    );
+    let third = id_of(&v["new"], "c1-");
+
+    // The first claim was replaced by the second, which was replaced by the
+    // third: the third is named.
+    let e = refused(&repo, &again);
+    assert_eq!(e["code"], "claim_retired");
+    assert_eq!(
+        s(&e["message"]),
+        format!(
+            "the claim {first}, with this statement, this note and its sides on the same units, was replaced, and the last claim of that chain is {third}"
+        )
+    );
+    assert_eq!(
+        s(&e["remediation"]),
+        format!("The claim was replaced by {third}: run hibi status {third}")
+    );
+    assert_eq!(repo.state(&third), "fresh");
+    let e = refused(&repo, &["mark", &first]);
+    assert_eq!(
+        s(&e["message"]),
+        format!(
+            "the claim {first} was replaced, and the last claim of that chain is {third} and cannot be marked"
+        )
+    );
+    assert_eq!(
+        s(&e["remediation"]),
+        format!("The claim was replaced by {third}: run hibi status {third}")
+    );
+
+    // The last claim of the chain is retired: nothing stands for the first
+    // claim, and the error says so, with the remediation of a retired claim.
+    j(&repo, &["retire", &third]);
+    let e = refused(&repo, &again);
+    assert_eq!(
+        s(&e["message"]),
+        format!(
+            "the claim {first}, with this statement, this note and its sides on the same units, was replaced, and the last claim of that chain, {third}, was retired"
+        )
+    );
+    assert_eq!(
+        s(&e["remediation"]),
+        "The claim was retired, and that stands. A different --note records the statement and anchors again as a new claim."
+    );
+    let e = refused(&repo, &["mark", &first]);
+    assert_eq!(s(&e["remediation"]), format!("hibi list {third}"));
+    // The note, as the remediation says, records it again.
+    let mut noted = again.to_vec();
+    noted.extend(["--note", "wanted again"]);
+    let v = j(&repo, &noted);
+    assert_eq!(v["claims"][0]["created"], true);
+}
+
 /// R55: the same anchor when another line of the function is edited: the
 /// quoted line is still there, so the anchor is good. The side is
 /// `changed`, says nothing more, and `next` is `hibi mark`.

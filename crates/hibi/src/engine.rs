@@ -57,8 +57,8 @@ pub use report::{
     scheme_reports,
 };
 pub use resolve::{
-    BY_SIMILARITY, Candidates, MAX_CANDIDATES, NAME_AND_QUOTE_APART, NOT_IDENTIFIED, Resolved,
-    content_candidates, quoted, reason_of_no_provider, resolve_anchors, resolve_with,
+    BY_SIMILARITY, Candidates, Enclosing, MAX_CANDIDATES, NAME_AND_QUOTE_APART, NOT_IDENTIFIED,
+    Resolved, content_candidates, quoted, reason_of_no_provider, resolve_anchors, resolve_with,
     selects_its_unit, side_of_error,
 };
 // For the judge's output types.

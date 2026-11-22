@@ -351,3 +351,72 @@ fn the_twin_sentence_names_a_declaration_only_when_one_holds_the_twins() {
     let v = repo.json(&["claim", "box", "--subject", "file:src/n.ts#Box"]);
     assert_eq!(v["claims"][0]["claim"]["sides"][0]["unit"]["kind"], "class");
 }
+
+/// Section 15.3: the twins of the sentence are all the units of the
+/// resource that cannot be told apart from a listed one, not the listed
+/// ones alone. An anchor that matches more units than are shown has twins
+/// beyond the list: twenty-one same methods of class `A` fill it, and two
+/// same methods of class `B` are not shown. No one declaration holds them
+/// all, so only the whole file is named. An anchor that matches the methods
+/// of `A` alone names `A`.
+#[test]
+fn the_twin_sentence_counts_the_twins_that_are_not_shown() {
+    let repo = Repo::new();
+    repo.write("docs/a.md", "# A\n\nText.\n");
+    let method = "    def get(self):\n        return self.value\n\n";
+    repo.write(
+        "m.py",
+        &format!(
+            "class A:\n{}\nclass B:\n{}",
+            method.repeat(21),
+            method.repeat(2)
+        ),
+    );
+    let e = repo.fail(&["claim", "S", "--subject", "file:m.py::return self.value"]);
+    assert_eq!(e["code"], "side_ambiguous", "{e}");
+    assert_eq!(
+        e["remediation"],
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the whole file instead: file:m.py",
+        "{e}"
+    );
+    let e = repo.fail(&["claim", "S", "--subject", "file:m.py#A.get"]);
+    assert_eq!(
+        e["remediation"],
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration file:m.py#A or the whole file file:m.py",
+        "{e}"
+    );
+}
+
+/// Section 15.3: both anchors of the twin sentence can be given back as
+/// they stand. A path with `#` cannot be written in compact syntax, so the
+/// whole file is printed as JSON, like the declaration.
+#[test]
+fn the_twin_sentence_prints_the_whole_file_as_an_anchor_that_parses() {
+    let repo = Repo::new();
+    repo.write("docs/a.md", "# A\n\nText.\n");
+    repo.write(
+        "src/c#/w.py",
+        "class K:\n    def v(self):\n        return 1\n\n    def v(self):\n        return 1\n",
+    );
+    let e = repo.fail(&[
+        "claim",
+        "S",
+        "--subject",
+        r##"{"loc":"file:src/c#/w.py","sel":{"symbol":"K.v"}}"##,
+    ]);
+    let fix = e["remediation"].as_str().unwrap();
+    assert_eq!(
+        fix,
+        r##"Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the enclosing declaration {"loc":"file:src/c#/w.py","sel":{"symbol":"K"}} or the whole file {"loc":"file:src/c#/w.py","sel":{}}"##
+    );
+    let (declaration, whole) = fix
+        .split_once("the enclosing declaration ")
+        .unwrap()
+        .1
+        .split_once(" or the whole file ")
+        .unwrap();
+    let v = repo.json(&["claim", "class", "--subject", declaration]);
+    assert_eq!(v["claims"][0]["claim"]["sides"][0]["unit"]["kind"], "class");
+    let v = repo.json(&["claim", "file", "--subject", whole]);
+    assert_eq!(v["claims"][0]["claim"]["sides"][0]["unit"]["kind"], "file");
+}

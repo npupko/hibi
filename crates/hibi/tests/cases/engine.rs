@@ -56,7 +56,8 @@ fn resolution(v: &Value) -> Resolved {
                 anchors: Vec::new(),
                 total: usize::try_from(n).unwrap(),
                 by_fp: Default::default(),
-                enclosing: None,
+                twin_sels: Vec::new(),
+                enclosing: hibi::engine::Enclosing::NoTwins,
             }),
         };
     }
