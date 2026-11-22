@@ -85,23 +85,25 @@ Ask the user before each of these steps; they change the repository.
    | The body of a declaration anchored `#name` | `changed` | Read the change, re-check, `hibi mark` |
    | A code line quoted by a bare quote commented out | `missing` (`not_exact`) | Read, `hibi reanchor` |
    | The line of a `#name::<line>` anchor edited, removed or commented out | `changed`, "the stored quote is no longer in this unit"; `mark` refuses. When the name has several declarations: `missing` (`not_exact`) with candidates | Read it, re-check, `hibi reanchor` with the new line |
-   | Other lines of a `#name::<line>` declaration | `changed` | Read the change, re-check, `hibi mark` |
+   | Other lines of a `#name::<line>` declaration | `changed`; when the name has several declarations, an edit within 48 characters of the quoted line gives `missing` (`not_exact`) | Read the change, re-check, `hibi mark` |
    | A sentence edited at its quoted words, or right around a quoted phrase | `missing` (`not_exact`) | Read the candidates and the file, re-check, `hibi reanchor` |
    | A long sentence edited away from its quote (not in the first 120 characters of a paragraph's first sentence) | `changed` | Read the change, re-check, `hibi mark` |
    | Another sentence edited, not the first of its paragraph or list item | nothing | |
-   | The first sentence of a paragraph or list item edited, deleted or inserted, the first cell of a row edited, a paragraph left with one sentence, an ordered list renumbered, a blockquote reflowed | the claims on that paragraph, item or row are `missing` (`not_exact`); the right sentence usually listed first | Read, `hibi reanchor` |
+   | The first 120 characters of a paragraph's or list item's first sentence edited, that sentence deleted or inserted, the first cell of a row edited, a paragraph left with one sentence, an ordered list renumbered, a blockquote reflowed | the claims on that paragraph, item or row are `missing` (`not_exact`); the right sentence usually listed first | Read, `hibi reanchor` |
    | Two paragraphs joined | the second paragraph's claims are `missing` (`not_exact`) | Read, `hibi reanchor` |
    | A sentence moved out of, or split from, a paragraph or section that keeps its name | `missing` (`selector_not_found`), the sentence listed as a candidate with the same content | Read, `hibi reanchor` |
-   | A heading renamed, a section or paragraph pasted again under the same heading, a function around a quote renamed | `missing` (`not_exact`), unless another container now has the name (last rows) | Read, `hibi reanchor` |
+   | A heading renamed, a section or paragraph pasted again under the same heading, a function around a quote renamed | `missing` (`not_exact`), unless another container now has the name (last rows) | Read, `hibi reanchor`. A pasted template that is not edited yet makes its sentences twins of the original's, and the remedy then names the whole file: finish editing the copy first, then run `hibi status`, instead of anchoring the whole file, which would widen precise claims. |
    | A declaration anchored `#name` renamed or deleted | `missing` (`selector_not_found`), usually with no candidate | Find it yourself, `hibi reanchor` |
    | The other declaration of a shared name removed | `missing` (`not_exact`): the count changed; the remaining declaration is a candidate | Read, `hibi reanchor` |
    | A second declaration of the name added | `ambiguous` or `missing` (`not_exact`), the declarations listed | Read, `hibi reanchor`. In Python a later `def` of a name replaces an earlier one when the module runs, and the earlier, unused one is listed first: check which one the code uses. |
    | A sentence, list item or table row copied within its scope, the original then edited | nothing: the claim follows the copy and stays fresh | `hibi cover` lists the edited original as uncovered |
    | A line of code copied into another declaration of the same name, the original then edited | `changed`, `next` is `hibi mark`, and the mark is accepted: only the line numbers show that it is the other declaration | Read the line and its line numbers before you mark |
+   | A declaration's whole body copied into another declaration of the same name (two `fmt` in two `impl` blocks, a Python function defined twice, two Go `init`), the original then edited | first `missing` or `ambiguous` with both listed; after the edit, fresh on the copy | Read the line numbers; check which declaration the claim is about |
    | A paragraph or section pasted again, then the original's first sentence or heading edited | nothing: only the copy has the name now, and the claim is fresh on it | Same check |
    | Two numbered lists in a section: a step removed from one, and an item of the other edited to read as the claimed item did | the claim is fresh on the other list's item (one removal alone gives `missing` or `ambiguous`) | Same check |
 2. **Read the change.** For a `changed` side, `status` prints the unit's text
-   as it is now, and `hibi status --detail <id>` prints every side's text.
+   as it is now, cut to 240 characters, and `hibi status --detail <id>`
+   prints every side's text whole.
    That is the current text, not a diff: for the change itself, run
    `git diff -- <path>` for an edit that is not committed, or
    `git log -p -- <path>` for a committed one. `mark` and `reanchor` print
@@ -116,10 +118,10 @@ Ask the user before each of these steps; they change the repository.
 
    | `reason` | What to do |
    |---|---|
-   | `not_exact` | The stored anchor no longer identifies one unit. `candidates` lists units it could mean: first units with the marked content (`sameFingerprint: true`), then hibi's guesses. A copy of the text has `sameFingerprint: true` too, so read each one and the file. If one is the unit the claim is about, re-check the statement against it, then run `next` with its `anchor` or with an anchor of your own. A printed `anchor` quotes the unit's first line or whole text, so it can widen a short quote to a whole sentence, or move a `#name::<line>` to another line, without saying so. For a declaration whose name is unique it is a bare `#name`: add `::<line>` again if the claim was about a line; when the claim is about particular words (a number, a name, one line of code), anchor them yourself (`<loc>::<words>`, `<loc>#<name>::<line>`). After you re-anchor to a candidate with the marked content, check that it is the original and not a copy: look at its line in the file, or run `hibi cover` and see whether the original is now uncovered. `status` cannot tell you, because the claim is fresh either way. When the detail says "the name and the quoted text now point to different units", the quoted line moved into another declaration: the first candidate has the name, the others hold the line. The right unit may not be listed; then find it yourself. |
+   | `not_exact` | The stored anchor no longer identifies one unit. `candidates` lists units it could mean: first units with the marked content (`sameFingerprint: true`), then hibi's guesses. A copy of the text has `sameFingerprint: true` too, so read each one and the file. If one is the unit the claim is about, re-check the statement against it, then run `next` with its `anchor` or with an anchor of your own. A printed `anchor` quotes the unit's first line or whole text, cut at 120 characters, so it can end inside a word and still selects its unit; it can widen a short quote to a whole sentence, or move a `#name::<line>` to another line, without saying so. For a declaration whose name is unique it is a bare `#name`: add `::<line>` again if the claim was about a line; when the claim is about particular words (a number, a name, one line of code), anchor them yourself (`<loc>::<words>`, `<loc>#<name>::<line>`). After you re-anchor to a candidate with the marked content, check that it is the original and not a copy: look at its line in the file, or run `hibi cover` and see whether the original is now uncovered. `status` cannot tell you, because the claim is fresh either way. When the detail says "the name and the quoted text now point to different units", the quoted line moved into another declaration: the first candidate has the name, the others hold the line. The right unit may not be listed; then find it yourself. |
    | `selector_not_found` | The stored anchor matches nothing where it points: a declaration anchored `#name` was renamed or removed, a sentence was moved out of, or split from, a paragraph or section that keeps its name (then it is listed as a candidate with the same content), or the unit was rewritten or moved to another file (only the side's own file is searched). Find it with `git diff` or `git log -p`, re-check, and re-anchor. If it is gone, ask the user before you retire. |
    | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
-   | `several_units` | The anchor matches several units, listed in `candidates`, for example a name that now has a second declaration. Choose the one the statement is about and re-anchor to its `anchor`. A candidate with `anchor: null` is identical, where it stands, to another one, and cannot be anchored alone: anchor the unit that contains them (the `#name` of the enclosing declaration, or the whole file). While a pasted template is only partly edited, its sentences are twins of the original's: finish editing the copy first, then run `hibi status`, instead of anchoring the whole file, which would widen precise claims. |
+   | `several_units` | The anchor matches several units, listed in `candidates`, for example a name that now has a second declaration. Choose the one the statement is about and re-anchor to its `anchor`. A candidate with `anchor: null` is identical, where it stands, to another one, and cannot be anchored alone: follow the sentence hibi prints with it. After you anchor a containing unit, the claim stays on it: re-anchoring it back to the original unit later is `claim_retired` (step 6 says what to do). |
    | `selector_refused` | The provider refuses the stored anchor, or no longer allows one of its selector keys; `detail` says which. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
    | `resource_unavailable` | The resource cannot be read now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses; the line named is where the parser first reported an error, which can be after the mistake (an unclosed string or comment). Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
    | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. For these, `resource_unavailable` and `provider_error`, the `remediation` also says how to move on: anchor an evidence side to another resource or drop it, re-point or retire a subject. When such a side and a missing side block a claim, `next` and the `reanchor` error name both. |
@@ -208,7 +210,10 @@ or `null`:
 | `hibi providers --check <scheme>` | A provider failed. The command starts it and reports what fails. Tell the user, and run it when they ask. |
 | `null` | Fresh, retired, or unavailable for a reason no command fixes. The side's `remediation` says what to do, for example fix a syntax error or declare a scheme. |
 
-`next` never contains a candidate: `<anchor>` is yours to fill. Plain
+`next` never contains a candidate: `<anchor>` is yours to fill. Commands
+hibi prints (`next`, fix lines) assume the same working directory and
+`--root` as the command that printed them; add `--root` yourself when you
+used it. Plain
 `hibi status` lists stale and expired claims. `hibi status <id>` shows one
 claim in any state.
 
@@ -252,7 +257,8 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
 `reanchor`):
 
 - It must match exactly (`selector_not_exact` otherwise). A quote that differs
-  only in whitespace counts as exact.
+  only in the length of runs of whitespace counts as exact; whitespace where
+  the text has none does not.
 - A quote that occurs in more than one unit is `side_ambiguous`, whatever its
   length. The error lists each candidate with an anchor you can use, or says
   that the units cannot be told apart.
@@ -270,8 +276,8 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
   takes the claim. Read the line the side shows.
 - Units that are identical, with identical text around them, in one
   scope cannot be anchored one by one: `claim` answers `side_ambiguous`
-  with each unit marked "cannot be told apart". Anchor the unit that
-  contains them (the enclosing `#name`, or the whole file). In `cover`, ask
+  with each unit marked "cannot be told apart". Follow the sentence hibi
+  prints with them. In `cover`, ask
   the user to exclude each one by its key, or the whole file; a claim on
   the containing unit does not cover them. (`quote_not_distinguishable` is a guard behind this
   that the file provider does not produce in practice.)
@@ -280,9 +286,10 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
 - A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is
   refused (`quote_in_comment`): anchor the code the comment describes. A
   Python docstring is a string and can be quoted.
-- Quote whole lines or whole tokens. A quote is matched as text, so one that
-  ends inside a number or a word still matches after an edit (`A = 1` still
-  occurs in `A = 10`).
+- When you type a quote, quote whole lines or whole tokens. A quote is
+  matched as text, so one that ends inside a number or a word still matches
+  after an edit (`A = 1` still occurs in `A = 10`). A printed anchor may end
+  inside a word; it still selects its unit.
 - A quote must lie inside one unit (`quote_spans_units`). A quote copied from
   a member line may keep its indentation and a trailing `,` or `;`.
 - A `file:` path must be one git lists (tracked, or untracked and not
@@ -301,11 +308,16 @@ precede. Units of prose: `sentence`, `heading`, `list-item`, `table-row`,
 
 ## What stales a claim
 
-Fingerprints are exact. Prose ignores whitespace changes. Code ignores
-whitespace, line breaks, comments and a trailing comma, but a Python
-backslash line continuation counts, and a formatter that
+Fingerprints are exact. Prose ignores whitespace changes. The code
+fingerprint ignores whitespace, line breaks, comments and a trailing comma,
+but a Python backslash line continuation counts, and a formatter that
 changes semicolons, quote style or parentheses stales claims; re-check and
-mark them. A reverted change makes a claim fresh again.
+mark them. A claim on a declaration by name stays fresh through the ignored
+edits. A bare quote is found by the text right around it, so such an edit
+next to it (a comment inserted in or beside the quoted line, a trailing
+comma removed, whitespace added between tokens) makes the side `missing`
+(`not_exact`) with the unit as a candidate: re-anchor it. A reverted change
+makes a claim fresh again.
 
 ## Batches
 

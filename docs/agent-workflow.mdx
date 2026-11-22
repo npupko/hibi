@@ -53,8 +53,11 @@ when it cannot decide.
 
     - the quoted words of a sentence, or the words right around a quoted
       phrase, were edited;
-    - the first sentence of the paragraph was edited, or the heading
-      renamed, or the sentence moved to another paragraph;
+    - the first 120 characters of the paragraph's first sentence were
+      edited, or the heading renamed;
+    - the sentence moved out of its paragraph or section, which keeps its
+      name (then the reason is `selector_not_found`, with the sentence as a
+      candidate);
     - the function around a quote was renamed;
     - a name now has a second declaration.
 
@@ -120,7 +123,10 @@ when it cannot decide.
 ## Reading `next`
 
 `next` is one command line quoted for a POSIX shell, or `null`. A part you
-must supply is written `<anchor>` or `<text>`. hibi picks the first row that
+must supply is written `<anchor>` or `<text>`. Commands that hibi prints, in
+`next` and in fix lines, assume the same working directory and the same
+`--root` as the command that printed them; add `--root` yourself when you
+used it. hibi picks the first row that
 applies:
 
 | Condition | `next` |

@@ -30,7 +30,7 @@ JavaScript), Python, Rust, Go and Java, and for the whole-file unit of a code
 file that parsed without error. The fingerprint is a hash of the unit's syntax
 tree, not of its text.
 
-| Edit | Stales the claim |
+| Edit | Changes the fingerprint |
 |---|---|
 | Whitespace, indentation, line breaks | No |
 | A Python backslash line continuation, as in `TOTAL = 1 + \` followed by `2` on the next line, added or removed | Yes |
@@ -49,8 +49,17 @@ tree, not of its text.
 | A change to a Python docstring | Yes, a docstring is a string |
 
 In short: reformatting that changes only whitespace, line breaks, comments or
-a trailing comma keeps claims fresh. The one line break that counts is a
-Python backslash continuation. A formatter that changes semicolons, quote
+a trailing comma keeps the fingerprint the same, so a claim that anchors a
+declaration by name (`#name` or `#name::<line>`) stays fresh. The one line
+break that counts is a Python backslash continuation.
+
+A bare quote is different, because it is found by the text right around it
+inside its unit. Such an edit right next to the quote makes the side
+`missing` (`not_exact`), with the unit as a candidate: a comment inserted
+inside or beside the quoted line, a TSX `{/* */}` removed, a trailing comma
+removed next to the quote, or whitespace added between tokens where there
+was none, within 48 characters of it. A changed run of whitespace has no
+effect. Such an edit never makes a claim fresh that should be stale. A formatter that changes semicolons, quote
 style or parentheses stales claims, and each stale claim needs a re-check and
 a `mark`.
 

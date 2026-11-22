@@ -69,8 +69,9 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
   claim is about. A whole sentence is a good quote; a short phrase works when
   it occurs once in its paragraph.
 
-Quote whole lines or whole tokens. A quote is matched as text, so a quote
-that ends inside a number or a word still matches after an edit: `A = 1`
+Quote whole lines or whole tokens when you type a quote. A quote is
+matched as text, so a quote that ends inside a number or a word still
+matches after an edit: `A = 1`
 still occurs in `A = 10`, and the side is then only `changed`, not gone.
 
 A bare quote on a line inside a function follows the text, not the
@@ -113,8 +114,10 @@ as `#MAX_ATTEMPTS` and stores only that.
 
 ## Finding the unit of a new anchor
 
-A quote that differs from the text only in whitespace, for example after a
-paragraph was re-wrapped, counts as an exact occurrence.
+A quote that differs from the text only in the length of its runs of
+whitespace, for example after a paragraph was re-wrapped, counts as an exact
+occurrence. Whitespace where the text has none, or none where it has some,
+does not.
 
 An anchor as you type it must select one unit. Occurrences of the quote
 inside one unit resolve to that unit. Occurrences in more than one unit are
@@ -163,8 +166,8 @@ The container of a unit is its section (one heading and the text below it),
 plus the paragraph, list item or table row when that holds several
 sentences; in code it is the enclosing declaration. hibi stores the
 container's path, and the scope is every container that path names:
-sections with the same heading path, paragraphs with the same first
-sentence, and declarations that share a symbol. The claim resolves while
+sections with the same heading path, paragraphs whose first sentences
+start with the same 120 characters, and declarations that share a symbol. The claim resolves while
 the path names as many containers as when the claim was made.
 
 Everything else is a candidate that you choose. hibi lists the units that
@@ -184,17 +187,18 @@ heading, and code outside every declaration.
 | The quoted words of a sentence, or the words right around a quoted phrase | `missing` (`not_exact`) | Read the candidates, re-check, `reanchor` |
 | Elsewhere in a long quoted sentence | `changed`, except in the first 120 characters of a paragraph's first sentence, which name the paragraph (next rows) | Read the change, re-check, `mark` |
 | Another sentence, not the first of its paragraph or list item | Nothing | |
-| The first sentence of a paragraph or list item edited, deleted or inserted, the first cell of a table row edited, a paragraph or list item left with one sentence, an ordered list renumbered or its marker changed, a blockquote reflowed | The claims on that paragraph's, item's or row's units are `missing` (`not_exact`), usually with the unchanged sentence listed first | Read, `reanchor` |
+| The first 120 characters of a paragraph's or list item's first sentence edited, that sentence deleted or inserted, the first cell of a table row edited, a paragraph or list item left with one sentence, an ordered list renumbered or its marker changed, a blockquote reflowed | The claims on that paragraph's, item's or row's units are `missing` (`not_exact`), usually with the unchanged sentence listed first | Read, `reanchor` |
 | Two paragraphs joined | The claims on the second paragraph's units are `missing` (`not_exact`); the first paragraph's claims are unaffected | Read, `reanchor` |
 | A heading renamed or deleted | The claims under it are `missing` (`not_exact`), unless another section now has the old heading: then they follow it | Read, `reanchor` |
 | A section or paragraph pasted again under the same heading, or one of several with the same name removed | The claims in them are `missing` (`not_exact`). If the original is then renamed, the copy alone has the name, and the claims are fresh on it | Read, `reanchor` |
 | A sentence, list item or table row copied in the same scope, with the original then edited | Nothing: the claim follows the copy and stays fresh | Check with `hibi cover` |
 | A line of code copied into another declaration of the same name, with the original then edited | `changed`, `next` is `hibi mark`, and the mark is accepted: the side is now the other declaration | Read the line and its line numbers before you mark |
+| A declaration's whole body copied into another declaration of the same name, with the original then edited | First `missing` or `ambiguous` with both declarations as candidates, then, after the edit, fresh on the copy | Read the line numbers the side shows; see [limits](#limits) |
 | A sentence moved out of, or split from, a paragraph or section that keeps its name | `missing` (`selector_not_found`), with the sentence as a candidate with the same content | Read, `reanchor` |
 | The body of a declaration anchored `#name` | `changed` | Read the change, re-check, `mark` |
 | A code line quoted by a bare quote commented out | `missing` (`not_exact`): text in a comment is never a hit | Read, `reanchor` |
 | The line of `#name::<line>` edited, removed or commented out | `changed`, "the stored quote is no longer in this unit"; `mark` is refused. When the name has several declarations, `missing` (`not_exact`) with candidates instead | Read, `reanchor` with the new line |
-| Other lines of a declaration anchored `#name::<line>` | `changed` | Read the change, re-check, `mark` |
+| Other lines of a declaration anchored `#name::<line>` | `changed`. When the name has several declarations, an edit within 48 characters of the quoted line gives `missing` (`not_exact`) instead | Read the change, re-check, `mark` |
 | The declaration renamed or deleted | `missing` (`selector_not_found`), with no candidate unless a unit has the content that was marked | Find it yourself, `reanchor` |
 | A second declaration of the name added, or one of several removed (the other declaration of a shared name included) | `ambiguous` or `missing` (`not_exact`), with the declarations as candidates | Read, `reanchor` |
 | The function around a bare quote renamed | `missing` (`not_exact`) | Read, `reanchor` |
@@ -245,7 +249,8 @@ Re-check each statement before running its next command. If it no longer holds, 
 
 ### Editing the container
 
-The first sentence of a paragraph names the paragraph. In the example above
+The first 120 characters of a paragraph's first sentence name the
+paragraph. In the example above
 it changed from "Each attempt times out after 30 s." to "... 45 s.", so a
 claim on the unchanged third sentence of that paragraph is a candidate as
 well. The sentence has the content that was marked, so it is listed first:
@@ -562,7 +567,9 @@ Each candidate carries an anchor that selects it alone. The anchor is
 `<loc>#<symbol>` when that symbol occurs once in the whole file, and the
 unit's full anchor as JSON otherwise. A printed anchor quotes the unit's
 first line, its whole text, or for a duplicated declaration the first line
-only it holds. That can be wider than the words the claim was about, or
+only it holds. A printed quote is cut at 120 characters and can end inside a
+word; it still selects its unit. The advice to quote whole lines or tokens
+is for quotes you type. That can be wider than the words the claim was about, or
 another line of the declaration. When the claim is about particular words,
 such as a number or one line of code, anchor the candidate with a quote of
 your own instead (`<loc>::<words>` or `<loc>#<name>::<line>`). Units that are identical where they
@@ -623,8 +630,9 @@ that states them; other pages link here.
   different code with the same name, the side is `changed`, and the
   re-check is yours.
 - An edit to another sentence has no effect, except an edit that renames or
-  restructures the container: editing, deleting or inserting the first
-  sentence of a paragraph or list item, editing the first cell of a table
+  restructures the container: editing the first 120 characters of a
+  paragraph's or list item's first sentence, deleting or inserting that
+  sentence, editing the first cell of a table
   row, splitting a paragraph, joining two (for the second paragraph's
   claims), removing the other sentences of
   a paragraph or list item, renumbering an ordered list or changing its
@@ -650,10 +658,15 @@ that states them; other pages link here.
   the unit), takes the claim when the original is then edited, also for
   `#name::<line>`. In code that text is read with every comment as one
   space, so editing a comment next to a quote changes nothing. With overloads or a function defined twice, the copy can
-  be in another declaration of the same name. The side is then `changed`
-  with `next: hibi mark`, shows the same name and only other line numbers,
-  and the mark is accepted, so read the line. A Python claim can end up on
-  the earlier definition, which the module does not use.
+  be in another declaration of the same name. For a copied line the side
+  is then `changed` with `next: hibi mark`, shows the same name and only
+  other line numbers, and the mark is accepted, so read the line. When a
+  declaration's whole body is copied into another declaration of the same
+  name (two `fmt` methods in two `impl` blocks of one type, a Python
+  function defined twice, two Go `init` functions), the side is first
+  `missing` or `ambiguous`, and once the original is edited the claim
+  follows the copy and stays fresh. A Python claim can end up on the
+  earlier definition, which the module does not use.
 - A copy in another scope is a candidate, never the claim's unit.
 - A pasted copy can become the claim's place. When a paragraph or section
   is pasted again under the same heading, its claims become candidates.
@@ -670,8 +683,8 @@ that states them; other pages link here.
   with its heading kept and its text is pasted into another, empty section
   of that name, the count is unchanged, and the copy can take the claim.
 - Identical units in one scope cannot be anchored one by one. When you
-  claim, anchor the unit that contains them (the `#name` of the enclosing
-  declaration, or the whole file). In `cover`, exclude each such unit by
+  claim, anchor the unit that contains them, as the message names it. In
+  `cover`, exclude each such unit by
   its key: a claim on the containing unit does not cover them.
 - Plain text, a one-sentence paragraph above the first heading and code
   outside every declaration have no container. Identical units there cannot
