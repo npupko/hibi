@@ -150,8 +150,7 @@ c1-c5dm2jvhr8hb36rx5rgm  stale  The client gives up after 5 attempts.
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
-`next` assumes the statement still
-holds. It does not: the code says 3. The
+`next` assumes the statement still holds. It does not: the code says 3. The
 agent fixes the sentence to "It gives up after 3 attempts." and replaces the
 claim with one that states the new fact. An id can be shortened to a unique
 prefix:
@@ -185,9 +184,26 @@ nothing stale
 
 Commit `.hibi/` with the change. The next session starts from this memory.
 
-When standard output is not a terminal, as in an agent's shell tool, each
-command prints one JSON object instead, with the same facts and a `next`
-command per claim. The exceptions are `hibi completions`, which prints a
+## Using hibi from a coding agent
+
+The Claude Code plugin in [`plugins/hibi-cli`](plugins/hibi-cli) puts the
+hibi skill in the agent's context. It does not install the binary:
+
+```text
+/plugin marketplace add npupko/hibi
+/plugin install hibi-cli@hibi
+```
+
+With the skill, the agent runs `hibi status` at the start of a session. It
+re-checks each listed statement, then marks, re-anchors or retires the
+claim, and records each new check with `hibi claim`. When it cannot tell
+whether the text or the code is right, it asks the user and does not mark.
+Before finishing a branch it runs `hibi status --since main...`,
+`hibi cover --since main...` and plain `hibi status`, and commits `.hibi/`.
+
+In an agent's shell tool standard output is not a terminal, so each command
+prints one JSON object instead, with the same facts and a `next` command per
+claim. The exceptions are `hibi completions`, which prints a
 shell script, `hibi schema <name>`, which prints the schema itself, and
 `--help`, which prints text.
 
@@ -202,6 +218,16 @@ shell script, `hibi schema <name>`, which prints the schema itself, and
 | Mark | A record that the claim was checked: the fingerprint of every side as it was then, the time, and optionally who. Append-only. |
 | Retirement | A permanent record that a claim no longer applies, optionally naming the claim that replaces it. |
 | Scope | A declaration in `.hibi/hibi.toml` that every unit of given kinds in matching resources must be covered by a claim. |
+
+The core knows nothing about documents. A provider turns a locator into
+units, their text and their fingerprints. The built-in file provider serves
+`file:` and `repo:` locators: prose, and code in TypeScript, TSX, Python,
+Rust, Go and Java. Any other tool can serve its own subjects through an
+external provider, a command that speaks a JSON-lines protocol over standard
+input and output. Each user registers that command in their own config;
+hibi never runs a command that a repository names.
+[`hibi-provider-reference`](crates/hibi-provider-reference) is the reference
+provider; see [external providers](https://hibi.mintlify.app/providers/external).
 
 A claim is **fresh** when some mark's fingerprints equal the current
 fingerprint of every side, and its recheck period, if any, has not run out. It
