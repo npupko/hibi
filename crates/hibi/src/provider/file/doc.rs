@@ -632,7 +632,7 @@ impl Doc {
         }
         let line = code::first_error_line(&self.text, self.class);
         let at = line.map_or(String::new(), |l| {
-            format!(" (the first error is on line {l})")
+            format!(" (the first error is near line {l})")
         });
         Err(ProviderError::new(
             ProviderErrorCode::Unavailable,
@@ -683,19 +683,78 @@ impl Doc {
     }
 
     /// `prefix(h, u)`: the last 48 characters of the normalized text of
-    /// unit `u` before the span.
+    /// unit `u` before the span, comments removed.
     fn prefix_window(&self, u: usize, span: Span) -> String {
         let e = &self.entries[u];
         let end = span.start.clamp(e.start, e.end);
-        text::trim(&last_normalized(&self.text[e.start..end], WINDOW_CHARS)).to_owned()
+        let rev = self
+            .code_segments(e.start, end)
+            .into_iter()
+            .rev()
+            .flat_map(|seg| match seg {
+                Seg::Text(a, b) => {
+                    Box::new(self.text[a..b].chars().rev()) as Box<dyn Iterator<Item = char>>
+                }
+                Seg::Comment => Box::new(std::iter::once(' ')),
+            });
+        text::trim(&last_normalized_of(rev, WINDOW_CHARS)).to_owned()
     }
 
     /// `suffix(h, u)`: the first 48 characters of the normalized text of
-    /// unit `u` after the span.
+    /// unit `u` after the span, comments removed.
     fn suffix_window(&self, u: usize, span: Span) -> String {
         let e = &self.entries[u];
         let start = span.end.clamp(e.start, e.end);
-        text::trim(&first_normalized(&self.text[start..e.end], WINDOW_CHARS)).to_owned()
+        text::trim(&first_normalized_of(
+            self.code_chars(start, e.end),
+            WINDOW_CHARS,
+        ))
+        .to_owned()
+    }
+
+    /// `text[from..to]` as code sees it, in order: the stretches of text
+    /// between comments, and each comment (section 6.7: in-unit windows
+    /// read every comment as one space, as the fingerprint does not see
+    /// comments). Without a parse tree, the text alone.
+    fn code_segments(&self, from: usize, to: usize) -> Vec<Seg> {
+        let comments: &[(usize, usize)] = if self.tree { self.comments() } else { &[] };
+        let lo = comments.partition_point(|&(_, ce)| ce <= from);
+        let hi = comments.partition_point(|&(cs, _)| cs < to);
+        let mut out = Vec::with_capacity(2 * (hi - lo) + 1);
+        let mut at = from;
+        for &(cs, ce) in &comments[lo..hi] {
+            count_work(1);
+            if cs > at {
+                out.push(Seg::Text(at, cs));
+            }
+            out.push(Seg::Comment);
+            at = ce.min(to).max(at);
+        }
+        if at < to {
+            out.push(Seg::Text(at, to));
+        }
+        out
+    }
+
+    /// The characters of [`Doc::code_segments`], a comment as one space.
+    fn code_chars(&self, from: usize, to: usize) -> impl Iterator<Item = char> + '_ {
+        self.code_segments(from, to)
+            .into_iter()
+            .flat_map(move |seg| match seg {
+                Seg::Text(a, b) => {
+                    Box::new(self.text[a..b].chars()) as Box<dyn Iterator<Item = char>>
+                }
+                Seg::Comment => Box::new(std::iter::once(' ')),
+            })
+    }
+
+    /// Some comment intersects `text[from..to]`.
+    fn has_comment_in(&self, from: usize, to: usize) -> bool {
+        self.tree
+            && self
+                .code_segments(from, to)
+                .iter()
+                .any(|s| matches!(s, Seg::Comment))
     }
 
     /// The span reproduces the stored windows of `sel` in unit `u`: a
@@ -1285,8 +1344,9 @@ impl Doc {
             for key in self.scope_keys(v) {
                 if needed.contains(&key) {
                     count_work(1);
-                    let s: &String = start
-                        .get_or_init(|| first_normalized(&self.text[e.start..e.end], START_CHARS));
+                    let s: &String = start.get_or_init(|| {
+                        first_normalized_of(self.code_chars(e.start, e.end), START_CHARS)
+                    });
                     starts.entry(key.clone()).or_default().push(s.clone());
                     let t: &String =
                         full.get_or_init(|| text::normalize(&self.text[e.start..e.end]));
@@ -1435,8 +1495,10 @@ impl Doc {
             return Counted::Selects(first.clone());
         }
         // The whole unit text: a quote with empty windows, so only a unit
-        // with the same normalized text reproduces it.
-        if !cut && twins == 1 {
+        // with the same normalized text reproduces it; a unit holding a
+        // comment is resolved, since a stored quote does not see a hit
+        // that touches a comment.
+        if !cut && twins == 1 && !self.has_comment_in(e.start, e.end) {
             return Counted::Selects(full.clone());
         }
         Counted::Unsettled
@@ -2076,6 +2138,15 @@ impl Scope {
     }
 }
 
+/// A stretch of `text[from..to]` as code sees it.
+#[derive(Debug, Clone, Copy)]
+enum Seg {
+    /// Text between comments, as a byte range.
+    Text(usize, usize),
+    /// One comment, read as one space.
+    Comment,
+}
+
 /// What counting says about a printed anchor (section 6.7).
 enum Counted {
     /// This selector selects the unit alone.
@@ -2179,10 +2250,15 @@ const START_CHARS: usize = DEFAULT_QUOTE_CHARS + 1 + WINDOW_CHARS + 1;
 
 /// The first `n` characters of `normalize(s)`.
 fn first_normalized(s: &str, n: usize) -> String {
+    first_normalized_of(s.chars(), n)
+}
+
+/// The first `n` characters of `normalize` of a character sequence.
+fn first_normalized_of(chars: impl Iterator<Item = char>, n: usize) -> String {
     let mut out = String::new();
     let mut count = 0;
     let mut pending = false;
-    for c in s.chars() {
+    for c in chars {
         if count == n {
             break;
         }
@@ -2204,11 +2280,12 @@ fn first_normalized(s: &str, n: usize) -> String {
     out
 }
 
-/// The last `n` characters of `normalize(s)`.
-fn last_normalized(s: &str, n: usize) -> String {
+/// The last `n` characters of `normalize` of a character sequence given
+/// last character first.
+fn last_normalized_of(rev_chars: impl Iterator<Item = char>, n: usize) -> String {
     let mut rev: Vec<char> = Vec::new();
     let mut pending = false;
-    for c in s.chars().rev() {
+    for c in rev_chars {
         if rev.len() == n {
             break;
         }
@@ -2229,10 +2306,13 @@ fn last_normalized(s: &str, n: usize) -> String {
 }
 
 /// The heading key of a heading text (section 6.7): links and images
-/// replaced by their text, `` ` ``, `*`, `_` and `~` removed, normalized.
+/// replaced by their text, `` ` ``, `*` and `~` removed, `_` removed unless
+/// it stands between two letters or digits, normalized.
 fn heading_key(h: &str) -> String {
-    let mut out = String::with_capacity(h.len());
+    // Links and images become their text first, so that markup inside a
+    // link's text is removed like any other.
     let chars: Vec<char> = h.chars().collect();
+    let mut plain: Vec<char> = Vec::with_capacity(chars.len());
     let mut i = 0;
     while i < chars.len() {
         let c = chars[i];
@@ -2246,13 +2326,36 @@ fn heading_key(h: &str) -> String {
                     _ => None,
                 };
                 if let Some(end) = target {
-                    out.extend(&chars[open + 1..close]);
+                    plain.extend(&chars[open + 1..close]);
                     i = end + 1;
                     continue;
                 }
             }
         }
-        if !matches!(c, '`' | '*' | '_' | '~') {
+        plain.push(c);
+        i += 1;
+    }
+    let mut out = String::with_capacity(plain.len());
+    let mut i = 0;
+    while i < plain.len() {
+        let c = plain[i];
+        // A run of `_` between two letters or digits is kept: an intraword
+        // underscore cannot open or close emphasis (CommonMark 0.31.2,
+        // section 6.2, rules 2 and 4), so `max_retries` keeps it.
+        if c == '_' {
+            let end = (i..plain.len())
+                .find(|&k| plain[k] != '_')
+                .unwrap_or(plain.len());
+            let intraword = i > 0
+                && plain[i - 1].is_alphanumeric()
+                && plain.get(end).is_some_and(|n| n.is_alphanumeric());
+            if intraword {
+                out.extend(&plain[i..end]);
+            }
+            i = end;
+            continue;
+        }
+        if !matches!(c, '`' | '*' | '~') {
             out.push(c);
         }
         i += 1;
@@ -2273,6 +2376,24 @@ fn first_cell(row: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Section 6.7: heading keys drop markup, and keep an underscore that
+    /// stands inside a word (CommonMark: it is not emphasis there).
+    #[test]
+    fn heading_keys_keep_intraword_underscores() {
+        for (heading, key) in [
+            ("`max_retries`", "max_retries"),
+            ("maxretries", "maxretries"),
+            ("max__retries", "max__retries"),
+            ("_Emphasis_ here", "Emphasis here"),
+            ("**Bold** and `code`", "Bold and code"),
+            ("trailing_ space", "trailing space"),
+            ("[The `x_y` link](https://e.example)", "The x_y link"),
+            ("~~old~~ new", "old new"),
+        ] {
+            assert_eq!(heading_key(heading), key, "{heading:?}");
+        }
+    }
 
     #[test]
     fn label_is_a_prefix_of_normalize() {

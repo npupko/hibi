@@ -1543,14 +1543,19 @@ is reported:
 5. The file is not valid UTF-8: `not_text`.
 6. The resource is of a code class and does not parse (section 6.1):
    `unavailable`, for every selector. The message is
-   `<loc> does not parse as <class> (the first error is on line <n>), so its units cannot be read; fix the syntax error`.
-   `<n>` is the 1-based line where parsing failed: going down the parse tree
-   in source order to the first error node or missing node, a missing node's
-   line, or, inside an error node, the line of its first token that is not
-   part of a construct it holds (an error node can start lines earlier, at
-   the first construct it swallowed); an error node without such a token
-   gives its own line. When the tree has no error node or missing node the
-   part in parentheses, with the space before it, is left out.
+   `<loc> does not parse as <class> (the first error is near line <n>), so its units cannot be read; fix the syntax error`.
+   `<n>` is the 1-based line where the parser first reported an error:
+   going down the parse tree in source order to the first error node or
+   missing node, a missing node's line, or, inside an error node, the line
+   of its first token that is not part of a construct it holds (an error
+   node can start lines earlier, at the first construct it swallowed); an
+   error node without such a token gives its own line. That line is near
+   the mistake but can be away from it, which is why the message says
+   "near": for an unclosed string in Java the parser reports the line of
+   the class around it, and for an unclosed block comment in Rust the line
+   where the comment would have to close, the end of the file. When the
+   tree has no error node or missing node the part in parentheses, with the
+   space before it, is left out.
 7. The selector has a `key`: `invalid_selector`.
 8. The selector is not valid by section 5.2 in any other way, for example
    `prefix` without `quote`, `count` without `symbol` or `within`, or a quote longer than
@@ -1620,7 +1625,12 @@ Definitions:
   cut in `u`. The windows are cut inside the unit's own text and stop at its edges, so
   they never hold a neighbouring unit's text; a window shorter than 48
   characters reached the unit's edge, and an empty window means the hit
-  touches that edge.
+  touches that edge. In a resource with a parse tree, the text the windows
+  are cut from reads every comment node (section 8.4) as one space, the
+  view of the code that its fingerprint has: an edit to a comment next to
+  a quote changes neither window, so it changes nothing about the side.
+  (`cases/resolve.json`: `python: stored: the comment next to the quote
+  edited: resolved unchanged` and `python: stored A2: ...`.)
 - `h` reproduces the stored windows of `sel` in `u` when
   `normalize(sel.prefix) == prefix(h, u)` (if `sel` has `prefix`) and
   `normalize(sel.suffix) == suffix(h, u)` (if `sel` has `suffix`). A stored
@@ -1629,8 +1639,13 @@ Definitions:
   text up to the same edge: a stored prefix `wait` does not match a hit
   preceded by `Then wait` in its unit.
 - Heading key of a heading text: the text with every link and image written
-  `[t](...)`, `![t](...)` or `[t][...]` replaced by `t`, every `` ` ``, `*`,
-  `_` and `~` removed, then `normalize`d. A heading's closing `#` sequence is
+  `[t](...)`, `![t](...)` or `[t][...]` replaced by `t`, then every `` ` ``,
+  `*` and `~` removed, and every run of `_` removed unless it stands between
+  two letters or digits, then `normalize`d. An underscore inside a word is
+  kept because it is not emphasis there: in CommonMark 0.31.2, section 6.2,
+  a `_` run that is both left- and right-flanking can open or close
+  emphasis only next to punctuation (rules 2 and 4). So `` `max_retries` ``
+  reads `max_retries`, not `maxretries`. A heading's closing `#` sequence is
   already not part of its text (section 6.3).
 - Piece: the paragraph, list item or table row of section 6.3 that a prose
   unit was cut from. A piece is a multi-unit piece when two or more units
@@ -1943,14 +1958,18 @@ hits, then crossing hits, then the similarity guess.
 - Where a unit has no container (plain text, a unit above the first heading
   in a one-unit piece, code outside every declaration), the whole resource
   is its scope and only in-unit evidence exists: identical units cannot be
-  claimed by quote (`quote_not_distinguishable`), and when a unit is copied
-  and the original is then edited, the copy is followed.
+  claimed by quote (the quote has a hit in each, so the anchor is
+  ambiguous, `side_ambiguous`, and in lists each unit is marked and offered
+  no anchor), and when a unit is copied and the original is then edited,
+  the copy is followed.
 - A renamed or deleted container (heading, piece or declaration) makes its
   claims candidates until they are re-anchored.
 - `count` counts containers; it does not tell them apart. When one of the
   containers a `within` named is removed and another one with the same path
   or name is added elsewhere, the count is unchanged and the union holds the
-  new one: a copy there, the original then edited, is followed.
+  new one: a copy there, the original then edited, is followed. The same
+  holds when a section is emptied (a section that no unit is in is not a
+  container) and units are pasted into an empty section of that path.
 - A renamed function claimed by name alone (`#name`, no quote) yields no
   candidate: the name is gone, the stored selector holds no quote to search
   for, and the function's fingerprint covers its name, so no unit's
@@ -1965,16 +1984,22 @@ hits, then crossing hits, then the similarity guess.
   within the first sentence; deleting or inserting a paragraph's first
   sentence; and splitting a paragraph, which moves the units after the split
   out of the piece. An edit to another unit of the piece leaves the claims
-  resolved. (`neighbour_edits_that_rename_a_piece_turn_its_claims_into_candidates`.)
+  resolved as long as the piece keeps its first unit's first 120
+  characters and two or more units (see the piece changes below).
+  (`neighbour_edits_that_rename_a_piece_turn_its_claims_into_candidates`.)
 - Inside one scope, a one-unit piece (a one-sentence paragraph, a
   one-sentence list item, a table row) that is copied, the original then
   edited, is followed, because nothing tells the copy apart from the
   original; so is a unit copied inside the same paragraph, list item or
   declaration. Sections whose heading paths read the same, pieces with the
   same name and declarations with the same symbol are one scope when they
-  existed together at claim time (`within` with `count`). In plain words,
-  these are one scope, and a line or sentence copied from one into another,
-  the original then edited, is followed:
+  existed together at claim time (`within` with `count`); pieces have the
+  same name when their first units have the same first 120 characters. In
+  plain words, these are one scope, and a line or sentence copied from one
+  into another, the original then edited, is followed when the copy stands
+  with the same in-unit windows (the same 48 characters of its unit on each
+  side, or the same unit edges) as the original did; a copy with other
+  surroundings is not followed:
   - declarations that share a symbol, for a quote inside them: Java and
     TypeScript overloads, a Python function defined twice, and Rust's
     `Display::fmt` and `Debug::fmt` of one type, which are both `Id.fmt`;
@@ -1982,19 +2007,27 @@ hits, then crossing hits, then the similarity guess.
     into another declaration of that name and the original then edited;
   - a section and a piece that read the same: a heading path equal to a
     piece's heading path and name;
-  - sections whose headings differ only in inline markup, which heading keys
-    remove: `max_retries` and `maxretries` read the same;
+  - sections whose headings differ only in markup that heading keys drop:
+    backticks, `*`, `~`, link syntax, and `_` that does not stand inside a
+    word, so `**Retries**` and `Retries` read the same (`max_retries` and
+    `maxretries` do not; `cases/resolve.json`: `markdown: headings that
+    differ by an intraword underscore are two sections`);
   - a paragraph pasted again under the same heading, then the original's
     first sentence edited or its heading renamed: the name now names only
     the copy, which the claims follow;
   - two numbered lists in one section, where removing a step leaves an item
     of the other list reading the same as the claimed one.
-- A paragraph or list item that loses its other sentences, or two paragraphs
-  joined into one, change the piece: the claims on the piece's units have
-  candidates until they are re-anchored.
+- A paragraph or list item that loses its other sentences becomes a one-unit
+  piece, which is no container: the claims on its remaining unit have
+  candidates until they are re-anchored. Two paragraphs joined into one keep
+  the first one's name, so only the claims on the second one's units have
+  candidates.
 - Identical text with identical in-unit windows in one scope cannot be
-  claimed by quote; a unit that no printed anchor selects alone is marked
-  `quote_not_distinguishable`.
+  claimed by quote: a quote of it is ambiguous (`side_ambiguous`). A unit
+  that no printed anchor selects alone carries `refuse:
+  quote_not_distinguishable` in lists, and no anchor is offered for it.
+- `cover` reads the file once per listed item, so a single file with many
+  thousands of units is slow.
 - An external provider vouches for identity by returning a unit without
   `approx` (section 13.3).
 
@@ -7096,6 +7129,10 @@ every other unit its printed anchor. Its cases pin:
   and a refresh keeps the stored `within` (cases named `markdown: a sentence
   whose piece name reads as a subsection: ...` and `markdown: a refresh
   keeps the stored within: ...`);
+- in code the windows read every comment as one space, so a comment edited
+  next to a stored quote changes nothing (cases named `python: ... comment
+  next to the quote ...`), and headings that differ by an intraword
+  underscore are two sections;
 - a quote equal to the text after `normalize` is found and stored as the text
   has it (`reflow:`), CRLF becomes LF and a leading U+FEFF belongs to the first
   unit (`decoding:`), unit boundaries (`boundary:`);
@@ -7391,6 +7428,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 147 | A printed remedy must work when it is followed. At claim time the twin remedy names only the containing unit; `cover` names only the exclusion, one per unit. `reanchor` names every failing kept side in one error and repeats the caller's arguments. A failed provider points at its check, a refused stored key at a new anchor. The judge, store and indistinguishable-quote remedies say what is true for the command and the provider. An accepted side's text is whole. | Remedies that looped, dropped arguments or led nowhere were followed literally by the reader they are written for. |
 | 148 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
 | 149 | Rulings on section 6.7 (round 5): for a stored selector a hit inside a comment is not a hit in P either; the line of the first parse error is where parsing failed, not the start of the error node that holds it; a refresh keeps the stored `within` and `count`; a printed anchor of a unit in a multi-unit piece below a heading is also tried with its section alone; the unit cache key adds `UNIT_RULES_REVISION` to the hibi version; the count of containers a `within` names is two lookups. | A quote commented out stayed `changed` and could be marked; error lines pointed at line 1; a refresh could widen a side's scope; a unit selectable by its section was marked; two builds of one version shared rows and printed old anchors; counting by listing made `cover` quadratic on near-identical units. |
+| 151 | Rulings on section 6.7 (round 6): in a resource with a parse tree the in-unit windows read every comment as one space; heading keys keep a run of `_` between two letters or digits (CommonMark: intraword `_` is not emphasis) and drop markup inside a link's text too; the parse-error message says "near line"; `cover` reading the file once per listed item is a stated limit. | A comment edit next to a quote turned the side into a candidate although comments never make a side stale; `max_retries` and `maxretries` were one section; the parser's error line can be away from the mistake for unclosed strings and comments. |
 
 ---
 
@@ -8402,4 +8440,15 @@ Each of these has a test, named in parentheses.
   with one name, sections with one path, identical paragraphs, same-named
   and same-bodied functions, top-level statements.
   (`printed_anchors_of_near_identical_units_cost_linear_work`.)
+- R162. In code, an edit to a comment next to a quote changes nothing: the
+  in-unit windows read every comment as one space, for a quote-only anchor
+  and for a stored symbol anchor among several declarations.
+  (`cases/resolve.json`: "python: stored: the comment next to the quote
+  edited: resolved unchanged", "python: stored A2: the comment next to the
+  quote edited: resolved unchanged".)
+- R163. Heading keys keep an underscore inside a word and drop the other
+  markup, also inside a link's text.
+  (`heading_keys_keep_intraword_underscores`, `cases/resolve.json`:
+  "markdown: headings that differ by an intraword underscore are two
+  sections".)
 

@@ -412,6 +412,20 @@ the unit's section alone) changed no case and added fifteen: the cases named
 whose piece name reads as a subsection, and one on a refresh that keeps its
 `within`.
 
+The ruling that in-unit windows in code read every comment as one space
+changed the expected value of fifteen cases, each derived again by hand
+under it: the generator states each unit's comments by their text, read
+off the fixture, and the windows replace each with a space. The cases are
+the six `rust:` cases on `retry` and `twice` whose windows held `// cap
+here` or `// step(1); first`, `typescript: quote in a comment: refused`,
+the three `python:` cases on `area` whose windows held `# pi times r
+squared`, `python B4: A2: ...`, and the four `... F1:` claim cases in Java,
+Python and Rust. Five stored cases whose input is one of those completed
+selectors changed their input with it and kept their expected value. Four
+cases were added: a quote next to a comment and its stored form after the
+comment is edited, the same for two declarations (A2), and headings that
+differ by an intraword underscore.
+
 The cases kept from the earlier file (the empty selector, symbols, quotes,
 refusals, members, boundaries, decoding, errors) were derived again for the
 new selector shape.

@@ -115,7 +115,7 @@
           "sel": {
             "symbol": "retry",
             "quote": "n.min(limit)",
-            "prefix": "ry(n: u32) -> u32 { let limit = MAX; // cap here",
+            "prefix": "pub fn retry(n: u32) -> u32 { let limit = MAX;",
             "suffix": "}"
           }
         }
@@ -144,7 +144,7 @@
           "sel": {
             "symbol": "retry",
             "quote": "cap here",
-            "prefix": "ub fn retry(n: u32) -> u32 { let limit = MAX; //",
+            "prefix": "pub fn retry(n: u32) -> u32 { let limit = MAX;",
             "suffix": "n.min(limit) }"
           }
         }
@@ -312,7 +312,7 @@
           "sel": {
             "symbol": "twice",
             "quote": "step(1);",
-            "prefix": "pub fn twice() { // step(1); first",
+            "prefix": "pub fn twice() {",
             "suffix": "step(1); }"
           }
         }
@@ -339,7 +339,7 @@
           "refuse": null,
           "sel": {
             "quote": "n.min(limit)",
-            "prefix": "ry(n: u32) -> u32 { let limit = MAX; // cap here",
+            "prefix": "pub fn retry(n: u32) -> u32 { let limit = MAX;",
             "suffix": "}",
             "within": [
               "retry"
@@ -403,7 +403,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "cap here",
-            "prefix": "ub fn retry(n: u32) -> u32 { let limit = MAX; //",
+            "prefix": "pub fn retry(n: u32) -> u32 { let limit = MAX;",
             "suffix": "n.min(limit) }",
             "within": [
               "retry"
@@ -514,7 +514,7 @@
       "sel": {
         "symbol": "retry",
         "quote": "n.min(limit)",
-        "prefix": "ry(n: u32) -> u32 { let limit = MAX; // cap here",
+        "prefix": "pub fn retry(n: u32) -> u32 { let limit = MAX;",
         "suffix": "}"
       }
     },
@@ -528,7 +528,7 @@
           "sel": {
             "symbol": "retry",
             "quote": "n.min(limit)",
-            "prefix": "ry(n: u32) -> u32 { let limit = MAX; // cap here",
+            "prefix": "pub fn retry(n: u32) -> u32 { let limit = MAX;",
             "suffix": "}"
           }
         }
@@ -611,7 +611,7 @@
       "sel": {
         "symbol": "retry_old",
         "quote": "n.min(limit)",
-        "prefix": "ry(n: u32) -> u32 { let limit = MAX; // cap here",
+        "prefix": "pub fn retry(n: u32) -> u32 { let limit = MAX;",
         "suffix": "}"
       }
     },
@@ -1121,8 +1121,8 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "first",
-            "prefix": "function g(a /*",
-            "suffix": "*/, b) { return a + b; }",
+            "prefix": "function g(a",
+            "suffix": ", b) { return a + b; }",
             "within": [
               "g"
             ]
@@ -1177,7 +1177,7 @@
           "sel": {
             "quote": "Area of a circle.",
             "prefix": "def area(r): \"\"\"",
-            "suffix": "\"\"\" # pi times r squared return math.pi * r * r",
+            "suffix": "\"\"\" return math.pi * r * r",
             "within": [
               "area"
             ]
@@ -1206,8 +1206,8 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pi times",
-            "prefix": "def area(r): \"\"\"Area of a circle.\"\"\" #",
-            "suffix": "r squared return math.pi * r * r",
+            "prefix": "def area(r): \"\"\"Area of a circle.\"\"\"",
+            "suffix": "return math.pi * r * r",
             "within": [
               "area"
             ]
@@ -1265,7 +1265,7 @@
           "sel": {
             "symbol": "area",
             "quote": "pi",
-            "prefix": "f a circle.\"\"\" # pi times r squared return math.",
+            "prefix": "ef area(r): \"\"\"Area of a circle.\"\"\" return math.",
             "suffix": "* r * r"
           }
         }
@@ -3451,7 +3451,7 @@
             "symbol": "run",
             "count": 2,
             "quote": "limit = 20",
-            "prefix": "def run(): # limit = 10",
+            "prefix": "def run():",
             "suffix": "return limit"
           }
         },
@@ -3694,7 +3694,7 @@
           "refuse": null,
           "sel": {
             "quote": "int limit = 10;",
-            "prefix": "int run() { // cap at ten",
+            "prefix": "int run() {",
             "suffix": "return limit; }",
             "within": [
               "A.run"
@@ -3713,7 +3713,7 @@
       "text": "class A {\n  int run() {\n    // cap at ten int limit = 10;\n    return limit;\n  }\n}\n",
       "sel": {
         "quote": "int limit = 10;",
-        "prefix": "int run() { // cap at ten",
+        "prefix": "int run() {",
         "suffix": "return limit; }",
         "within": [
           "A.run"
@@ -3754,7 +3754,7 @@
           "refuse": null,
           "sel": {
             "quote": "limit = 10",
-            "prefix": "def run(): # cap",
+            "prefix": "def run():",
             "suffix": "return limit",
             "within": [
               "run"
@@ -3773,7 +3773,7 @@
       "text": "def run():\n    # cap limit = 10\n    return limit\n",
       "sel": {
         "quote": "limit = 10",
-        "prefix": "def run(): # cap",
+        "prefix": "def run():",
         "suffix": "return limit",
         "within": [
           "run"
@@ -3814,7 +3814,7 @@
           "refuse": null,
           "sel": {
             "quote": "let limit = 3;",
-            "prefix": "pub fn retry() -> u32 { /// cap",
+            "prefix": "pub fn retry() -> u32 {",
             "suffix": "limit }",
             "within": [
               "retry"
@@ -3833,7 +3833,7 @@
       "text": "pub fn retry() -> u32 {\n    /// cap let limit = 3;\n    limit\n}\n",
       "sel": {
         "quote": "let limit = 3;",
-        "prefix": "pub fn retry() -> u32 { /// cap",
+        "prefix": "pub fn retry() -> u32 {",
         "suffix": "limit }",
         "within": [
           "retry"
@@ -3874,7 +3874,7 @@
           "refuse": null,
           "sel": {
             "quote": "return limit",
-            "prefix": "def run(): limit = 20 # cap",
+            "prefix": "def run(): limit = 20",
             "suffix": "",
             "within": [
               "run"
@@ -3893,7 +3893,7 @@
       "text": "def run():\n    limit = 20  # cap return\n    limit\n",
       "sel": {
         "quote": "return limit",
-        "prefix": "def run(): limit = 20 # cap",
+        "prefix": "def run(): limit = 20",
         "suffix": "",
         "within": [
           "run"
@@ -4141,6 +4141,150 @@
             "suffix": "",
             "within": [
               "Setup"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python: a quote next to a comment: the windows leave the comment out",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    limit = 10  # cap\n    return limit\n",
+      "sel": {
+        "quote": "return limit"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "return limit",
+            "prefix": "def run(): limit = 10",
+            "suffix": "",
+            "within": [
+              "run"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python: stored: the comment next to the quote edited: resolved unchanged",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    limit = 10  # cap at ten, see the docs\n    return limit\n",
+      "sel": {
+        "quote": "return limit",
+        "prefix": "def run(): limit = 10",
+        "suffix": "",
+        "within": [
+          "run"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "return limit",
+            "prefix": "def run(): limit = 10",
+            "suffix": "",
+            "within": [
+              "run"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python: stored A2: the comment next to the quote edited: resolved unchanged",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    limit = 10  # cap at ten, see the docs\n    return limit\n\n\ndef run():\n    limit = 30\n    return limit\n",
+      "sel": {
+        "symbol": "run",
+        "count": 2,
+        "quote": "return limit",
+        "prefix": "def run(): limit = 10",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "run",
+            "count": 2,
+            "quote": "return limit",
+            "prefix": "def run(): limit = 10",
+            "suffix": ""
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown: headings that differ by an intraword underscore are two sections",
+    "input": {
+      "path": "docs/limits.md",
+      "text": "# Doc\n\n## `max_retries`\n\nThe default is 3.\n\n## maxretries\n\nThe default is 3.\n",
+      "sel": {
+        "quote": "The default is 3."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "The default is 3.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Doc",
+              "max_retries"
+            ]
+          }
+        },
+        {
+          "key": "sentence:*~2",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "The default is 3.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Doc",
+              "maxretries"
             ]
           }
         }

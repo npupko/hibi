@@ -403,7 +403,7 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
                     "anchor": {"loc": "file:src/a.rs", "sel": {
                         "quote": "let max_entries = 64;",
                         "prefix": "pub fn limit() -> u32 {",
-                        "suffix": "// max entries note max_entries }",
+                        "suffix": "max_entries }",
                         "symbol": "limit"
                     }},
                     "state": "same",
@@ -489,7 +489,7 @@ fn claim_completes_a_symbol_a_bare_quote_and_a_whole_file() {
         json!({"loc": "file:src/a.rs", "sel": {
             "quote": "max_entries = 64",
             "prefix": "pub fn limit() -> u32 { let",
-            "suffix": "; // max entries note max_entries }",
+            "suffix": "; max_entries }",
             "within": ["limit"]
         }})
     );
@@ -2363,7 +2363,7 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable() {
     // command again, once.
     assert_eq!(
         s(&side["remediation"]),
-        "file:report.py does not parse as python (the first error is on line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed."
+        "file:report.py does not parse as python (the first error is near line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed."
     );
 
     // The stored anchor: `mark` is refused with the same remediation.
