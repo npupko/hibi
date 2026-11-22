@@ -28,7 +28,7 @@ selector, as in `--subject file:docs/retry.md`, selects it.
 
 A code file that does not parse without error cannot be anchored until it
 parses: every side on it is `unavailable` with reason
-`resource_unavailable`, naming the line near which parsing first failed, a new anchor on
+`resource_unavailable`, naming the line where the parser reports its first error (the mistake can be before or after it), a new anchor on
 it fails, and `cover` lists it as unavailable (see
 [fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). A
 `#symbol` on a markdown, prose or text file is refused, because such a file
@@ -48,10 +48,10 @@ $ hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-r7bnw9yaen8skwsc0ngx  stale  SMALL is 1.
-  marked 2026-11-22T20:58:45Z (m1-xd6ye1pp6spkj3137wtn)
+  marked 2026-11-22T21:57:25Z (m1-584nf23f3ajdqafhfq0d)
   evidence 1  file:src/grow.rs  unavailable (too_large)
     file:src/grow.rs has 2457830 bytes, more than the limit of 2097152 bytes for a code file
-    The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource. To move on without that: give this side an anchor on another resource with hibi reanchor --evidence 1=<anchor>, or drop it with --drop-evidence 1.
+    The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; in a scope, add an exclusion for the resource. To move on without that: hibi reanchor c1-r7bnw9yaen8skwsc0ngx --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor c1-r7bnw9yaen8skwsc0ngx --drop-evidence 1 drops it.
 ```
 
 When git can be used, a `file:` path must also be in the root's git file

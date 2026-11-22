@@ -123,8 +123,8 @@ Ask the user before each of these steps; they change the repository.
    | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
    | `several_units` | The anchor matches several units, listed in `candidates`, for example a name that now has a second declaration. Choose the one the statement is about and re-anchor to its `anchor`. A candidate with `anchor: null` is identical, where it stands, to another one, and cannot be anchored alone: follow the sentence hibi prints with it. After you anchor a containing unit, the claim stays on it: re-anchoring it back to the original unit later is `claim_retired` (step 6 says what to do). |
    | `selector_refused` | The provider refuses the stored anchor, or no longer allows one of its selector keys; `detail` says which. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
-   | `resource_unavailable` | The resource cannot be read now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses; the line named is where the parser first reported an error, which can be after the mistake (an unclosed string or comment). Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
-   | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. For these, `resource_unavailable` and `provider_error`, the `remediation` also says how to move on: anchor an evidence side to another resource or drop it, re-point or retire a subject. When such a side and a missing side block a claim, `next` and the `reanchor` error name both. |
+   | `resource_unavailable` | The resource cannot be read now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses. The line named is where the parser reports its first error; the mistake can be before or after it, by many lines (an unclosed string or block comment, a deleted `}`), so read the code around it. Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
+   | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. For these, `provider_error` and a code file that does not parse, the `remediation` also gives the whole commands to move on: anchor an evidence side to another resource or drop it, re-point or retire a subject. A file list that cannot be read has no such commands. When such a side and a missing side block a claim, `next` and the `reanchor` error name both. |
    | `profile_mismatch` | The fingerprint profile changed, for example after an external provider renamed its profile, or after a hibi upgrade. Re-check and mark. |
    | `provider_failed` | `next` is `hibi providers --check <scheme>`, which starts the provider and reports what fails. Tell the user, and run it when they ask. Do not mark. |
    | `provider_not_registered`, `repo_not_allowed` | `next` is `hibi providers`. Run it and tell the user: providers and sibling repositories are set up in their user config. |
@@ -164,10 +164,11 @@ Ask the user before each of these steps; they change the repository.
    Re-check before you do that, as for `mark`. Two elements of one batch
    that are the same claim make one claim. When the same claim was retired,
    `claim` fails with `claim_retired`, and so does a `reanchor` back to the
-   units of a claim that the claim replaced. If the earlier claim was
-   replaced by a `reanchor`, run the command again with a `--note` that says
-   why the claim is made again. If it was retired with `hibi retire`, that
-   was a decision: ask the user first. When a
+   units of a claim that the claim replaced. The error says which: `was
+   replaced by <new>` means a `reanchor` replaced it, so look at `<new>`
+   first with `hibi status <new>`; to make the earlier claim again anyway,
+   give a `--note` that says why. `was retired` means someone decided it:
+   ask the user before you record it again with a different `--note`. When a
    side of the existing claim is missing or ambiguous, `claim` writes a
    second claim: re-anchor the existing one instead.
 7. **Cover.** `hibi cover` (or `--since main...`) lists units of the declared

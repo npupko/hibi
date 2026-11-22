@@ -52,7 +52,7 @@ hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 ```text output
-c1-xwck2bdefbx39g56m7dn  marked  m1-vj1eaq9n4m0e22tqrqmb
+c1-xwck2bdefbx39g56m7dn  marked  m1-ehw7j8pzy1ya0fzmegwb
   was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked it
     evidence 1 is now:
     | pub fn delay_ms(n: u32) -> u64 {
@@ -80,7 +80,7 @@ hibi retire c1-2kfx --note "The docs no longer state the attempt limit."
 ```
 
 ```text output
-c1-2kfx78rwbb7wyxwst92f  retired  r1-bqs63n3wpexaw3nb47s1
+c1-2kfx78rwbb7wyxwst92f  retired  r1-4w7mw7a9550drp3e1p1c
 ```
 
 `--replaced-by <claim-id>` names the claim that takes the place of the
@@ -141,7 +141,8 @@ error: selector_not_exact: evidence 1 (file:src/ab.py): the stored quote is no l
 ```
 
 `reanchor` marks every changed side it keeps, not only the side it
-re-points, and prints each one's text after "is now:". Because `reanchor`
+re-points, and prints after "is now:" the text of each side of the new
+claim that it accepted, the re-pointed side included. Because `reanchor`
 writes a mark, run it only after you checked the statement against every
 changed side.
 
@@ -154,8 +155,9 @@ the record. Two consequences:
 - A claim with exactly the same statement, stored anchors, `recheck` and `note`
   is the same claim.
 - A claim with the same body as a retired claim is that retired claim, and
-  `claim` fails with `claim_retired`. To record the same statement and anchors
-  again, give a different `--note`.
+  `claim` fails with `claim_retired`. The error says whether the claim was
+  retired or replaced by another claim (see
+  [running the same claim again](#running-the-same-claim-again)).
 
 ## Running the same claim again
 
@@ -176,7 +178,7 @@ changed:
 
 ```text output
 $ hibi claim "Old entries are evicted first." --subject "file:docs/cache.md::evicted first" --evidence "file:src/cache.rs#evict"
-c1-msg51e29yny7wkpesxnw  marked  m1-s2h86rdm7fkg4ej51b7j  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
+c1-msg51e29yny7wkpesxnw  marked  m1-q4ecsejp0z80dvy4jk12  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
   was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it
     evidence 1 is now:
     | pub fn evict() { drop_oldest(); }
@@ -192,7 +194,7 @@ claimed again with the whole sentence:
 
 ```text output
 $ hibi claim "The client gives up after 3 attempts." --subject "file:docs/retry.md::It gives up after 3 attempts." --evidence "file:src/retry.rs#MAX_ATTEMPTS"
-c1-2kfx78rwbb7wyxwst92f  marked  m1-x6pvvtsz0y5r2bdzna36  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-2kfx78rwbb7wyxwst92f  marked  m1-91dwttwx15f39236v64n  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 In JSON the entry has `"created": false`. A side of the existing claim must
@@ -209,20 +211,22 @@ retired, and the same statement is claimed with quotes:
 
 ```text output
 $ hibi claim 'Downloads are tried 5 times.' --subject 'file:docs/limits.md::queue holds 100 jobs' --evidence 'file:src/retry.py::MAX_ATTEMPTS = 5'
-error: claim_retired: the claim c1-hs7gg4pstrtdyds0c2wq, with this statement, this note and its sides on the same units, is retired
-  fix: To record the same statement and anchors again, give a different --note.
+error: claim_retired: the claim c1-hs7gg4pstrtdyds0c2wq, with this statement, this note and its sides on the same units, was retired
+  fix: The claim was retired, and that stands. A different --note records the statement and anchors again as a new claim.
 ```
 
-To record the statement again, give a different `--note`. A different
-`note` makes another claim.
+A different `note` makes another claim, so it records the statement
+again. A claim that was replaced by `reanchor` gives `was replaced by <new>`
+instead, and the fix line is `hibi status <new>`: look at the claim that
+stands for it before anything else.
 
 Two elements of one `--stdin` batch that are the same claim make one claim.
 The second reports the first one's id and the same mark:
 
 ```text output
 $ echo '[{"statement": "The queue is bounded.", "subject": "file:docs/limits.md::The queue holds 100 jobs."}, {"statement": "The queue is bounded.", "subject": "file:docs/limits.md::holds 100 jobs"}]' | hibi claim --stdin
-c1-mp1mzh0jpgbwpb0997rg  created  m1-zhecm0e6qajew8y046nv  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
-c1-mp1mzh0jpgbwpb0997rg  marked  m1-zhecm0e6qajew8y046nv  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
+c1-mp1mzh0jpgbwpb0997rg  created  m1-747a368j6j78zjhv2da8  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
+c1-mp1mzh0jpgbwpb0997rg  marked  m1-747a368j6j78zjhv2da8  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
 ```
 
 
@@ -240,11 +244,11 @@ hibi list --retired
 ```
 
 ```text output
-c1-2axv59jx0ztvfjd1adn9  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-22T20:58:37Z
-c1-2kfx78rwbb7wyxwst92f  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-22T20:58:37Z  retired
-c1-c5dm2jvhr8hb36rx5rgm  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-22T20:58:36Z  retired
+c1-2axv59jx0ztvfjd1adn9  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-22T21:57:19Z
+c1-2kfx78rwbb7wyxwst92f  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-22T21:57:19Z  retired
+c1-c5dm2jvhr8hb36rx5rgm  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-22T21:57:18Z  retired
 c1-xqhbms40kkesq10rxjen  Each attempt times out after 10 seconds.  file:docs/retry.md  1 mark  last 2026-08-01T09:00:00Z
-c1-xwck2bdefbx39g56m7dn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-22T20:58:37Z  retired
+c1-xwck2bdefbx39g56m7dn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-22T21:57:19Z  retired
 ```
 
 With an id, `list` prints the stored claim, its marks in time order and its
@@ -260,10 +264,10 @@ c1-c5dm2jvhr8hb36rx5rgm
   subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
   evidence 1: {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
 1 mark:
-  m1-w0g0tq30s3g55jh2v15g  2026-11-22T20:58:36Z
+  m1-ghrk9mrsfsp3q988g6bm  2026-11-22T21:57:18Z
     file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
     file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
-retired: r1-365nxe6vj23pykbztb01  2026-11-22T20:58:36Z  replaced by c1-2kfx78rwbb7wyxwst92f
+retired: r1-sz2a09yhbc4db51fxv4g  2026-11-22T21:57:18Z  replaced by c1-2kfx78rwbb7wyxwst92f
 ```
 
 `--loc <glob>` keeps claims with a side whose locator matches, and
