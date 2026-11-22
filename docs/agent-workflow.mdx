@@ -108,9 +108,11 @@ when it cannot decide.
   <Step title="Before you finish">
     ```bash
     hibi status --since main
+    hibi status
     ```
 
-    lists the claims that the branch made stale. Resolve them, then commit
+    The first lists the claims that the branch made stale; plain
+    `hibi status` is the complete check. Resolve what they list, then commit
     `.hibi/` with the change.
   </Step>
 </Steps>

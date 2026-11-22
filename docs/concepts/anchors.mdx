@@ -184,17 +184,19 @@ heading, and code outside every declaration.
 | The quoted words of a sentence, or the words right around a quoted phrase | `missing` (`not_exact`) | Read the candidates, re-check, `reanchor` |
 | Elsewhere in a long quoted sentence | `changed`, except in the first 120 characters of a paragraph's first sentence, which name the paragraph (next rows) | Read the change, re-check, `mark` |
 | Another sentence, not the first of its paragraph or list item | Nothing | |
-| The first sentence of a paragraph or list item edited, deleted or inserted, the first cell of a table row edited, a paragraph split or joined with another, a paragraph or list item left with one sentence, an ordered list renumbered or its marker changed, a blockquote reflowed | The claims on that paragraph's, item's or row's units are `missing` (`not_exact`), usually with the unchanged sentence listed first | Read, `reanchor` |
+| The first sentence of a paragraph or list item edited, deleted or inserted, the first cell of a table row edited, a paragraph or list item left with one sentence, an ordered list renumbered or its marker changed, a blockquote reflowed | The claims on that paragraph's, item's or row's units are `missing` (`not_exact`), usually with the unchanged sentence listed first | Read, `reanchor` |
+| Two paragraphs joined | The claims on the second paragraph's units are `missing` (`not_exact`); the first paragraph's claims are unaffected | Read, `reanchor` |
 | A heading renamed or deleted | The claims under it are `missing` (`not_exact`), unless another section now has the old heading: then they follow it | Read, `reanchor` |
 | A section or paragraph pasted again under the same heading, or one of several with the same name removed | The claims in them are `missing` (`not_exact`). If the original is then renamed, the copy alone has the name, and the claims are fresh on it | Read, `reanchor` |
-| A copy in the same scope, with the original then edited | Nothing: the claim follows the copy | Check with `hibi cover` |
-| A sentence moved to another paragraph or section | `missing` (`not_exact`) | Read, `reanchor` |
+| A sentence, list item or table row copied in the same scope, with the original then edited | Nothing: the claim follows the copy and stays fresh | Check with `hibi cover` |
+| A line of code copied into another declaration of the same name, with the original then edited | `changed`, `next` is `hibi mark`, and the mark is accepted: the side is now the other declaration | Read the line and its line numbers before you mark |
+| A sentence moved out of, or split from, a paragraph or section that keeps its name | `missing` (`selector_not_found`), with the sentence as a candidate with the same content | Read, `reanchor` |
 | The body of a declaration anchored `#name` | `changed` | Read the change, re-check, `mark` |
 | A code line quoted by a bare quote commented out | `missing` (`not_exact`): text in a comment is never a hit | Read, `reanchor` |
-| The line of `#name::<line>` edited, removed or commented out | `changed`, "the stored quote is no longer in this unit"; `mark` is refused | Read, `reanchor` with the new line |
+| The line of `#name::<line>` edited, removed or commented out | `changed`, "the stored quote is no longer in this unit"; `mark` is refused. When the name has several declarations, `missing` (`not_exact`) with candidates instead | Read, `reanchor` with the new line |
 | Other lines of a declaration anchored `#name::<line>` | `changed` | Read the change, re-check, `mark` |
 | The declaration renamed or deleted | `missing` (`selector_not_found`), with no candidate unless a unit has the content that was marked | Find it yourself, `reanchor` |
-| A second declaration of the name added, or one of several removed | `ambiguous` or `missing` (`not_exact`), with the declarations as candidates | Read, `reanchor` |
+| A second declaration of the name added, or one of several removed (the other declaration of a shared name included) | `ambiguous` or `missing` (`not_exact`), with the declarations as candidates | Read, `reanchor` |
 | The function around a bare quote renamed | `missing` (`not_exact`) | Read, `reanchor` |
 
 ### Editing quoted text
@@ -620,41 +622,46 @@ that states them; other pages link here.
 - An edit to another sentence has no effect, except an edit that renames or
   restructures the container: editing, deleting or inserting the first
   sentence of a paragraph or list item, editing the first cell of a table
-  row, splitting a paragraph or joining two, removing the other sentences of
+  row, splitting a paragraph, joining two (for the second paragraph's
+  claims), removing the other sentences of
   a paragraph or list item, renumbering an ordered list or changing its
   marker, reflowing a blockquote, and an edit in the first 120 characters of
   a claimed first sentence. These turn the claims on that paragraph, item or
   row into candidates, usually with the right sentence listed first.
 - A scope is every container the stored path names, and it can be wider
   than one section, paragraph or declaration. It holds the sections with the
-  same heading path, the paragraphs or list items with the same first
-  sentence, a subsection and a paragraph of its parent section whose first
-  sentence reads the same as the subsection's heading, and the
+  same heading path, the paragraphs or list items whose first unit starts
+  with the same 120 characters, a subsection and a paragraph of its parent
+  section whose first 120 characters read the same as the subsection's
+  heading, and the
   declarations that share a symbol: Java and TypeScript overloads, a Python
   function defined twice, and Rust `impl Display for Id` and
   `impl Debug for Id`, which both define `Id.fmt`. Headings are compared
   without inline markup, so a heading with `max_retries` in backticks reads
   the same as one with maxretries.
 - Inside one scope a copy is followed. A sentence, list item, table row or
-  line of code copied anywhere in the scope, with the original then edited,
-  takes the claim, also for `#name::<line>`. With overloads or a function
-  defined twice, the copy can be in another declaration of the same name.
-  The side then shows the same name and only other line numbers, so read
-  the line. A Python claim can end up fresh on the earlier definition,
-  which the module does not use.
+  line of code copied in the scope, with the same text around it inside its
+  unit, takes the claim when the original is then edited, also for
+  `#name::<line>`. With overloads or a function defined twice, the copy can
+  be in another declaration of the same name. The side is then `changed`
+  with `next: hibi mark`, shows the same name and only other line numbers,
+  and the mark is accepted, so read the line. A Python claim can end up on
+  the earlier definition, which the module does not use.
 - A copy in another scope is a candidate, never the claim's unit.
 - A pasted copy can become the claim's place. When a paragraph or section
   is pasted again under the same heading, its claims become candidates.
   When the original's first sentence or heading is then edited, the stored
   name names only the copy, and the claims resolve on the copy, fresh.
-- Two numbered lists in one section are one scope. Removing a step from one
-  list renumbers its items, and a claimed item can then read the same as an
-  item of the other list. The claim resolves to that item, fresh: a claim on
-  "3. Ship." in the first list, after a step before it was removed, follows
-  "3. Ship." in the second list.
+- Two numbered lists in one section are one scope. It takes two edits for
+  a claim to move between them: a step removed from the first list, which
+  renumbers its items, and an item of the second list edited to read as the
+  claimed item did. A claim on "3. Ship." in the first list then follows
+  "3. Ship." in the second list, fresh. One removal alone makes the claim
+  `missing` or `ambiguous`.
 - `count` cannot see a swap. When one of several sections with the same
-  path is removed and another with that path is added, the count is
-  unchanged, and a copy in the new section can take the claim.
+  path is removed and another with that path is added, or one is emptied
+  with its heading kept and its text is pasted into another, empty section
+  of that name, the count is unchanged, and the copy can take the claim.
 - Identical units in one scope cannot be anchored one by one. When you
   claim, anchor the unit that contains them (the `#name` of the enclosing
   declaration, or the whole file). In `cover`, exclude each such unit by

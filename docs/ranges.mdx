@@ -104,7 +104,9 @@ notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
 ```bash
 hibi status --since main...
 hibi cover --since main...
+hibi status
 ```
 
-The three-dot form compares against the point where the branch left `main`,
+Plain `hibi status` is the complete check: it lists every stale and expired
+claim, not only those the range touched. The three-dot form compares against the point where the branch left `main`,
 so changes merged into `main` since then are not reported as the branch's.

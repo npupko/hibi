@@ -81,9 +81,11 @@ practice:
   A renamed heading, a sentence moved to another paragraph, and a renamed
   function around a quote do the same. The
   [limits](/concepts/anchors#limits) list every such edit.
-- **A copy in the same scope can take a claim over**, and the claim stays
-  fresh on the copy. `hibi cover` then lists the edited original as
-  uncovered. The [limits](/concepts/anchors#limits) say when this
+- **A copy in the same scope can take a claim over.** A copied sentence
+  keeps the claim fresh on the copy, and `hibi cover` then lists the edited
+  original as uncovered. A line of code copied into another declaration of
+  the same name gives `changed` with `next: hibi mark`, and the mark is
+  accepted. The [limits](/concepts/anchors#limits) say when this
   happens.
 
 A candidate is a guess for you to read; the side stays `missing` until you
