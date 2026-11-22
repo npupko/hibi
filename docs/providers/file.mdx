@@ -277,7 +277,10 @@ The symbol of a declaration is its path, joined with `.`: `MAX_ATTEMPTS`,
 `Config.timeout_secs`, `Store.get`, `inner.LIMIT`. Use it after `#` in a
 compact anchor. A Rust impl block is named `impl Config` (or
 `impl Display for Config` for a trait impl); its methods have paths that start
-with the type, `Config.new`, whichever impl block they are in.
+with the type, `Config.new`, whichever impl block they are in. A symbol that
+contains `::`, such as `impl fmt::Display for Config`, cannot be written in
+a compact anchor: write the anchor as JSON (see
+[compact anchors](/concepts/anchors#compact-anchors-on-the-command-line)).
 
 Unit keys identify a unit within one file:
 

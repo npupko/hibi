@@ -142,11 +142,13 @@ error: side_unavailable: evidence 1 (file:src/Conf.java) cannot be evaluated (re
   fix: file:src/Conf.java does not parse as java (the parser reports its first error at line 1), so its units cannot be read; fix the syntax error. Run the command again once that is fixed.
 ```
 
-The side's `remediation` repeats the message and gives the whole commands
-to move on without the file: for evidence, one that anchors the side to
-another resource and one that drops it; for the subject, one that re-points
-it and one that retires the claim. `next` is `null`, because no hibi command fixes a
-syntax error. Here `src/size.ts` has a claim on the whole file and
+A new anchor on such a file fails like this until the file parses. For a
+side of a claim that exists, the side's `remediation` repeats the message
+and gives the whole commands to move on without the file: for evidence, one
+that anchors the side to another resource and one that drops it; for the
+subject, one that re-points it and one that retires the claim. `next` is
+`null`, because no hibi command fixes a syntax error. Here `src/size.ts`
+has a claim on the whole file and
 one on a quote inside the declaration `SIZE`, and a syntax error was added
 on line 2:
 

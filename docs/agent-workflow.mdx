@@ -135,7 +135,7 @@ applies:
 | A side is missing or ambiguous, its stored line is gone from its declaration, or the provider refuses its stored anchor (`selector_refused`) | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side |
 | A side is unavailable because its provider is not registered, or a sibling repository is not allowed | `hibi providers` |
 | A side is unavailable because its provider failed | `hibi providers --check <scheme>`, which starts the provider and reports what fails |
-| A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, or the resource cannot be read now | `null`; the side's `remediation` says what to do |
+| A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, a code file does not parse, or git's file list cannot be read | `null`; the side's `remediation` says what to do |
 | Otherwise: expired, a side changed, or a side is unavailable with `profile_mismatch` | `hibi mark <id>` |
 
 `next` never contains a candidate. Where a side has to be anchored again it
