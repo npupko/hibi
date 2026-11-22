@@ -2599,7 +2599,7 @@ shared-declaration rules in section 6.4, requires a new profile name
 ### 8.5 No fallback inside a profile
 
 There is no partial tree hashing. A code file either parses without error and
-all its units use `ast-v1`, or it has no units and is `unavailable`
+all its units use `ast-v1`, or it has no units and is `unparsable`
 (section 6.1, section 6.7, error 6). A code file never has `prose-v1` units.
 
 ---
@@ -6175,7 +6175,8 @@ one, or its selector breaks section 5.2, the error is `invalid_anchor`. This
 holds wherever a command takes an anchor argument: `--subject` and
 `--evidence` of `claim`, `--subject` and `--add-evidence` of `reanchor`, and
 the anchor part of `reanchor --evidence <n>=<anchor>`. The JSON form is the
-way to give a path that contains `#` or `::`, a selector of an external
+way to give a path that contains `#` or `::`, a symbol that contains `::`
+(section 5.5), a selector of an external
 scheme, and an anchor that an error message printed.
 
 With `--stdin`, standard input is
@@ -7013,7 +7014,7 @@ Closed list. Every error carries one of these codes.
 | `usage` | Unknown command or option, missing argument, arguments that cannot be combined, or an option value that does not parse: `--format`, `--state`, `--limit`, `--drop-evidence`, `--evidence <n>=<anchor>`, the shell of `completions`. Also a `reanchor` evidence number that is named twice or does not exist. |
 | `invalid_argument` | A well-formed argument with an unacceptable value. Also two evidence sides of one claim that resolve to the same unit (section 15.3). |
 | `invalid_json` | Standard input is not the expected JSON |
-| `invalid_anchor` | A locator, selector or compact anchor does not parse; or the provider refuses a new anchor for its resource (provider error `invalid_selector` or `invalid_locator`, section 9.2). The message is then the side and the provider's message, and the remediation is `Change the anchor as the message says. hibi claim --help describes the anchor forms.` |
+| `invalid_anchor` | A locator, selector or compact anchor does not parse; the remediation is then `Write the anchor as <locator>, <locator>#<symbol>, <locator>::<quote> or <locator>#<symbol>::<quote>, or as a JSON object {"loc": "...", "sel": {...}} when the path contains # or ::, or the symbol contains ::.` (section 5.5). Or the provider refuses a new anchor for its resource (provider error `invalid_selector` or `invalid_locator`, section 9.2). The message is then the side and the provider's message, and the remediation is `Change the anchor as the message says. hibi claim --help describes the anchor forms.` |
 | `invalid_duration` | Section 9.4. Also a `recheck` that is zero, such as `P0D` or `PT0S` (section 15.3). |
 | `invalid_time` | `--now` does not parse, or is a time outside `0000-01-01T00:00:00Z` to `9999-12-30T22:00:00Z` (section 15.1). Reported by every command. |
 | `invalid_range` | Section 10.3 |
@@ -8360,7 +8361,7 @@ Each of these has a test, named in parentheses.
   `resource_unavailable`; and every stored anchor resolves to its unit
   unchanged once the file parses.
   (`a_symbol_on_a_class_without_symbols_is_invalid_selector`,
-  `a_code_file_that_does_not_parse_is_unavailable_for_every_request`,
+  `a_code_file_that_does_not_parse_is_unparsable_for_every_request`,
   `a_code_file_that_does_not_parse_is_resource_unavailable`,
   `a_parse_error_gives_no_units`, `cases/resolve.json`: the cases named
   "python with a syntax error: ...".)

@@ -2059,12 +2059,12 @@ fn neighbour_edits_that_rename_a_piece_turn_its_claims_into_candidates() {
     }
 }
 
-/// Section 6.1: a file of a code class that does not parse is `unavailable`
+/// Section 6.1: a file of a code class that does not parse is `unparsable`
 /// for `resolve` with any selector, new or stored, for `units` and for
 /// `render`; nothing is cached for it, and every stored anchor resolves
 /// unchanged once the file parses again.
 #[test]
-fn a_code_file_that_does_not_parse_is_unavailable_for_every_request() {
+fn a_code_file_that_does_not_parse_is_unparsable_for_every_request() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path();
     let good = "def wait(n):\n    return n * 2\n\n\nprint(wait(3))\n";

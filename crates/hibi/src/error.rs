@@ -198,7 +198,7 @@ impl Code {
                 "Run `hibi schema` to list the input schemas, and check standard input against the one for this command."
             }
             Code::InvalidAnchor => {
-                "Write the anchor as <locator>, <locator>#<symbol>, <locator>::<quote> or <locator>#<symbol>::<quote>, or as a JSON object {\"loc\": \"...\", \"sel\": {...}} when the path contains # or ::."
+                "Write the anchor as <locator>, <locator>#<symbol>, <locator>::<quote> or <locator>#<symbol>::<quote>, or as a JSON object {\"loc\": \"...\", \"sel\": {...}} when the path contains # or ::, or the symbol contains ::."
             }
             Code::InvalidDuration => {
                 "Write the duration as P[nY][nM][nW][nD][T[nH][nM][nS]] with whole numbers, for example P90D."
