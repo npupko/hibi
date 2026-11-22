@@ -165,11 +165,13 @@ Ask the user before each of these steps; they change the repository.
    Re-check before you do that, as for `mark`. Two elements of one batch
    that are the same claim make one claim. When the same claim was retired,
    `claim` fails with `claim_retired`, and so does a `reanchor` back to the
-   units of a claim that the claim replaced. The error says which: `was
-   replaced by <new>` means a `reanchor` replaced it, so look at `<new>`
-   first with `hibi status <new>`; to make the earlier claim again anyway,
-   give a `--note` that says why. `was retired` means someone decided it:
-   ask the user before you record it again with a different `--note`. When a
+   units of a claim that the claim replaced. The error follows the chain of
+   replacements to its last claim. `was replaced by <new>` or `the last
+   claim of that chain is <last>` means a `reanchor` replaced it: look at
+   that claim first with `hibi status`; to make the earlier claim again
+   anyway, give a `--note` that says why. `was retired`, also as the end of
+   a chain, means someone decided it: ask the user before you record it
+   again with a different `--note`. When a
    side of the existing claim is missing or ambiguous, `claim` writes a
    second claim: re-anchor the existing one instead.
 7. **Cover.** `hibi cover` (or `--since main...`) lists units of the declared
@@ -342,12 +344,12 @@ echo '["c1-xqhb", {"claim": "c1-2axv", "note": "checked against delay_ms"}]' | h
 
 An anchor in a batch is a compact string, `{"loc": ..., "sel": {...}}`, or
 that object as a JSON string, as candidates and errors print it.
-Use the object form for a selector other than the empty one on an external
-scheme, for example `{"loc": "ref:notes", "sel": {"key": "n1"}}`, for a
-path that contains `#` or `::`, and for a symbol that contains `::`, such
-as a Rust impl:
-`{"loc": "file:src/id.rs", "sel": {"symbol": "impl fmt::Debug for Id"}}`.
-The compact form splits at the first `::`. Each `cover` item has an `anchor` object you
+Compact syntax is split at the first `::` and then at the first `#`, so an
+anchor whose path contains `#` or `::`, or whose symbol contains `::` (a
+Rust impl:
+`{"loc": "file:src/id.rs", "sel": {"symbol": "impl fmt::Debug for Id"}}`),
+must be written as JSON, as must a selector other than the empty one on an
+external scheme, for example `{"loc": "ref:notes", "sel": {"key": "n1"}}`. Each `cover` item has an `anchor` object you
 can use as `subject` unchanged, or `null` for a unit that cannot be anchored
 alone.
 
