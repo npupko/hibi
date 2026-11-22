@@ -32,10 +32,6 @@ with the code, so the memory follows the branch you are on.
 
 ## Install
 
-No release of this version has been published yet. The latest release on
-GitHub, 0.7.0, is the earlier TypeScript line and does not contain these
-files. The commands below become valid when version 5.0.0 is released.
-
 macOS and Linux, with the installer that cargo-dist builds:
 
 ```bash

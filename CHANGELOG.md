@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-11-23
+
+hibi 5 is a new program, written from scratch in Rust. It gives an AI coding
+agent memory that survives between sessions: the agent records a check of a
+statement against evidence as a claim, `hibi status` reports which claims
+need a new check because the statement or its evidence changed, and
+`hibi cover` reports which parts of a declared scope have no claim. Its store
+is plain text under `.hibi/`, committed with the code.
+
+It does not read the store of the earlier TypeScript line (`.claims/`).
+Start a store with `hibi init`.
+
+The accepted limits of how a claim finds its unit again after edits are
+listed at <https://hibi.mintlify.app/concepts/anchors#limits>.
+
 ## Before the Rust rewrite
 
 hibi was rewritten from scratch in Rust, and this changelog restarts with
