@@ -5087,7 +5087,9 @@ before the cut, and is `true` when there are no candidates.
 
 ### 14.5 `status --judge-order`
 
-One request per stale claim with one question.
+One question per stale claim, sent in a request of its own. A claim whose
+answer is in the judge cache sends no request (section 14.2, packing rule
+1; section 14.6).
 
 State: `{"task":"hibi-order-v1","statement":<statement>}`.
 
