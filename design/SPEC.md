@@ -533,8 +533,8 @@ Release:
   pull request by hand; `cargo test` fails until it equals the new version. The job
   `release` pushes the tag `vX.Y.Z` when a release pull request has been
   merged, and does nothing otherwise. Both jobs use a token of a GitHub App
-  installed on the repository (secrets `RELEASE_APP_CLIENT_ID` and
-  `RELEASE_APP_PRIVATE_KEY`), because a tag or pull request created with the
+  installed on the repository (secrets `RELEASE_PLEASE_APP_CLIENT_ID` and
+  `RELEASE_PLEASE_APP_PRIVATE_KEY`), because a tag or pull request created with the
   default workflow token starts no other workflow.
 - **`dist-workspace.toml` and `.github/workflows/release.yml`.** The tag
   starts `release.yml`, which `cargo-dist` generates from
