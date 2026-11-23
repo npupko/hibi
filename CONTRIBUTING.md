@@ -159,8 +159,9 @@ All three crates share one version, `[workspace.package] version` in
    a GitHub App installed on the repository, because a tag or pull request
    made with the default `GITHUB_TOKEN` does not start other workflows. The
    App needs Contents and Pull requests read and write. Its client ID and
-   private key are the repository secrets `RELEASE_APP_CLIENT_ID` and
-   `RELEASE_APP_PRIVATE_KEY`, read by `.github/workflows/release-plz.yml`.
+   private key are the repository secrets `RELEASE_PLEASE_APP_CLIENT_ID` and
+   `RELEASE_PLEASE_APP_PRIVATE_KEY`, read by
+   `.github/workflows/release-plz.yml`.
 3. The tag starts `.github/workflows/release.yml`.
    [cargo-dist](https://github.com/axodotdev/cargo-dist) builds the `hibi`
    binary for every target in `dist-workspace.toml`. It then creates the
