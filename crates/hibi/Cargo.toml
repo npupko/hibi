@@ -1,0 +1,73 @@
+[package]
+name = "hibi"
+description = "Records that a statement was checked against evidence and reports what changed since"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = ["file", "git-store", "command", "cache", "judge"]
+# The file provider, the prose splitter, tree-sitter and the six grammars.
+file = [
+    "dep:tree-sitter",
+    "dep:tree-sitter-typescript",
+    "dep:tree-sitter-python",
+    "dep:tree-sitter-rust",
+    "dep:tree-sitter-go",
+    "dep:tree-sitter-java",
+    "dep:sha1",
+]
+# `GitTextStore` (section 12).
+git-store = []
+# `CommandProvider`, the external-command adapter (section 13).
+command = ["dep:wait-timeout"]
+# The SQLite cache (section 11.3).
+cache = ["dep:rusqlite", "dep:sha1"]
+# The Jev client (section 14).
+judge = ["cache", "dep:ureq"]
+
+[dependencies]
+# Always present: model, canon, text, duration, locate, fingerprint (prose-v1),
+# config, git, store, provider, engine, error.
+serde.workspace = true
+serde_json.workspace = true
+serde_json_canonicalizer.workspace = true
+schemars.workspace = true
+blake3.workspace = true
+data-encoding.workspace = true
+unicode-normalization.workspace = true
+jiff.workspace = true
+globset.workspace = true
+toml.workspace = true
+etcetera.workspace = true
+thiserror.workspace = true
+
+# Feature `file`.
+tree-sitter = { workspace = true, optional = true }
+tree-sitter-typescript = { workspace = true, optional = true }
+tree-sitter-python = { workspace = true, optional = true }
+tree-sitter-rust = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
+tree-sitter-java = { workspace = true, optional = true }
+# Features `file` and `cache`: git blob ids (section 11.3).
+sha1 = { workspace = true, optional = true }
+# Feature `command`.
+wait-timeout = { workspace = true, optional = true }
+# Feature `cache`.
+rusqlite = { workspace = true, optional = true }
+# Feature `judge`.
+ureq = { workspace = true, optional = true }
+
+# Unix only: the `O_NOFOLLOW` constant for opening store files without
+# following a symbolic link (section 12.4). No libc function is called.
+[target.'cfg(unix)'.dependencies]
+libc.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

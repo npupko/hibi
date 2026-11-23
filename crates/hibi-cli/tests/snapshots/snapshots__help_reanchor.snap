@@ -1,0 +1,67 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "help(&repo, &[command, \"--help\"])"
+---
+$ hibi reanchor --help
+exit status: 0
+---- standard output ----
+Build a new claim from an existing one and retire the old one, in one write. Claims are never edited in place: a change of the statement, an anchor, the recheck period or the note gives a new claim id. The new claim gets a mark, so run this only after you checked the statement.
+
+Every side you do not replace must still resolve exactly from its stored anchor; its stored selector is then refreshed. A side that is missing or ambiguous has to be replaced with --subject or --evidence: `hibi status` lists candidates with their anchors, and the anchor is yours to choose.
+
+The new claim's mark covers every side, also the ones you did not replace: a kept side that changed since the reference mark is marked as checked by this command. The result lists those sides under "accepted", with the state the old claim was in. When the new claim is a claim that already exists (the same statement, recheck period and note, and sides on the same units), the old claim is merged into it and the result says "merged": true.
+
+Evidence numbers start at 1 and always refer to the old claim's list.
+
+Usage: hibi reanchor [OPTIONS] <claim-id>
+
+Arguments:
+  <claim-id>
+          The claim to replace. May be shortened to a unique prefix
+
+Options:
+      --statement <text>
+          The new statement
+
+      --subject <anchor>
+          A new anchor for the subject
+
+      --evidence <n=anchor>
+          A new anchor for evidence number n, for example 1=file:src/a.rs#name. Repeat for several
+
+      --add-evidence <anchor>
+          Add an evidence anchor at the end of the list. Repeat for several
+
+      --drop-evidence <n>
+          Remove evidence number n. Repeat for several
+
+      --recheck <duration|none>
+          A new recheck period, or "none" to remove it
+
+      --note <text|none>
+          A new note, or "none" to remove it
+
+      --by <text>
+          Who checked, stored with the mark and the retirement [default: the value of HIBI_BY]
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --root <dir>
+          Use this directory as the root (the directory that contains .hibi/) instead of searching upward from the working directory
+
+      --format <format>
+          Output format. Without this option the output is JSON when standard output is not a terminal, and text when it is
+
+          Possible values:
+          - human: Text for a person
+          - json:  One JSON object
+
+      --now <timestamp>
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped. The largest value is 9999-12-30T22:00:00Z
+
+      --no-cache
+          Do not read or write the cache database. Every command that does not call the judge gives the same result with and without the cache. The judge commands (triage, suggest-evidence, status --judge-order) may rank differently from one run to the next without it
+---- standard error ----
+(empty)

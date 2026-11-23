@@ -1,0 +1,99 @@
+---
+title: "Security model"
+description: "What untrusted repository content can and cannot make hibi do, what was and was not verified, and what hibi does not protect against."
+---
+
+hibi runs in repositories other people wrote: a cloned project, a pull
+request branch, a sibling checkout. Everything tracked in such a repository is
+untrusted, including `.hibi/hibi.toml` and the claim records. The full policy,
+including how to report a vulnerability, is in
+[`SECURITY.md`](https://github.com/npupko/hibi/blob/main/SECURITY.md).
+
+## What repository content cannot do
+
+- **Run a command.** A repository declares schemes and sibling aliases by
+  name only. Provider commands and sibling directories come from your user
+  config; a `command` key in `hibi.toml` is refused with `invalid_config`.
+  Provider commands are started without a shell.
+- **Make git run a program.** Every git process hibi starts sets
+  `safe.bareRepository=explicit` and `core.fsmonitor=false`, disables the
+  untracked cache and optional locks, never uses a pager, and sets
+  `GIT_NO_LAZY_FETCH=1` and `GIT_TERMINAL_PROMPT=0`. It removes the
+  repository-location variables `GIT_DIR`, `GIT_WORK_TREE`,
+  `GIT_INDEX_FILE`, `GIT_OBJECT_DIRECTORY`,
+  `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_COMMON_DIR`, `GIT_NAMESPACE` and
+  `GIT_PREFIX` from git's environment, so a run inside a git hook does not
+  point git at another repository. None of the git commands hibi runs starts
+  a hook or contacts a remote. In a sibling repository hibi runs only
+  `git rev-parse --show-toplevel` and `git ls-files`.
+- **Make hibi write elsewhere.** hibi writes only under `.hibi/` and to its
+  cache file. If `.hibi`, `hibi.toml`, a shard directory, a shard or the lock
+  file is a symbolic link, the command stops with `store_corrupt` before
+  writing.
+- **Make hibi read elsewhere.** A path with a symbolic link in it is treated
+  as not found. When git can be used, a `file:` path is read only when git
+  lists it in the root (tracked, or untracked and not ignored), so a claim
+  stored in the repository cannot point hibi at an ignored file such as a
+  local secrets file, and `status` never prints the content of one. Paths
+  under `.git/` and `.hibi/` are never read. A sibling repository is read only
+  when your user config allows its directory, and only files that git lists
+  there.
+- **Exhaust memory with one file.** A code file larger than 2 MiB or another file larger than 8 MiB is not read, a
+  shard larger than 64 MiB, a store larger than 256 MiB in total, and a `hibi.toml` or user config larger than 1 MiB
+  are errors, and a provider response line longer than 16 MiB kills the
+  provider.
+- **Send data off the machine.** Only `triage`, `suggest-evidence` and
+  `status --judge-order` use the network, and only with `TYPESAFE_API_KEY`
+  set, which is sent in the `Authorization` header. Each request carries the
+  model name and hibi's fixed question wording, plus: for `triage`, a
+  document's locator and, per uncovered prose unit, its text and the
+  headings above it; for `suggest-evidence`, your statement and, per
+  candidate unit, its locator, label and text; for `status --judge-order`,
+  per stale claim whose sides can all be rendered, its statement and the
+  current text of each side. Text of a `file:` or `repo:` unit is sent only
+  when git lists the file (tracked, or untracked and not ignored); text of a
+  side served by an external provider is what its `render` returns. See
+  [the judge](/judge#what-is-sent).
+
+## Caveats
+
+- **The git hardening is tested, not proven.** Every git process except
+  the `git --version` check starts with `--no-pager`, `-c core.quotePath=false`,
+  `-c safe.bareRepository=explicit`, `-c core.fsmonitor=false` and
+  `-c core.untrackedCache=false`, and a git older than 2.45.0 is refused
+  with `git_too_old`. The tests run with the git installed where they run.
+  They check that every call carries these options and the four
+  variables hibi adds; that the eight repository-location variables are
+  removed, on one constructed command and in one test; that a bare-repository layout committed inside the tree, whose
+  config names an fsmonitor program, runs nothing, while plain git runs it;
+  that `core.fsmonitor=false` wins over an fsmonitor set in the root's
+  `.git/config` or in `GIT_CONFIG_*` variables; and that inherited
+  `GIT_DIR`, `GIT_WORK_TREE` and `GIT_INDEX_FILE` do not redirect git. No
+  test covers every program that repository configuration can name, or each
+  git version from 2.45.0 on.
+- **`--since` can run a clean filter.** `git diff`, which `--since` uses on
+  the root repository, can run a `clean` filter named in that repository's own
+  `.git/config`. That file is written by your git and is not transferred by a
+  clone. No `diff` runs in a sibling repository.
+- **A repository copied with its `.git` directory is trusted.** A repository
+  obtained together with its `.git` directory from an untrusted source (a
+  tarball, a copied folder) is outside this model, as it is for git itself.
+- **Providers inherit your environment.** A registered provider command runs
+  with hibi's environment, including `TYPESAFE_API_KEY` when it is set, plus
+  `HIBI_ROOT` and `HIBI_PROTOCOL`. Register only programs you trust.
+
+## What is trusted
+
+- Your user config.
+- The repository's own `.git/config`, and that of a sibling you allowed.
+- The provider programs you register.
+- The agent or person running hibi.
+
+## What hibi does not protect against
+
+hibi is memory for a trusted agent, not a gatekeeper. It has no signatures,
+no actor ranks and no tamper detection. Anyone who can commit to the
+repository can add a mark, and `by` is free text that hibi never checks. A
+fresh claim means someone recorded a check against that content; it does not
+prove the check was careful. If you need to know who checked, read the marks
+with `hibi list <id>` and the commit history of `.hibi/`.

@@ -1,0 +1,159 @@
+---
+title: "Coverage and scopes"
+description: "Declare which units must have a claim, and list the ones that do not."
+---
+
+`hibi status` looks at the claims you have. `hibi cover` looks the other way:
+at the units that should have a claim and do not.
+
+## Scopes
+
+A scope is declared in `.hibi/hibi.toml`:
+
+```toml
+[[scope]]
+name = "docs"
+resource = "file:docs/**/*.md"
+kinds = ["sentence", "list-item", "table-row"]
+exclude = [
+  { resource = "file:docs/changelog.md", reason = "release notes, not claims" },
+  { resource = "file:docs/retry.md", unit = "sentence:0863e2920c1f", reason = "a pointer, not a statement" },
+]
+```
+
+| Key | Rule |
+|---|---|
+| `name` | Required, unique, lower-case letters, digits and `-`, starting with a letter or digit |
+| `resource` | Required. For `file:` and `repo:`, a glob over the paths git lists (tracked files, and untracked files that are not ignored): `*` within a path segment, `**` across segments, `?`, `[...]`, `{a,b}`. Paths under `.hibi/` never match. For an external scheme, one exact locator. |
+| `kinds` | Required, not empty. The [unit kinds](/providers/file#unit-kinds) that must be covered. For a `file:` or `repo:` scope, a kind the file provider does not have is `invalid_config`; for an external scheme, a kind the provider did not list in `hello` gives the warning `unknown_kind`. |
+| `exclude` | Optional. Each entry has a `resource` pattern, an optional `unit` holding one exact unit key (in the JSON output of `cover`, at `scopes[].items[].unit.key`; for an uncovered unit the text output prints the key only under a unit that cannot be anchored alone, or in place of a unit's text when it has no text and no label), and a required `reason`. Without `unit`, the matching resources are not read at all; see [exclusions](#exclusions). |
+
+## What counts as covered
+
+hibi resolves every side of every live claim. A side that resolves to exactly
+one unit covers that unit and every unit that encloses it. So a claim on the
+field `Config.timeout_secs` also covers the struct `Config` and the file. The
+claim's state does not matter: a stale claim still covers, because its anchor
+still points at the unit. Retired claims cover nothing.
+
+A unit of a scope is `covered` when some side covers it, `excluded` when it is
+not covered and an exclusion with that `unit` matches it, and `uncovered`
+otherwise. A resource matched by an exclusion without `unit` has no units in
+the scope at all.
+
+## Running `cover`
+
+```bash
+hibi cover
+```
+
+```text output
+docs (file:docs/**/*.md; sentence, list-item, table-row): 3 units, 0 covered, 0 excluded, 3 uncovered
+  file:docs/retry.md
+        3  sentence  The client retries a failed download.
+        4  sentence  It gives up after 5 attempts.
+        5  sentence  The delay between attempts doubles each time, starting at 200 ms.
+```
+
+| Option | Effect |
+|---|---|
+| `--scope <name>` | Report only this scope. Repeat for several. |
+| `--since <range>` | Only units added or changed since a commit; see [ranges](/ranges) |
+| `--limit <n>` | List at most this many uncovered units per scope (default 200, 0 for all). The counts are never cut. |
+
+`cover` needs git, because it lists files with git. A repository without any
+scope gets the error `no_scopes`.
+
+## Exclusions
+
+With the exclusions above, in a later state of the same repository where
+`docs/retry.md` ends with the sentence "See the FAQ for more.":
+
+```text output
+docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 1 excluded, 1 uncovered; 1 resource excluded
+  file:docs/retry.md
+        3  sentence  The client retries a failed download.
+  excluded: file:docs/changelog.md (1 resource): release notes, not claims
+  excluded: file:docs/retry.md unit sentence:0863e2920c1f (1 unit): a pointer, not a statement
+```
+
+Every exclusion is printed with its reason and what it matched, so an
+exclusion is never hidden:
+
+- **An exclusion with `unit`** matches that one unit, and counts units
+  ("(1 unit)"). The unit is `excluded` only while no claim covers it. The key
+  of a prose unit is made from its content, so when the excluded sentence
+  changes, the exclusion stops matching and the sentence is listed again.
+  The JSON result reports this as `"matched": 0`.
+- **An exclusion without `unit`** matches whole resources, and counts
+  resources ("(1 resource)"). The scope's line ends with "1 resource
+  excluded", and JSON has `excludedResources`. A matched resource is not read at all: its
+  units are not units of the scope, so they appear in no count, it is never
+  listed as unavailable, and a claim on one of its units does not show as
+  covered in that scope. Here `docs/changelog.md` is such a resource, so the
+  scope has 4 units, not 5.
+
+Excluding a whole file is therefore the remedy for a file that cannot be
+read and will not become readable: a code file that does not parse, a file
+that is too large, or one that is not text (see
+[fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). Agree on
+every exclusion with the people who maintain the scope.
+
+## From an uncovered unit to a claim
+
+In JSON, each uncovered unit carries an `anchor` object that can be used as
+the subject of `hibi claim --stdin` as it is:
+
+```bash
+hibi cover --limit 1
+```
+
+```json output
+{"ok":true,"command":"cover","since":null,"summary":{"units":3,"covered":1,"excluded":0,"uncovered":2,"excludedResources":0},"scopes":[{"name":"docs","resource":"file:docs/**/*.md","kinds":["sentence","list-item","table-row"],"units":3,"covered":1,"excluded":0,"uncovered":2,"excludedResources":0,"truncated":true,"skipped":null,"items":[{"loc":"file:docs/retry.md","unit":{"key":"sentence:f62289c99f0c","kind":"sentence","label":"The client retries a failed download.","line":3,"endLine":3},"text":"The client retries a failed download.","anchor":{"loc":"file:docs/retry.md","sel":{"quote":"The client retries a failed download.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}}],"exclusions":[],"unavailable":[]}],"warnings":[]}
+```
+
+Units that are identical where they stand, such as two list items with the
+same text in one section, have no anchor that selects one of them alone.
+Their `anchor` is `null`, and the text output says so under each:
+
+```text output
+$ hibi cover --scope steps
+steps (file:docs/steps.md; list-item): 3 units, 0 covered, 0 excluded, 3 uncovered
+  file:docs/steps.md
+        3  list-item  - Run the tests.
+           cannot be anchored alone: exclude it with unit = "list-item:4fba09794abf"; each such unit needs its own exclusion, or exclude the resource (a claim on the unit that contains it does not cover it)
+        4  list-item  - Build the package.
+        5  list-item  - Run the tests.
+           cannot be anchored alone: exclude it with unit = "list-item:4fba09794abf~2"; each such unit needs its own exclusion, or exclude the resource (a claim on the unit that contains it does not cover it)
+```
+
+A claim on the unit that contains them, such as the whole file, records a
+statement about them, but does not cover them: a claim covers its unit and
+the units around it, not the units inside it. To stop `cover` listing them,
+exclude each one by the key its hint names, or exclude the whole file.
+
+Not every unit states something checkable: headings, examples and opinions
+usually do not. Claim what can be checked against evidence. Exclude the rest
+with a reason, or leave it uncovered, after agreeing with the user which is
+right for the project. The optional [judge](/judge) can rank a long list of
+uncovered prose by how likely each unit states a checkable fact.
+
+## Units that cannot be listed
+
+A file that matches a scope but cannot be read (not UTF-8, a code file that
+does not parse, a code file larger than 2 MiB or another file larger than
+8 MiB, a symbolic link) or an external resource whose provider fails is listed as
+unavailable, with the reason. Such a resource is never counted as covered and
+never dropped silently. To stop reading one for good, exclude it without
+`unit`. Here `docs/bad.md` is not valid UTF-8 and
+`docs/link.md` is a symbolic link:
+
+```text output
+docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 1 excluded, 1 uncovered; 1 resource excluded
+  file:docs/retry.md
+        3  sentence  The client retries a failed download.
+  excluded: file:docs/changelog.md (1 resource): release notes, not claims
+  excluded: file:docs/retry.md unit sentence:0863e2920c1f (1 unit): a pointer, not a statement
+  unavailable: file:docs/bad.md (not_text)
+  unavailable: file:docs/link.md (resource_not_found)
+```

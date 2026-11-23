@@ -1,128 +1,258 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/npupko/hibi/main/assets/logo/hibi-wordmark-dark.png">
-    <img alt="Hibi 日々" src="https://raw.githubusercontent.com/npupko/hibi/main/assets/logo/hibi-wordmark-transparent.png" width="300">
-  </picture>
+  <img src="docs/logo/light.png" alt="hibi" width="160">
 </p>
 
-<p align="center"><em>Find the sentences in your documents that are no longer true.</em></p>
+# hibi
 
-<p align="center"><a href="https://hibi.mintlify.app"><strong>Documentation</strong></a></p>
+hibi gives an AI coding agent memory that survives between sessions. The agent
+checks a statement against evidence, for example a sentence in a document
+against the function it describes, and records that check as a claim. Later,
+`hibi status` reports exactly which claims need a new check because the
+statement or its evidence changed or their recheck period ran out, and
+`hibi cover` reports which parts of a
+declared scope have no claim at all.
 
-<p align="center">
-  <a href="https://github.com/npupko/hibi/actions/workflows/ci.yml"><img src="https://github.com/npupko/hibi/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://www.npmjs.com/package/@npupko/hibi"><img src="https://img.shields.io/npm/v/@npupko/hibi.svg" alt="npm version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <!-- Uncomment once the first OpenSSF Scorecard run has published results:
-  <a href="https://securityscorecards.dev/viewer/?uri=github.com/npupko/hibi"><img src="https://api.securityscorecards.dev/projects/github.com/npupko/hibi/badge" alt="OpenSSF Scorecard"></a>
-  -->
-</p>
+hibi is a single Rust binary. Its store is plain text under `.hibi/`, committed
+with the code, so the memory follows the branch you are on.
 
-Hibi tracks **claims**: checkable sentences in documents such as a README, `CLAUDE.md`, an ADR, or a pricing page. It reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify. Hibi runs no verifiers and no resolvers, and its only network call is the judge API; an agent collects evidence and submits it.
+## What hibi is and is not
 
-A claim has one of three kinds:
-
-| kind | where its truth is observed | what makes it stale |
-|------|----------------------------|---------------------|
-| `code` | one or more code spans | an anchored span changed, disappeared, or matches several places |
-| `reference` | one span in another document | the span changed, or the judge finds it no longer supports the sentence |
-| `attested` | outside the repo (a dashboard, a vendor page, a person) | its `ttl` ran out since the last judged evidence or human vouch, or submitted evidence refutes it |
+- **It is memory.** hibi records what was checked, against which evidence, and
+  what that evidence looked like. It reports what changed since.
+- **It does not decide what is true.** The agent re-checks a statement with its
+  own judgement and asks the user when it is unsure. Any re-check by anyone
+  clears a claim.
+- **It is not a gate.** Every command exits 0 when it ran, whatever it found,
+  and 1 only on an error. There is no CI mode and no GitHub Action.
+- **It is deterministic.** Freshness is exact fingerprint equality. A
+  similarity score only proposes where a moved unit may have gone. It never
+  resolves an anchor and never decides that nothing changed.
+- **It stays offline.** Only the optional judge commands (`triage`,
+  `suggest-evidence` and `status --judge-order`) use the network, and only
+  when `TYPESAFE_API_KEY` is set. See [the judge](https://hibi.mintlify.app/judge).
 
 ## Install
 
-```sh
-# Prebuilt single-file executable (no runtime needed)
-curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
+macOS and Linux, with the installer that cargo-dist builds:
 
-# Or, in a Bun/JS project
-bun add @npupko/hibi        # then: bunx hibi …
-bunx @npupko/hibi --help    # or run it once without installing
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/npupko/hibi/releases/download/v5.0.0/hibi-cli-installer.sh | sh
 ```
 
-The judge reads `TYPESAFE_API_KEY`. Without it, everything else works and uncached judgments are `pending`, a warning. A judge error (an answer hibi cannot use) is `pending` too; it never aborts a run.
+Windows, in PowerShell:
 
-## Quick start
-
-```sh
-hibi init --instructions AGENTS.md   # create .claims/; add the check line to AGENTS.md
-hibi audit --doc README.md           # one row per region: covered, or what kind of claim it could be
-
-# Record a claim of each kind
-hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts." \
-  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --by agent:opus
-hibi record --doc README.md --doc-quote "Refunds are issued within two weeks of a request." \
-  --kind reference --ref-file docs/billing.md --ref-quote "Refunds are issued within 14 days." --by agent:opus
-hibi record --doc docs/pricing.md --doc-quote 'The Pro plan costs $29 per month.' \
-  --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 \
-  --instructions "Open the Stripe dashboard and report the Pro monthly price." --by human:alice@example.com
-
-hibi check                      # every claim, the contradiction pass, and the worklist
-hibi check --doc CLAUDE.md      # can this one document be trusted now? (exit 1 if it has no claims)
-hibi check --since origin/main  # what did this change invalidate?
-hibi list --state pending       # the worklist: claims an agent should re-check
-
-# Submit evidence an agent collected; the judge decides whether it supports the claim
-echo '[{"claimId":"clm_…","evidence":"Pro plan: $29.00 per month","source":"stripe",
-        "summary":"Stripe lists Pro at $29/month"}]' | hibi evidence --from-file - --by agent:opus
-
-hibi attest <claim-id> --by human:alice@example.com --note "checked, still true"
-hibi attest <claim-id> --by human:alice@example.com --ack conflict:<other-id> --note "different plans"
+```bash
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/npupko/hibi/releases/download/v5.0.0/hibi-cli-installer.ps1 | iex"
 ```
 
-`--by` is required on `record` and `attest`; there is no default actor. Agents record in batches with `hibi record --from-file - --by agent:<name>` (a JSON array on stdin, all or nothing; an item's own `by` overrides `--by`). `hibi evidence` accepts `attested` claims only; a `reference` claim is judged from the referenced document. Paths are stored as POSIX paths relative to the anchor root, so `./README.md` and `README.md` are the same document.
+Or with the repository's own script, which downloads the release tarball for
+your platform, checks its SHA-256 sum and copies `hibi` into
+`$HOME/.local/bin`:
 
-Commands: `init`, `record`, `check`, `list`, `audit`, `reanchor`, `retire`, `supersede`, `archive`, `evidence`, `attest`, `schema`, `completions`, `version`. `hibi <cmd> --help` prints that command's options.
-
-Output is human on a terminal and JSON when piped. `--format human|compact|json|json-pretty`, `--json`, `--explain` (detail tail), `--no-hints` (drop the remediation menu), and `--color auto|always|never` override it.
-
-### Exit codes
-
-| code | meaning |
-|------|---------|
-| `0`  | clean, or warnings only |
-| `2`  | gating: a `changed` / `orphaned` / `ambiguous` side, a `refuted` judgment, or a contradiction on an enforced claim; `expired` also gates under `check --doc`; under `--fail-on warn`, any warning |
-| `1`  | operational error, including `check --doc` on a path with no registered claims |
-
-Warnings are `moved`, `review`, `pending`, `unavailable`, and `expired` in a whole-store check. `--fail-on gating|warn|never` sets when to exit 2. `record --suggest` makes a claim advisory.
-
-## How it works
-
-Each claim has a doc side (the sentence) and, for `code` and `reference`, evidence sides. Each side stores selectors against one file: the quoted text with 48 characters of context, its position, and on code sides the enclosing tree-sitter node hash and the literal inside the span, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim. The tree-sitter grammars are embedded in the binary; `--no-ast` skips them, and a language without a grammar gets text selectors only. On `check`, each side resolves to `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`; a side in a sibling repo that is not checked out is `unavailable`.
-
-A model judge (TypeSafe's Jev, over HTTP) answers three questions: what kind of claim a region is (`audit`), whether evidence supports a sentence (`reference` claims and `evidence`), and whether two sentences contradict each other (the contradiction pass). Every answer is cached in `.claims/judge/` by model and exact request, so a second run asks nothing and cannot flip a verdict. Numbers, money, versions, and dates are compared in code. One threshold, `judge.threshold` in `.claims/config.json`, decides when a judgment gates. Every rule that fires is a reason label in the output.
-
-Attestations are append-only and name an actor (`human:`, `agent:`, `process:`). A claim's `ttl` counts from the newest judged evidence or human vouch; an agent vouch is recorded and does not count.
-
-## What you can rely on
-
-- **Same tree, same verdicts.** Anchor resolution is deterministic, and judge verdicts are cached and never re-asked.
-- **A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose; only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.
-- **Nothing clears without evidence or a human.** An agent cannot vouch a claim fresh.
-- **Any text format.** Markdown, plain text, AsciiDoc, and instruction files work without a per-format parser.
-
-## Use it with Claude Code
-
-Hibi ships a [Claude Code](https://claude.com/claude-code) skill that teaches coding agents the loop: check a document before trusting it, audit and record, work the worklist, and submit evidence. The repo doubles as a plugin marketplace:
-
+```bash
+curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | HIBI_VERSION=5.0.0 sh
 ```
+
+From source, with Rust 1.90 or later, in a clone of this repository:
+
+```bash
+cargo install --locked --path crates/hibi-cli
+```
+
+hibi needs git 2.45.0 or later for `init`, `cover`, `--since`, sibling
+repositories and the judge commands. Everything else works without git.
+
+## Five minutes with hibi
+
+A repository has a document and the code it describes:
+
+```markdown docs/retry.md
+# Retries
+
+The client retries a failed download.
+It gives up after 5 attempts.
+The delay between attempts doubles each time, starting at 200 ms.
+```
+
+```rust src/retry.rs
+/// How often a download is tried before the client gives up.
+pub const MAX_ATTEMPTS: u32 = 5;
+
+/// The delay before attempt `n`, in milliseconds.
+pub fn delay_ms(n: u32) -> u64 {
+    200 * 2u64.pow(n)
+}
+```
+
+Create the store at the top of the git repository:
+
+```bash
+hibi init
+```
+
+`init` writes only under `.hibi/`: `hibi.toml`, three dot files and 32 empty
+shard files. Declare which units must be covered by appending a scope to
+`.hibi/hibi.toml`:
+
+```toml
+[[scope]]
+name = "docs"
+resource = "file:docs/**/*.md"
+kinds = ["sentence", "list-item", "table-row"]
+```
+
+Ask what has no claim yet:
+
+```bash
+hibi cover
+```
+
+```text output
+docs (file:docs/**/*.md; sentence, list-item, table-row): 3 units, 0 covered, 0 excluded, 3 uncovered
+  file:docs/retry.md
+        3  sentence  The client retries a failed download.
+        4  sentence  It gives up after 5 attempts.
+        5  sentence  The delay between attempts doubles each time, starting at 200 ms.
+```
+
+Read the code, confirm that the second sentence is true, and record the check.
+The subject is the sentence; the evidence is the constant:
+
+```bash
+hibi claim "The client gives up after 5 attempts." \
+  --subject "file:docs/retry.md::gives up after 5 attempts" \
+  --evidence "file:src/retry.rs#MAX_ATTEMPTS"
+```
+
+```text output
+c1-c5dm2jvhr8hb36rx5rgm  created  m1-1nhmgpeagp6bbwt6kh0j  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+```
+
+Now someone changes `MAX_ATTEMPTS` to 3. In the next session the agent asks
+what needs a new check:
+
+```bash
+hibi status
+```
+
+```text output
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-c5dm2jvhr8hb36rx5rgm  stale  The client gives up after 5 attempts.
+  marked 2026-11-22T22:31:29Z (m1-1nhmgpeagp6bbwt6kh0j)
+  evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
+    | pub const MAX_ATTEMPTS: u32 = 3;
+  next: hibi mark c1-c5dm2jvhr8hb36rx5rgm
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+`next` assumes the statement still holds. It does not: the code says 3. The
+agent fixes the sentence to "It gives up after 3 attempts." and replaces the
+claim with one that states the new fact. An id can be shortened to a unique
+prefix:
+
+```bash
+hibi reanchor c1-c5dm \
+  --statement "The client gives up after 3 attempts." \
+  --subject "file:docs/retry.md::gives up after 3 attempts"
+```
+
+```text output
+c1-c5dm2jvhr8hb36rx5rgm is retired and replaced by the new claim c1-2kfx78rwbb7wyxwst92f
+  mark m1-qnnn2w60hevd1h14q3ek, retirement r1-fmpt7hwtdzded271kw2d
+  was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
+    subject is now:
+    | It gives up after 3 attempts.
+    evidence 1 is now:
+    | pub const MAX_ATTEMPTS: u32 = 3;
+  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
+    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
+  evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+    {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
+```
+
+```bash
+hibi status
+```
+
+```text output
+2 claims: 1 fresh, 0 stale, 0 expired, 1 retired
+nothing stale
+```
+
+Commit `.hibi/` with the change. The next session starts from this memory.
+
+## Using hibi from a coding agent
+
+The Claude Code plugin in [`plugins/hibi-cli`](plugins/hibi-cli) puts the
+hibi skill in the agent's context. It does not install the binary:
+
+```text
 /plugin marketplace add npupko/hibi
 /plugin install hibi-cli@hibi
 ```
 
-Invoke it as `/hibi-cli:hibi`, or let Claude load it when you ask about hibi. The source lives in [`plugins/hibi-cli`](plugins/hibi-cli).
+With the skill, the agent runs `hibi status` at the start of a session. It
+re-checks each listed statement, then marks or re-anchors the claim, or
+retires it after asking the user, and records each new check with
+`hibi claim`. When it cannot tell
+whether the text or the code is right, it asks the user and does not mark.
+Before finishing a branch it runs `hibi status --since main...`,
+`hibi cover --since main...` and plain `hibi status`, and commits `.hibi/`.
 
-## Develop
+In an agent's shell tool standard output is not a terminal, so each command
+prints one JSON object instead, with the same facts and a `next` command per
+claim. The exceptions are `hibi completions`, which prints a
+shell script, `hibi schema <name>`, which prints the schema itself, and
+`--help`, which prints text.
 
-`bun install`, `bun run build:grammars`, then `bun test` (the judge is a fake; no key needed). `bun run build` writes a single-file executable to `dist/hibi`. Details are in [CONTRIBUTING.md](CONTRIBUTING.md).
+## The model in one screen
 
-## Contributing
+| Term | Meaning |
+|---|---|
+| Resource | Anything addressable by a locator: `file:docs/retry.md`, `repo:api//src/lib.rs` for a sibling repository, or `<scheme>:<name>` for an external provider. |
+| Unit | One part of a resource: a sentence, list item, table row, heading or fenced block of prose; a function, method, class, struct, field, variant or other declaration of code; a block of plain text; the whole file. |
+| Anchor | A locator plus a selector (a quote, a symbol, or a key) that finds one unit again after edits. |
+| Claim | A statement, one subject anchor, zero or more evidence anchors, an optional recheck period and an optional note. Immutable: changing any of them makes a new claim. |
+| Mark | A record that the claim was checked: the fingerprint of every side as it was then, the time, and optionally who. Append-only. |
+| Retirement | A permanent record that a claim no longer applies, optionally naming the claim that replaces it. |
+| Scope | A declaration in `.hibi/hibi.toml` that every unit of given kinds in matching resources must be covered by a claim. |
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, commit conventions, and PR expectations. Please follow our [Code of Conduct](CODE_OF_CONDUCT.md), and report security issues per [SECURITY.md](SECURITY.md).
+The core works with the units that providers serve, not with documents. A
+provider turns a locator into
+units, their text and their fingerprints. The built-in file provider serves
+`file:` and `repo:` locators: prose, plain text, and code in TypeScript,
+TSX, Python, Rust, Go and Java. Any other tool can serve its own units,
+as subjects or as evidence, through an external provider, a command that speaks a JSON-lines protocol over standard
+input and output. Each user registers that command in their own config;
+hibi never runs a command that a repository names.
+[`hibi-provider-reference`](crates/hibi-provider-reference) is the reference
+provider; see [external providers](https://hibi.mintlify.app/providers/external).
+
+A claim is **fresh** when some mark's fingerprints equal the current
+fingerprint of every side, and its recheck period, if any, has not run out. It
+is **stale** when no mark matches, **expired** when a mark matches but the
+period ran out, and **retired** when it was retired. Every side must resolve
+exactly. A stored anchor finds its unit by name (`#MAX_ATTEMPTS`, the
+declaration with that name) or by place (the quoted words, in their
+section and paragraph, with the text right around them unchanged). When the
+quoted words of a sentence are edited, the side is missing, and
+`hibi status` lists the units it could mean as candidates. You read them,
+re-check the statement, and re-anchor the claim with `hibi reanchor`. An
+edit to a neighbouring sentence usually leaves the claim fresh; the
+[limits](https://hibi.mintlify.app/concepts/anchors#limits) list the
+exceptions.
+
+## Learn more
+
+- Documentation: <https://hibi.mintlify.app>
+- Claude Code plugin with the hibi skill: [`plugins/hibi-cli`](plugins/hibi-cli)
+- Command reference, generated from the code: [`cli-reference.md`](plugins/hibi-cli/skills/hibi/references/cli-reference.md)
+- Specification: [`design/SPEC.md`](design/SPEC.md)
+- Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- Security policy: [`SECURITY.md`](SECURITY.md)
 
 ## License
 
-[MIT](LICENSE) © Nick Pupko
-
----
-
-The design contract is [`design/SPEC.md`](design/SPEC.md).
+MIT. See [LICENSE](LICENSE).

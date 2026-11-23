@@ -1,0 +1,140 @@
+[
+  {
+    "name": "triage: one unit, both questions answered",
+    "input": {
+      "document": "file:docs/guide.md",
+      "units": [
+        {"headings": ["Retries"], "text": "The client retries a request three times."}
+      ],
+      "response": {
+        "model": "jev-1.14.0",
+        "answers": {
+          "q0.checkable": {"type": "noul", "noul": 0.92},
+          "q0.evidence": {"type": "choice", "choice": "code", "confidence": 0.12,
+                          "probabilities": {"code": 0.81, "config": 0.09, "doc": 0.05, "external": 0.03, "none": 0.02}}
+        },
+        "usage": {"input_tokens": 180, "output_tokens": 6}
+      }
+    },
+    "expected": {
+      "request": {
+        "model": "jev-1.14.0",
+        "state": {"task": "hibi-triage-v1", "document": "file:docs/guide.md"},
+        "questions": {
+          "q0.checkable": {"type": "noul",
+            "instructions": {"ask": "The text states a fact about how the software behaves, is configured or is built, and that fact could be confirmed or refuted by reading source code or configuration.",
+                             "headings": ["Retries"], "text": "The client retries a request three times."}},
+          "q0.evidence": {"type": "choice",
+            "instructions": {"ask": "Where the fact in the text would be confirmed.",
+                             "headings": ["Retries"], "text": "The client retries a request three times."},
+            "criteria": {"code": "In program source code", "config": "In a configuration or build file",
+                         "doc": "In another document", "external": "Outside this repository",
+                         "none": "The text states no checkable fact"}}
+        }
+      },
+      "answers": {
+        "q0.checkable": {"noul": 0.92},
+        "q0.evidence": {"choice": "code", "p": 0.81}
+      },
+      "results": [{"checkable": 0.92, "band": "likely", "evidence": "code"}]
+    },
+    "source": "Written by hand from SPEC 14.2 and 14.3 and the NoulAnswer and ChoiceAnswer schemas of https://api.typesafe.ai/openapi.json (read 2026-11-20). confidence is set low to show that it is not read.",
+    "origin": "synthetic"
+  },
+  {
+    "name": "triage: two units, thresholds at 0.3 and 0.6, no headings",
+    "input": {
+      "document": "file:README.md",
+      "units": [
+        {"headings": [], "text": "Welcome!"},
+        {"headings": [], "text": "Set HIBI_CACHE_DIR to move the cache."}
+      ],
+      "response": {
+        "model": "jev-1.14.0",
+        "answers": {
+          "q0.checkable": {"type": "noul", "noul": 0.3},
+          "q0.evidence": {"type": "choice", "choice": "none", "confidence": 0.9,
+                          "probabilities": {"code": 0.1, "config": 0.1, "doc": 0.1, "external": 0.1, "none": 0.6}},
+          "q1.checkable": {"type": "noul", "noul": 0.55},
+          "q1.evidence": {"type": "choice", "choice": "config", "confidence": 0.9,
+                          "probabilities": {"code": 0.3, "config": 0.59, "doc": 0.05, "external": 0.03, "none": 0.03}}
+        },
+        "usage": {"input_tokens": 300, "output_tokens": 12}
+      }
+    },
+    "expected": {
+      "request": {
+        "model": "jev-1.14.0",
+        "state": {"task": "hibi-triage-v1", "document": "file:README.md"},
+        "questions": {
+          "q0.checkable": {"type": "noul",
+            "instructions": {"ask": "The text states a fact about how the software behaves, is configured or is built, and that fact could be confirmed or refuted by reading source code or configuration.",
+                             "headings": [], "text": "Welcome!"}},
+          "q0.evidence": {"type": "choice",
+            "instructions": {"ask": "Where the fact in the text would be confirmed.", "headings": [], "text": "Welcome!"},
+            "criteria": {"code": "In program source code", "config": "In a configuration or build file",
+                         "doc": "In another document", "external": "Outside this repository",
+                         "none": "The text states no checkable fact"}},
+          "q1.checkable": {"type": "noul",
+            "instructions": {"ask": "The text states a fact about how the software behaves, is configured or is built, and that fact could be confirmed or refuted by reading source code or configuration.",
+                             "headings": [], "text": "Set HIBI_CACHE_DIR to move the cache."}},
+          "q1.evidence": {"type": "choice",
+            "instructions": {"ask": "Where the fact in the text would be confirmed.", "headings": [], "text": "Set HIBI_CACHE_DIR to move the cache."},
+            "criteria": {"code": "In program source code", "config": "In a configuration or build file",
+                         "doc": "In another document", "external": "Outside this repository",
+                         "none": "The text states no checkable fact"}}
+        }
+      },
+      "answers": {
+        "q0.checkable": {"noul": 0.3},
+        "q0.evidence": {"choice": "none", "p": 0.6},
+        "q1.checkable": {"noul": 0.55},
+        "q1.evidence": {"choice": "config", "p": 0.59}
+      },
+      "results": [
+        {"checkable": 0.3, "band": "unlikely", "evidence": "none"},
+        {"checkable": 0.55, "band": "unsure", "evidence": "unsure"}
+      ]
+    },
+    "source": "Written by hand from SPEC 14.3 (band unlikely at p <= 0.3; the label needs probability >= 0.6) and the answer schemas of https://api.typesafe.ai/openapi.json (read 2026-11-20).",
+    "origin": "synthetic"
+  },
+  {
+    "name": "triage: an answer of the wrong type, and a choice without its probability, are unusable",
+    "input": {
+      "document": "file:docs/guide.md",
+      "units": [
+        {"headings": ["Retries"], "text": "The client retries a request three times."}
+      ],
+      "response": {
+        "model": "jev-1.14.0",
+        "answers": {
+          "q0.checkable": {"type": "choice", "choice": "code", "confidence": 0.9, "probabilities": {"code": 0.9}},
+          "q0.evidence": {"type": "choice", "choice": "code", "confidence": 0.9, "probabilities": {"config": 0.9}}
+        },
+        "usage": {"input_tokens": 180, "output_tokens": 6}
+      }
+    },
+    "expected": {
+      "request": {
+        "model": "jev-1.14.0",
+        "state": {"task": "hibi-triage-v1", "document": "file:docs/guide.md"},
+        "questions": {
+          "q0.checkable": {"type": "noul",
+            "instructions": {"ask": "The text states a fact about how the software behaves, is configured or is built, and that fact could be confirmed or refuted by reading source code or configuration.",
+                             "headings": ["Retries"], "text": "The client retries a request three times."}},
+          "q0.evidence": {"type": "choice",
+            "instructions": {"ask": "Where the fact in the text would be confirmed.",
+                             "headings": ["Retries"], "text": "The client retries a request three times."},
+            "criteria": {"code": "In program source code", "config": "In a configuration or build file",
+                         "doc": "In another document", "external": "Outside this repository",
+                         "none": "The text states no checkable fact"}}
+        }
+      },
+      "answers": {"q0.checkable": null, "q0.evidence": null},
+      "results": null
+    },
+    "source": "SPEC 14.2, a response that lacks an answer of the right type for any question fails the request.",
+    "origin": "synthetic"
+  }
+]

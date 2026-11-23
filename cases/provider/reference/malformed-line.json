@@ -1,0 +1,77 @@
+{
+  "name": "a line that is not a request is answered with id null, then serving goes on",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": "{\"id\": \"one\", \"method\": \"resolve\"}",
+      "expect": {
+        "id": null,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": "\"just a string\"",
+      "expect": {
+        "id": null,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "ref:notes",
+          "sel": {
+            "key": "n1"
+          }
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "units": [
+            {
+              "key": "n1",
+              "kind": "note",
+              "parent": null,
+              "label": "Retries are capped at 5.",
+              "fp": "<fingerprint>",
+              "sel": {
+                "key": "n1"
+              },
+              "text": "Retries are capped at 5."
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

@@ -1,0 +1,45 @@
+{
+  "name": "resolve by a quote no unit contains returns zero units",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "ref:notes",
+          "sel": {
+            "quote": "no unit says this"
+          }
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "units": []
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

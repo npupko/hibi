@@ -1,0 +1,27 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"status\"])"
+---
+$ hibi status
+exit status: 0
+---- standard output ----
+2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
+
+c1-2vx3y5hhm6a653sffzyf  stale  Workers restart every night.
+  marked 2026-11-20T12:00:00Z (m1-dtax2xyn5161se6f67ex)
+  subject  file:docs/ops.md  missing (selector_not_found)
+    stored: quote "Workers are restarted nightly."
+  next: hibi reanchor c1-2vx3y5hhm6a653sffzyf --subject <anchor>
+
+c1-h11mnkp70sgmegp55r2g  stale  The cache holds 64 entries.
+  marked 2026-11-20T12:00:00Z (m1-0jseyppy3zdpd0gvx6v6)
+  evidence 1  file:src/cache.rs  changed (fingerprint_differs)  function "limit", lines 1-4
+    | pub fn limit() -> u32 {
+    |     let max_entries = 64;
+    |     max_entries * 2
+    | }
+  next: hibi mark c1-h11mnkp70sgmegp55r2g
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+---- standard error ----
+(empty)

@@ -1,0 +1,46 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "help(&repo, &[command, \"--help\"])"
+---
+$ hibi cover --help
+exit status: 0
+---- standard output ----
+For every scope declared in .hibi/hibi.toml, count its units and list the ones no claim covers. A unit is covered when a side of a live claim resolves to it or to a unit nested in it, whatever the claim's state. Units matched by an exclusion are counted separately, with the reason given in hibi.toml.
+
+Each listed unit comes with an anchor that can be passed to `hibi claim --stdin` as it is. This command needs git.
+
+Usage: hibi cover [OPTIONS]
+
+Options:
+      --scope <name>
+          Report only this scope. Repeat for several [default: every scope]
+
+      --since <range>
+          Report only units that were added or changed since a commit. The range is written as for `hibi status --since`. Only scopes on scheme "file" are evaluated
+
+      --limit <n>
+          List at most this many uncovered units per scope; 0 lists all. The counts are never cut
+          
+          [default: 200]
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --root <dir>
+          Use this directory as the root (the directory that contains .hibi/) instead of searching upward from the working directory
+
+      --format <format>
+          Output format. Without this option the output is JSON when standard output is not a terminal, and text when it is
+
+          Possible values:
+          - human: Text for a person
+          - json:  One JSON object
+
+      --now <timestamp>
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped. The largest value is 9999-12-30T22:00:00Z
+
+      --no-cache
+          Do not read or write the cache database. Every command that does not call the judge gives the same result with and without the cache. The judge commands (triage, suggest-evidence, status --judge-order) may rank differently from one run to the next without it
+---- standard error ----
+(empty)

@@ -1,0 +1,45 @@
+{
+  "name": "hello describes the reference provider",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1,
+          "provider": {
+            "name": "hibi-provider-reference",
+            "version": "<string>"
+          },
+          "schemes": [
+            "ref"
+          ],
+          "selectors": [
+            "key",
+            "quote"
+          ],
+          "kinds": "<any>",
+          "capabilities": {
+            "units": true,
+            "render": true,
+            "batch": true
+          }
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

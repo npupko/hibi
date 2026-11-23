@@ -1,0 +1,50 @@
+{
+  "name": "hello without protocol 1 is unsupported_protocol",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            2
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 2,
+        "error": {
+          "code": "unsupported_protocol",
+          "message": "<string>"
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

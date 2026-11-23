@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi error output",
+  "description": "The failure envelope of section 15.1: `{\"ok\": false, \"command\",\n\"errors\"}`. `errors` has at least one entry.",
+  "type": "object",
+  "properties": {
+    "command": {
+      "type": "string"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Error"
+      },
+      "minItems": 1
+    },
+    "ok": {
+      "description": "Always `false`.",
+      "type": "boolean",
+      "const": false
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "errors"
+  ],
+  "$defs": {
+    "Code": {
+      "description": "The closed list of error codes of section 15.4.",
+      "oneOf": [
+        {
+          "description": "Unknown command or option, missing argument.",
+          "type": "string",
+          "const": "usage"
+        },
+        {
+          "description": "A well-formed argument with an unacceptable value.",
+          "type": "string",
+          "const": "invalid_argument"
+        },
+        {
+          "description": "Standard input is not the expected JSON.",
+          "type": "string",
+          "const": "invalid_json"
+        },
+        {
+          "description": "A locator, selector or compact anchor does not parse.",
+          "type": "string",
+          "const": "invalid_anchor"
+        },
+        {
+          "description": "Section 9.4.",
+          "type": "string",
+          "const": "invalid_duration"
+        },
+        {
+          "description": "`--now` does not parse.",
+          "type": "string",
+          "const": "invalid_time"
+        },
+        {
+          "description": "Section 10.3.",
+          "type": "string",
+          "const": "invalid_range"
+        },
+        {
+          "description": "No `.hibi/hibi.toml` found.",
+          "type": "string",
+          "const": "not_initialized"
+        },
+        {
+          "description": "`init` on an existing store.",
+          "type": "string",
+          "const": "already_initialized"
+        },
+        {
+          "description": "A command that needs git is run where the root is not a git top level, or git is missing.",
+          "type": "string",
+          "const": "not_a_git_repository"
+        },
+        {
+          "description": "Section 12.5.",
+          "type": "string",
+          "const": "legacy_store"
+        },
+        {
+          "description": "`version` in `hibi.toml` is not 1.",
+          "type": "string",
+          "const": "unsupported_store_version"
+        },
+        {
+          "description": "`hibi.toml` does not parse or breaks section 11.1.",
+          "type": "string",
+          "const": "invalid_config"
+        },
+        {
+          "description": "The user config does not parse or breaks section 11.2.",
+          "type": "string",
+          "const": "invalid_user_config"
+        },
+        {
+          "description": "Section 12.3.",
+          "type": "string",
+          "const": "store_corrupt"
+        },
+        {
+          "description": "Section 12.4.",
+          "type": "string",
+          "const": "store_locked"
+        },
+        {
+          "description": "A write would take a shard or the store over its size limit.",
+          "type": "string",
+          "const": "store_full"
+        },
+        {
+          "description": "A file operation failed.",
+          "type": "string",
+          "const": "io_error"
+        },
+        {
+          "description": "Section 10.4.",
+          "type": "string",
+          "const": "git_failed"
+        },
+        {
+          "description": "The installed git is older than `MIN_GIT` (section 10.4).",
+          "type": "string",
+          "const": "git_too_old"
+        },
+        {
+          "description": "Section 3.6.",
+          "type": "string",
+          "const": "claim_not_found"
+        },
+        {
+          "description": "Section 3.6.",
+          "type": "string",
+          "const": "ambiguous_id"
+        },
+        {
+          "description": "A write on a retired claim.",
+          "type": "string",
+          "const": "claim_retired"
+        },
+        {
+          "description": "`reanchor` would produce the same claim.",
+          "type": "string",
+          "const": "no_change"
+        },
+        {
+          "description": "A new anchor uses a scheme that is not declared.",
+          "type": "string",
+          "const": "unknown_scheme"
+        },
+        {
+          "description": "An anchor resolves to no unit.",
+          "type": "string",
+          "const": "side_missing"
+        },
+        {
+          "description": "An anchor resolves to several units.",
+          "type": "string",
+          "const": "side_ambiguous"
+        },
+        {
+          "description": "An anchor cannot be evaluated.",
+          "type": "string",
+          "const": "side_unavailable"
+        },
+        {
+          "description": "A new anchor resolved only approximately.",
+          "type": "string",
+          "const": "selector_not_exact"
+        },
+        {
+          "description": "A quote reaches outside one unit.",
+          "type": "string",
+          "const": "quote_spans_units"
+        },
+        {
+          "description": "A quote lies wholly or partly inside a code comment.",
+          "type": "string",
+          "const": "quote_in_comment"
+        },
+        {
+          "description": "The quoted text is identical, with identical text around it in its\nunit, to another place in the same scope: a stored anchor\ncould not tell the two apart.",
+          "type": "string",
+          "const": "quote_not_distinguishable"
+        },
+        {
+          "description": "A new anchor has a selector key its provider does not allow.",
+          "type": "string",
+          "const": "unsupported_selector"
+        },
+        {
+          "description": "`cover` or `triage` with no scope declared.",
+          "type": "string",
+          "const": "no_scopes"
+        },
+        {
+          "description": "`--scope` names no scope.",
+          "type": "string",
+          "const": "unknown_scope"
+        },
+        {
+          "description": "Section 14.4.",
+          "type": "string",
+          "const": "too_many_candidates"
+        },
+        {
+          "description": "Section 14.1.",
+          "type": "string",
+          "const": "judge_unavailable"
+        },
+        {
+          "description": "Section 14.7.",
+          "type": "string",
+          "const": "judge_failed"
+        },
+        {
+          "description": "A bug.",
+          "type": "string",
+          "const": "internal"
+        }
+      ]
+    },
+    "Error": {
+      "description": "A hibi error: a code of section 15.4, a message, a remediation, and for\nstandard-input batches the index of the offending element.\n\nSerializes to the error object of the JSON envelope (section 15.1):\n`{\"code\", \"message\", \"remediation\", \"index\"?}`.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/Code"
+        },
+        "index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "message": {
+          "type": "string"
+        },
+        "remediation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "remediation"
+      ]
+    }
+  }
+}

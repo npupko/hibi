@@ -1,8 +1,8 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Hibi",
-  "description": "Find the sentences in your documents that are no longer true: claims tied to code, other documents, or attestations, checked before an agent trusts a file.",
+  "name": "hibi",
+  "description": "Deterministic memory for AI coding agents: record that a statement was checked against evidence, then learn which side of which claim changed since and what in a declared scope has no claim.",
   "colors": {
     "primary": "#D6452F",
     "light": "#E97A66",
@@ -20,33 +20,37 @@
   "navigation": {
     "groups": [
       {
-        "group": "Get Started",
-        "pages": ["index", "quickstart", "workflows"]
+        "group": "Get started",
+        "pages": ["index", "quickstart", "agent-workflow"]
       },
       {
         "group": "Concepts",
         "pages": [
-          "claims",
-          "attestations",
-          "verdicts",
-          "anchors",
-          "judge",
-          "conflicts",
-          "audit",
-          "lifecycle"
+          "concepts/claims-and-marks",
+          "concepts/anchors",
+          "concepts/fingerprints",
+          "concepts/freshness",
+          "coverage",
+          "ranges"
         ]
       },
       {
-        "group": "Why Hibi",
+        "group": "Providers",
+        "pages": ["providers/file", "providers/external"]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "configuration",
+          "store",
+          "judge",
+          "cli-reference",
+          "security"
+        ]
+      },
+      {
+        "group": "Why hibi",
         "pages": ["design"]
-      },
-      {
-        "group": "Usage",
-        "pages": ["cli-reference", "ci"]
-      },
-      {
-        "group": "Integrations",
-        "pages": ["claude-code"]
       }
     ]
   },
@@ -59,7 +63,7 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Get started",
+      "label": "Quickstart",
       "href": "/quickstart"
     }
   },

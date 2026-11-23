@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi retire output",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "command": {
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean",
+      "const": true
+    },
+    "retired": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RetireResult"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "retired",
+    "warnings"
+  ],
+  "$defs": {
+    "ClaimId": {
+      "type": "string",
+      "pattern": "^c1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "RetireResult": {
+      "description": "One entry of `retired` in the output of `retire`.",
+      "type": "object",
+      "properties": {
+        "alreadyRetired": {
+          "type": "boolean"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimId"
+        },
+        "retirement": {
+          "description": "`null` when the claim was already retired.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RetirementId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "claim",
+        "retirement",
+        "alreadyRetired"
+      ]
+    },
+    "RetirementId": {
+      "type": "string",
+      "pattern": "^r1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old",
+        "unknown_kind"
+      ]
+    }
+  }
+}

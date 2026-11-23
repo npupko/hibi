@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi unit",
+  "description": "The unit object of section 13.3.",
+  "type": "object",
+  "properties": {
+    "approx": {
+      "description": "In `resolve`: the unit is a candidate, not the unit the selector was\nmade for.",
+      "type": "boolean"
+    },
+    "fp": {
+      "$ref": "#/$defs/Fingerprint"
+    },
+    "identity": {
+      "description": "In `resolve`: `symbol` when the unit is resolved by its symbol alone\nbecause the selector's stored quote is no longer in the resource.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Identity"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "key": {
+      "description": "Unique within the resource. Stable while the unit is the same unit.",
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "label": {
+      "description": "One line for people.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parent": {
+      "description": "Key of the enclosing unit. Absent on the wire means `null`.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "range": {
+      "description": "Omitted when the resource is not text.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Range"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refuse": {
+      "description": "In `resolve`: must not be used to create a claim or replace a side.\nOn a unit of `units`, a candidate or a unit of an ambiguous list,\nonly `quote_not_distinguishable`: no anchor selects the unit alone,\nso its `sel` is not offered as an anchor (section 6.7).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Refuse"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sel": {
+      "description": "A selector that, sent to `resolve` with the same `loc`, returns\nexactly this unit now; for a unit with `refuse:\nquote_not_distinguishable`, one that names it among the units it\ncannot be told apart from.",
+      "$ref": "#/$defs/Selector"
+    },
+    "text": {
+      "description": "The unit's content. In `resolve` only.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "key",
+    "kind",
+    "fp",
+    "sel"
+  ],
+  "$defs": {
+    "Fingerprint": {
+      "type": "string",
+      "pattern": "^b3:[a-z][a-z0-9-]*:[0-9a-f]{32,64}$"
+    },
+    "Identity": {
+      "description": "How a unit returned without `approx` was resolved, when not by its full\nselector (section 6.7).",
+      "oneOf": [
+        {
+          "description": "By its symbol alone: the selector's stored quote is no longer in the\nresource.",
+          "type": "string",
+          "const": "symbol"
+        }
+      ]
+    },
+    "Range": {
+      "description": "A unit's place in a text resource (section 4.2): UTF-8 byte offsets,\n`start` inclusive, `end` exclusive, 1-based lines.",
+      "type": "object",
+      "properties": {
+        "end": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "endLine": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "start": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "line",
+        "endLine"
+      ]
+    },
+    "Refuse": {
+      "description": "Why a resolution must not be used to create a claim or replace a side.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "quote_spans_units",
+            "quote_in_comment"
+          ]
+        },
+        {
+          "description": "The anchored text is identical, with identical in-unit windows, to\nanother place in the same container (section 6.7).",
+          "type": "string",
+          "const": "quote_not_distinguishable"
+        }
+      ]
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 2
+        },
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "prefix": {
+          "description": "Up to 48 characters of the unit's own text before the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "quote": {
+          "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
+          "type": "string",
+          "maxLength": 2048,
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters of the unit's own text after the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource, as typed.",
+          "type": "string",
+          "minLength": 1
+        },
+        "within": {
+          "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "dependentRequired": {
+        "prefix": [
+          "quote"
+        ],
+        "suffix": [
+          "quote"
+        ],
+        "within": [
+          "quote"
+        ]
+      },
+      "dependentSchemas": {
+        "count": {
+          "anyOf": [
+            {
+              "required": [
+                "symbol"
+              ]
+            },
+            {
+              "required": [
+                "within"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

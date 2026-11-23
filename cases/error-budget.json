@@ -1,0 +1,128 @@
+[
+  {
+    "name": "length 10",
+    "input": {
+      "quoteLength": 10
+    },
+    "expected": 4,
+    "source": "test/algo.test.ts › fixed resolution parameters › the fuzzy error budget is 40% of the quote length, capped at 256",
+    "origin": "copied"
+  },
+  {
+    "name": "length 1000 hits the cap",
+    "input": {
+      "quoteLength": 1000
+    },
+    "expected": 256,
+    "source": "test/algo.test.ts › fixed resolution parameters › the fuzzy error budget is 40% of the quote length, capped at 256",
+    "origin": "copied"
+  },
+  {
+    "name": "length 0",
+    "input": {
+      "quoteLength": 0
+    },
+    "expected": 0,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 1",
+    "input": {
+      "quoteLength": 1
+    },
+    "expected": 0,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 2",
+    "input": {
+      "quoteLength": 2
+    },
+    "expected": 0,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 3",
+    "input": {
+      "quoteLength": 3
+    },
+    "expected": 1,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 5",
+    "input": {
+      "quoteLength": 5
+    },
+    "expected": 2,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 7",
+    "input": {
+      "quoteLength": 7
+    },
+    "expected": 2,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 8",
+    "input": {
+      "quoteLength": 8
+    },
+    "expected": 3,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 32",
+    "input": {
+      "quoteLength": 32
+    },
+    "expected": 12,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 33",
+    "input": {
+      "quoteLength": 33
+    },
+    "expected": 13,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 639",
+    "input": {
+      "quoteLength": 639
+    },
+    "expected": 255,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 640",
+    "input": {
+      "quoteLength": 640
+    },
+    "expected": 256,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "length 641",
+    "input": {
+      "quoteLength": 641
+    },
+    "expected": 256,
+    "source": "computed: src/algo/params.ts fuzzyErrorBudget",
+    "origin": "computed"
+  }
+]

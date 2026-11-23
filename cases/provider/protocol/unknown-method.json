@@ -1,0 +1,40 @@
+{
+  "name": "an unknown method is unknown_method with the request's id",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "frobnicate",
+        "params": {}
+      },
+      "expect": {
+        "id": 2,
+        "error": {
+          "code": "unknown_method",
+          "message": "<string>"
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

@@ -1,0 +1,44 @@
+{
+  "name": "render on a locator that is not in the fixture is not_found",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "render",
+        "params": {
+          "loc": "ref:absent",
+          "unit": "n1"
+        }
+      },
+      "expect": {
+        "id": 2,
+        "error": {
+          "code": "not_found",
+          "message": "<string>"
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

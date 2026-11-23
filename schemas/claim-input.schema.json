@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi claim --stdin input",
+  "description": "Standard input of `claim --stdin`: a non-empty array of claims.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/ClaimInput"
+  },
+  "minItems": 1,
+  "$defs": {
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "AnchorInput": {
+      "description": "An anchor as a caller gives it: compact syntax (section 5.5) or the\nJSON object of section 5.3. A string whose first character after white\nspace is `{` is that JSON object written as text, on the command line\nand in a standard-input document alike: it is how the `anchor` of a\ncandidate is given back.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/Anchor"
+        }
+      ]
+    },
+    "ClaimInput": {
+      "description": "One claim to create: the arguments of `hibi claim`, or one element of\nits standard-input array.",
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "evidence": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AnchorInput"
+          }
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "recheck": {
+          "description": "A duration in the grammar of section 9.4, for example `P90D`.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "pattern": "^P(?=[0-9]|T[0-9])([0-9]+Y)?([0-9]+M)?([0-9]+W)?([0-9]+D)?(T(?=[0-9])([0-9]+H)?([0-9]+M)?([0-9]+S)?)?$"
+        },
+        "statement": {
+          "description": "Not empty after trimming.",
+          "type": "string",
+          "minLength": 1
+        },
+        "subject": {
+          "$ref": "#/$defs/AnchorInput"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "statement",
+        "subject"
+      ]
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^(?:file:(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|repo:[a-z0-9][a-z0-9-]*//(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|(?!file:|repo:)[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+)$"
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 2
+        },
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "prefix": {
+          "description": "Up to 48 characters of the unit's own text before the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "quote": {
+          "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
+          "type": "string",
+          "maxLength": 2048,
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters of the unit's own text after the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource, as typed.",
+          "type": "string",
+          "minLength": 1
+        },
+        "within": {
+          "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "dependentRequired": {
+        "prefix": [
+          "quote"
+        ],
+        "suffix": [
+          "quote"
+        ],
+        "within": [
+          "quote"
+        ]
+      },
+      "dependentSchemas": {
+        "count": {
+          "anyOf": [
+            {
+              "required": [
+                "symbol"
+              ]
+            },
+            {
+              "required": [
+                "within"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

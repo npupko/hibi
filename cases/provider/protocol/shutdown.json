@@ -1,0 +1,27 @@
+{
+  "name": "the provider exits with status 0 when its standard input is closed",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

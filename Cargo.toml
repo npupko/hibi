@@ -1,0 +1,52 @@
+[workspace]
+resolver = "3"
+members = ["crates/hibi", "crates/hibi-cli", "crates/hibi-provider-reference"]
+
+[workspace.package]
+version = "5.0.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+repository = "https://github.com/npupko/hibi"
+
+# Versions are spec section 2.6. Grammar crates are pinned with `=` because
+# they are part of the `ast-v1` definition (section 8.4).
+[workspace.dependencies]
+hibi = { path = "crates/hibi", version = "5.0.0", default-features = false }
+
+tree-sitter = "0.27.2"
+tree-sitter-typescript = "=0.23.2"
+tree-sitter-python = "=0.25.0"
+tree-sitter-rust = "=0.24.2"
+tree-sitter-go = "=0.25.0"
+tree-sitter-java = "=0.23.5"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+toml = "1.2.1"
+serde_json_canonicalizer = "0.4.1"
+schemars = "1.2.3"
+clap = { version = "4.6.9", features = ["derive"] }
+clap_complete = "4.6.12"
+blake3 = "1.8.7"
+sha1 = "0.11.0"
+data-encoding = "2.11.1"
+unicode-normalization = "0.1.26"
+jiff = "1.0.1"
+globset = "0.4.21"
+etcetera = "0.11.0"
+rusqlite = { version = "0.43.0", features = ["bundled"] }
+ureq = "3.5.2"
+wait-timeout = "0.2.1"
+thiserror = "2.0.21"
+insta = { version = "1.49.0", features = ["json"] }
+tempfile = "3.27.0"
+# Unix only: the O_NOFOLLOW constant for store files (section 12.4).
+libc = "0.2.191"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

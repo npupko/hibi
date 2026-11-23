@@ -1,0 +1,82 @@
+[
+  {
+    "name": "one substitution in 10 is inside",
+    "input": {
+      "located": "abcdefghix",
+      "exact": "abcdefghij"
+    },
+    "expected": true,
+    "source": "test/algo.test.ts › fixed resolution parameters › withinErrorBudget accepts a span inside the budget and rejects one outside it",
+    "origin": "copied"
+  },
+  {
+    "name": "all substituted is outside",
+    "input": {
+      "located": "zzzzzzzzzz",
+      "exact": "abcdefghij"
+    },
+    "expected": false,
+    "source": "test/algo.test.ts › fixed resolution parameters › withinErrorBudget accepts a span inside the budget and rejects one outside it",
+    "origin": "copied"
+  },
+  {
+    "name": "4 edits of 10 is inside (budget 4)",
+    "input": {
+      "located": "abcdefwxyz",
+      "exact": "abcdefghij"
+    },
+    "expected": true,
+    "source": "computed: src/algo/localize.ts withinErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "5 edits of 10 is outside (budget 4)",
+    "input": {
+      "located": "abcdevwxyz",
+      "exact": "abcdefghij"
+    },
+    "expected": false,
+    "source": "computed: src/algo/localize.ts withinErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "whitespace-only difference is equal after normalization",
+    "input": {
+      "located": "MAX  =\n  5",
+      "exact": "MAX = 5"
+    },
+    "expected": true,
+    "source": "computed: src/algo/localize.ts withinErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "budget uses the normalized quote length",
+    "input": {
+      "located": "a b c d e",
+      "exact": "a      b      c      d      e"
+    },
+    "expected": true,
+    "source": "computed: src/algo/localize.ts withinErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "quote of 2 chars has budget 0",
+    "input": {
+      "located": "ab",
+      "exact": "ac"
+    },
+    "expected": false,
+    "source": "computed: src/algo/localize.ts withinErrorBudget",
+    "origin": "computed"
+  },
+  {
+    "name": "empty located vs short quote",
+    "input": {
+      "located": "",
+      "exact": "abc"
+    },
+    "expected": false,
+    "source": "computed: src/algo/localize.ts withinErrorBudget",
+    "origin": "computed"
+  }
+]

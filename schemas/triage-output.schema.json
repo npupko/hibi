@@ -1,0 +1,304 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi triage output",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "command": {
+      "type": "string"
+    },
+    "considered": {
+      "description": "The number of ranked items before the cut.",
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0
+    },
+    "items": {
+      "description": "Ordered by `checkable` descending, then locator, start offset and\nkey; cut to `--limit`.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TriageItem"
+      }
+    },
+    "model": {
+      "description": "The model id the answers come from.",
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean",
+      "const": true
+    },
+    "skipped": {
+      "description": "Uncovered units that were not sent: not prose served by the file\nprovider, not in a file list (section 14.2), or not renderable.",
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "model",
+    "items",
+    "considered",
+    "skipped",
+    "warnings"
+  ],
+  "$defs": {
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "Band": {
+      "description": "`band` of a triage item.",
+      "oneOf": [
+        {
+          "description": "`checkable >= 0.7`.",
+          "type": "string",
+          "const": "likely"
+        },
+        {
+          "description": "Between the two thresholds.",
+          "type": "string",
+          "const": "unsure"
+        },
+        {
+          "description": "`checkable <= 0.3`.",
+          "type": "string",
+          "const": "unlikely"
+        }
+      ]
+    },
+    "EvidenceLabel": {
+      "description": "`evidence` of a triage item: the chosen option when its probability is\nat least 0.6, otherwise `unsure`.",
+      "type": "string",
+      "enum": [
+        "code",
+        "config",
+        "doc",
+        "external",
+        "none",
+        "unsure"
+      ]
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^(?:file:(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|repo:[a-z0-9][a-z0-9-]*//(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|(?!file:|repo:)[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+)$"
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 2
+        },
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "prefix": {
+          "description": "Up to 48 characters of the unit's own text before the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "quote": {
+          "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
+          "type": "string",
+          "maxLength": 2048,
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters of the unit's own text after the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource, as typed.",
+          "type": "string",
+          "minLength": 1
+        },
+        "within": {
+          "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "dependentRequired": {
+        "prefix": [
+          "quote"
+        ],
+        "suffix": [
+          "quote"
+        ],
+        "within": [
+          "quote"
+        ]
+      },
+      "dependentSchemas": {
+        "count": {
+          "anyOf": [
+            {
+              "required": [
+                "symbol"
+              ]
+            },
+            {
+              "required": [
+                "within"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "TriageItem": {
+      "description": "One entry of `items` in the output of `triage`.",
+      "type": "object",
+      "properties": {
+        "anchor": {
+          "description": "The unit's locator with its printed selector, to give to `claim`.\n`null` when no anchor selects this unit alone (it is identical to\nanother unit where it stands).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "band": {
+          "$ref": "#/$defs/Band"
+        },
+        "checkable": {
+          "description": "The Noul probability that the text states a checkable fact.",
+          "type": "number",
+          "format": "double"
+        },
+        "evidence": {
+          "$ref": "#/$defs/EvidenceLabel"
+        },
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "text": {
+          "description": "The unit text cut to 240 characters.",
+          "type": "string"
+        },
+        "unit": {
+          "$ref": "#/$defs/UnitRef"
+        }
+      },
+      "required": [
+        "loc",
+        "unit",
+        "text",
+        "anchor",
+        "checkable",
+        "band",
+        "evidence"
+      ]
+    },
+    "UnitRef": {
+      "description": "UnitRef of section 15.2. `label` is `null` when the provider gave none;\n`line` and `endLine` are `null` without a range.",
+      "type": "object",
+      "properties": {
+        "endLine": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "kind",
+        "label",
+        "line",
+        "endLine"
+      ]
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old",
+        "unknown_kind"
+      ]
+    }
+  }
+}

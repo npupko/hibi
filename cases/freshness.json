@@ -1,0 +1,1479 @@
+[
+  {
+    "name": "one matching mark, no recheck: fresh",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "fresh",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the mark matches (side 0 resolves to a unit with the marked fingerprint), so row 2 does not apply; recheck is null, row 3: fresh. 9.2 second table: equal fingerprint is same, no reason.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "no mark: stale, side changed with no_mark",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": null,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "changed",
+          "reason": "no_mark"
+        }
+      ]
+    },
+    "source": "SPEC 9.3 note: a claim with no mark is stale; there is no reference mark. 9.2 second table, first row: changed, no_mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "fingerprint differs within one profile: stale, changed",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "changed",
+          "reason": "fingerprint_differs"
+        }
+      ]
+    },
+    "source": "SPEC 9.3 row 2: no mark matches, stale. Reference mark: the mark with the latest at. 9.2: same profile, different: changed, fingerprint_differs.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "marked ast-v1, current prose-v1: unavailable, profile_mismatch",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:ast-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "profile_mismatch"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 second table, last row: different profile is unavailable with profile_mismatch, never changed (R17). No mark matches: stale.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "an older mark matches, the newest does not: fresh",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        {
+          "at": "2026-02-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "fresh",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3 notes: any matching mark is enough, not only the newest (R14). Reference mark: the matching mark with the latest at, here the older one.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "no mark matches: the reference is the mark with the latest at",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        {
+          "at": "2026-02-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:cccccccccccccccccccccccccccccccc"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 1,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "changed",
+          "reason": "fingerprint_differs"
+        }
+      ]
+    },
+    "source": "SPEC 9.3: no mark matches, stale; the reference mark is then the mark with the latest at (the second). Side: B marked, C now: changed.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "two marks match: the reference is the later matching one",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        {
+          "at": "2026-02-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        {
+          "at": "2026-03-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "fresh",
+      "mark": 1,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: reference mark is the matching mark with the latest at; the third mark is later but does not match.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "marks tied on at and none matching: the reference is the greater id",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:cccccccccccccccccccccccccccccccc"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": {
+        "greaterIdOf": [
+          0,
+          1
+        ]
+      },
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "changed",
+          "reason": "fingerprint_differs"
+        }
+      ]
+    },
+    "source": "SPEC 9.3: ties on at go to the greater id. The two marks differ in their side fingerprint, so they have different ids; the binding compares the derived ids.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "recheck P1D, one second before the boundary: fresh",
+    "input": {
+      "recheck": "P1D",
+      "retired": false,
+      "now": "2026-01-01T23:59:59Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "fresh",
+      "mark": 0,
+      "expiresAt": "2026-01-02T00:00:00Z",
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3 row 4: now < add(m.at, recheck) = 2026-01-02T00:00:00Z, fresh (R18). 15.2: expiresAt is add(markedAt, recheck) for a fresh claim with recheck.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "recheck P1D, at the boundary: expired",
+    "input": {
+      "recheck": "P1D",
+      "retired": false,
+      "now": "2026-01-02T00:00:00Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "expired",
+      "mark": 0,
+      "expiresAt": "2026-01-02T00:00:00Z",
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the boundary is inclusive; at now == add(m.at, recheck) the claim is expired (R18). The side is still same.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "recheck P1M from Jan 31: expires on Feb 28",
+    "input": {
+      "recheck": "P1M",
+      "retired": false,
+      "now": "2026-02-28T09:59:59Z",
+      "marks": [
+        {
+          "at": "2026-01-31T10:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "fresh",
+      "mark": 0,
+      "expiresAt": "2026-02-28T10:00:00Z",
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.4 step 1: one month after 2026-01-31 is February, which is shorter, so its last day: 2026-02-28T10:00:00Z. One second before that instant the claim is fresh.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "an expired matching mark and a live matching mark: fresh",
+    "input": {
+      "recheck": "P10D",
+      "retired": false,
+      "now": "2026-01-12T00:00:00Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        {
+          "at": "2026-01-08T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "fresh",
+      "mark": 1,
+      "expiresAt": "2026-01-18T00:00:00Z",
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3 row 4: some matching mark has now < add(at, P10D): the second, 2026-01-08 + 10 days = 2026-01-18 > 2026-01-12. Reference: the latest matching mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "a live mark that does not match does not keep the claim fresh",
+    "input": {
+      "recheck": "P1D",
+      "retired": false,
+      "now": "2026-01-08T12:00:00Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        {
+          "at": "2026-01-08T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "expired",
+      "mark": 0,
+      "expiresAt": "2026-01-02T00:00:00Z",
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3 row 4 counts matching marks only: the matching mark of 2026-01-01 ran out on 2026-01-02; the mark of 2026-01-08 does not match. Expired. Reference: the latest matching mark, the first.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "stale comes before expired, and has no expiresAt",
+    "input": {
+      "recheck": "P1D",
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "changed",
+          "reason": "fingerprint_differs"
+        }
+      ]
+    },
+    "source": "SPEC 9.3 row 2 is tested before rows 4 and 5: no mark matches, stale, although the recheck time has passed. 15.2: expiresAt is null unless fresh or expired.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "retired: no sides, whatever the content",
+    "input": {
+      "recheck": "P1D",
+      "retired": true,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        {
+          "at": "2026-02-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": []
+    },
+    "expected": {
+      "state": "retired",
+      "mark": 1,
+      "expiresAt": null,
+      "sides": []
+    },
+    "source": "SPEC 9.3 row 1: a retirement makes the claim retired; its sides are not resolved, so the result has none. No mark can match, so the reference is the mark with the latest at.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "retired with no mark",
+    "input": {
+      "recheck": null,
+      "retired": true,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [],
+      "sides": []
+    },
+    "expected": {
+      "state": "retired",
+      "mark": null,
+      "expiresAt": null,
+      "sides": []
+    },
+    "source": "SPEC 9.3 row 1; there is no mark, so no reference mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "two sides, one changed: stale",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "unit": "b3:prose-v1:cccccccccccccccccccccccccccccccc"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        },
+        {
+          "state": "changed",
+          "reason": "fingerprint_differs"
+        }
+      ]
+    },
+    "source": "SPEC 9.3: a mark matches only when every side matches. Side 0 same, side 1 changed (B marked, C now).",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "sides that match different marks do not add up to a match",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "at": "2026-02-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:dddddddddddddddddddddddddddddddd"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "unit": "b3:prose-v1:dddddddddddddddddddddddddddddddd"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 1,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "changed",
+          "reason": "fingerprint_differs"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: side 0 equals the first mark and side 1 equals the second, but no single mark matches every side: stale. Reference: the latest mark, the second, so side 0 (C marked, A now) is changed and side 1 (D marked, D now) is same.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "one side resolves to no unit: stale, the other side still same",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "units": 0
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        },
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table: no unit is missing, selector_not_found. A mark matches only when every side resolves to a unit: stale.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: the scheme is not declared: unavailable, scheme_not_declared",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "noProvider": "scheme_not_declared"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "scheme_not_declared"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: the scheme has no registered command: unavailable, provider_not_registered",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "noProvider": "provider_not_registered"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "provider_not_registered"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error failed: unavailable, provider_failed",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "failed"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "provider_failed"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error not_found: missing, resource_not_found",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "not_found"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "resource_not_found"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error not_text: unavailable, not_text",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "not_text"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "not_text"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error too_large: unavailable, too_large",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "too_large"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "too_large"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error repo_not_found: unavailable, repo_not_found",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "repo_not_found"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "repo_not_found"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error repo_not_allowed: unavailable, repo_not_allowed",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "repo_not_allowed"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "repo_not_allowed"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error invalid_request: unavailable, provider_error",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "invalid_request"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "provider_error"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error unknown_method: unavailable, provider_error",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "unknown_method"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "provider_error"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error invalid_locator: unavailable, selector_refused",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "invalid_locator"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "selector_refused"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error invalid_selector: unavailable, selector_refused",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "invalid_selector"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "selector_refused"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error unavailable: unavailable, resource_unavailable",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "unavailable"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "resource_unavailable"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: provider error internal: unavailable, provider_error",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "error": "internal"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "provider_error"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: a returned unit fails validation: unavailable, provider_error",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "invalidUnit": true
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "unavailable",
+          "reason": "provider_error"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "9.2: several units: ambiguous, several_units",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 2
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "ambiguous",
+          "reason": "several_units"
+        }
+      ]
+    },
+    "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "recheck whose expiry is past the last representable instant: fresh, expiresAt null",
+    "input": {
+      "recheck": "P1D",
+      "retired": false,
+      "now": "9999-12-31T23:59:59Z",
+      "marks": [
+        {
+          "at": "9999-12-31T12:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "fresh",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3 and 9.4: the mark matches. add(mark.at, P1D) would be 10000-01-01T12:00:00Z, past 9999-12-31T23:59:59Z, so the expiry is never reached and row 4 holds for every now: fresh. 15.2: expiresAt is add(markedAt, recheck), which has no value here: null.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "not fresh: the reference is the mark that matches the most sides, not the latest",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "at": "2026-02-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:dddddddddddddddddddddddddddddddd"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 0
+        },
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the reference mark of a claim that is not fresh is the mark that matches the most sides as they resolve now; ties go to the later at, then the greater id. The earlier mark matches the second side; the later mark matches none.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "not fresh, marks tied on at: the mark that matches more sides, first of the two",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:dddddddddddddddddddddddddddddddd"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 0
+        },
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the reference mark of a claim that is not fresh is the mark that matches the most sides as they resolve now; ties go to the later at, then the greater id. The ids do not decide: this case and the next give the matching mark both positions.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "not fresh, marks tied on at: the mark that matches more sides, second of the two",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:dddddddddddddddddddddddddddddddd"
+          ]
+        },
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 0
+        },
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 1,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the reference mark of a claim that is not fresh is the mark that matches the most sides as they resolve now; ties go to the later at, then the greater id. The ids do not decide: this case and the previous one give the matching mark both positions.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "not fresh, marks tied on matched sides and on at: the greater id",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 0
+        },
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": {
+        "greaterIdOf": [
+          0,
+          1
+        ]
+      },
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the reference mark of a claim that is not fresh is the mark that matches the most sides as they resolve now; ties go to the later at, then the greater id. Both marks match the second side only.",
+    "origin": "spec-derived"
+  }
+]

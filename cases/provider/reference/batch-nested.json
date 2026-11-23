@@ -1,0 +1,133 @@
+{
+  "name": "hello and batch inside a batch are invalid_request whatever their params",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "batch",
+        "params": {
+          "requests": [
+            {
+              "method": "hello",
+              "params": {
+                "protocol": [
+                  1
+                ],
+                "client": {
+                  "name": "conformance",
+                  "version": "0"
+                },
+                "root": "."
+              }
+            },
+            {
+              "method": "hello",
+              "params": {}
+            },
+            {
+              "method": "batch",
+              "params": {
+                "requests": []
+              }
+            },
+            {
+              "method": "batch",
+              "params": {
+                "requests": [
+                  {
+                    "method": "resolve",
+                    "params": {
+                      "loc": "ref:notes",
+                      "sel": {
+                        "key": "n1"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "method": "resolve",
+              "params": {
+                "loc": "ref:notes",
+                "sel": {
+                  "key": "n1"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "responses": [
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            },
+            {
+              "result": {
+                "units": [
+                  {
+                    "key": "n1",
+                    "kind": "note",
+                    "parent": null,
+                    "label": "Retries are capped at 5.",
+                    "fp": "<fingerprint>",
+                    "sel": {
+                      "key": "n1"
+                    },
+                    "text": "Retries are capped at 5."
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

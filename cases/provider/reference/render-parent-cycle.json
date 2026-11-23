@@ -1,0 +1,81 @@
+{
+  "name": "render stops a parent chain that comes back to a unit",
+  "fixture": "cycle.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "render",
+        "params": {
+          "loc": "ref:cycle",
+          "unit": "a"
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "text": "Unit a.",
+          "context": [
+            "Unit b."
+          ]
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "units",
+        "params": {
+          "loc": "ref:cycle"
+        }
+      },
+      "expect": {
+        "id": 3,
+        "result": {
+          "units": [
+            {
+              "key": "a",
+              "kind": "note",
+              "parent": "b",
+              "label": "Unit a.",
+              "fp": "<fingerprint>",
+              "sel": {
+                "key": "a"
+              }
+            },
+            {
+              "key": "b",
+              "kind": "note",
+              "parent": "a",
+              "label": "Unit b.",
+              "fp": "<fingerprint>",
+              "sel": {
+                "key": "b"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

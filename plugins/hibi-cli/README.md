@@ -1,35 +1,54 @@
-# hibi-cli: Claude Code plugin
+# hibi-cli plugin for Claude Code
 
-A Claude Code [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches coding agents to use the [hibi](https://github.com/npupko/hibi) CLI ([docs](https://hibi.mintlify.app)). hibi tracks checkable sentences (claims) in any document: READMEs, `CLAUDE.md`, process pages, pricing and marketing pages, decision records. Evidence can be code, another document, or something only an agent with tools can reach. The skill covers `init`, `audit --doc` to find what to record, `record` for `code`, `reference`, and `attested` claims, `check --doc` before trusting a document and `check --since` after a change, the worklist and `evidence` loop with the TypeSafe judge, `attest`, contradictions, expired claims, `reanchor` and `retire`, and CI.
+This plugin bundles the `hibi` Agent Skill. The skill teaches Claude Code to
+use [hibi](https://github.com/npupko/hibi) as memory across sessions:
 
-## Install
+- run `hibi status` at the start of a session and re-check each stale claim;
+- record the result with `hibi mark`, `hibi reanchor` or `hibi retire`, and
+  ask the user when it cannot tell whether a document or the code is right;
+- record new checks with `hibi claim`;
+- find units with no claim with `hibi cover`, and limit both reports to a
+  branch with `--since`.
 
-From inside Claude Code:
+The plugin does not install hibi. Install the binary first; see the
+[quickstart](https://hibi.mintlify.app/quickstart).
 
-```
+## Install the plugin
+
+In Claude Code:
+
+```text
 /plugin marketplace add npupko/hibi
 /plugin install hibi-cli@hibi
 ```
 
-To pull the latest version after the repo changes, run `claude plugin update hibi-cli@hibi` in your shell, or select **Update now** on the plugin in the **Installed** tab of `/plugin`.
+## Contents
 
-## What's inside
+| Path | What it is |
+|---|---|
+| `skills/hibi/SKILL.md` | The skill: when to use hibi, the session loop, reading `next`, anchors, batches |
+| `skills/hibi/references/cookbook.md` | Worked tasks with real commands and outputs |
+| `skills/hibi/references/cli-reference.md` | Every command and option. Generated from the code by `cargo run -p hibi-cli --example cli-reference`; do not edit by hand |
 
-```
-plugins/hibi-cli/
-├── .claude-plugin/plugin.json
-└── skills/
-    └── hibi/
-        ├── SKILL.md                     # the skill (auto-discovered on install)
-        ├── references/cli-reference.md  # generated from src/cli/options.ts
-        ├── references/cookbook.md       # eight worked recipes with JSON
-        └── assets/hibi-ci.yml           # drop-in GitHub Actions workflow
-```
+## Permissions
 
-Claude loads the skill when you ask whether a document is still true, before it relies on `CLAUDE.md` or `AGENTS.md`, after a feature, when docs or a knowledge repo drift, when documents contradict each other, or when you mention claims or `.claims/`. You can also invoke it as `/hibi-cli:hibi`.
+The skill's `allowed-tools` lists `hibi status`, `hibi list`, `hibi cover`,
+`hibi providers`, `hibi version` and `hibi schema`. Claude Code runs those
+without asking only during the turn that invokes the skill; the grant clears
+when you send your next message. Commands that write to `.hibi/` ask for
+permission as usual.
 
-The skill pre-approves `hibi check`, `hibi list`, `hibi audit`, and their `bunx @npupko/hibi` forms; they write nothing except judge cache entries. Mutating verbs prompt for permission. The judge needs `TYPESAFE_API_KEY`; without it, uncached judgments are `pending` and nothing fails.
+Two of the listed commands can do more than read, because an allow rule
+matches any arguments after the command name and cannot exclude a flag:
 
-## Develop
+- `hibi status --judge-order` sends claim statements and the text of their
+  sides to TypeSafe's API. It needs `TYPESAFE_API_KEY`, so it fails without
+  the key.
+- `hibi providers --check <scheme>` starts the provider program registered
+  in your user config.
 
-The canonical skill source lives in the hibi repo. Edit `skills/hibi/SKILL.md`, `references/cookbook.md`, or `assets/`, commit, and users get it when they update the plugin. Do not edit `references/cli-reference.md` by hand; run `bun run build:cli-reference` at the repo root.
+The skill tells the agent to run either only when you ask. Claude Code
+permission settings can also hold deny rules such as
+`Bash(hibi status --judge-order:*)`; deny rules are evaluated before allow
+rules, but a rule matches the command words as written, so it does not catch
+the flag in another position.

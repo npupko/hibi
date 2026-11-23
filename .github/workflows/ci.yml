@@ -5,62 +5,185 @@ on:
     branches: [main]
   pull_request:
 
-# Least-privilege default; no job in this workflow needs write scopes.
+# No job in this workflow writes to the repository.
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # On pull requests a new push cancels the older run; every push to main
+  # runs to the end.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  lint:
+  fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51 # v2.7.1
         with:
-          version: 2.5.13 # keep in lockstep with the @biomejs/biome devDependency
-      - run: biome ci . # read-only; emits GitHub annotations
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          components: rustfmt
+          cache: false
+      - run: cargo fmt --all --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          components: clippy
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      # `-p hibi`, not `--workspace`, for the reason given in the test job.
+      - name: Lint the library with its features off
+        run: cargo clippy -p hibi --no-default-features --all-targets -- -D warnings
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-      - run: bun install --frozen-lockfile
-      - run: bun run build:grammars
-      - name: Typecheck
-        run: bunx tsc --noEmit
-      - name: Test
-        run: bun test
-      - name: Schemas are up to date
-        run: |
-          bun run build:schemas
-          git diff --exit-code schemas/ || (echo "schemas/ is stale — run bun run build:schemas" && exit 1)
-      - name: CLI reference and completions are generated from the option tables
-        run: |
-          bun run build:cli-reference
-          git diff --exit-code docs/cli-reference.mdx plugins/hibi-cli/skills/hibi/references/cli-reference.md || (echo "generated CLI reference is stale — run bun run build:cli-reference" && exit 1)
-      # .claims/judge/ is a local cache and is not committed; restore it
-      # between runs, keyed on the claim files.
-      - name: Restore the judge cache
-        uses: actions/cache@v4
         with:
-          path: .claims/judge
-          key: hibi-judge-${{ hashFiles('.claims/claims/**') }}
-          restore-keys: hibi-judge-
-      # Dogfood: hibi checks its own docs against its own code. With the
-      # TYPESAFE_API_KEY secret set, judgments missing from the cache are
-      # asked and gate as the spec says (refuted, and a conflict at or above
-      # the threshold, gate). Without it they are pending, which warns and
-      # never gates. Changed, orphaned, or ambiguous anchors gate either way,
-      # and under --doc an expired claim gates too.
-      - name: Claims in .claims/ hold (whole store)
-        env:
-          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
-        run: bun run src/cli/index.ts check --fail-on gating --json
-      - name: README.md claims hold (doc gate; README has only code and reference claims)
-        env:
-          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
-        run: bun run src/cli/index.ts check --doc README.md --fail-on gating --json
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo test --workspace
+      # `-p hibi`, not `--workspace`: hibi-cli enables every feature, and a
+      # workspace build would unify them back on.
+      - name: Build the library with its features off
+        run: cargo build -p hibi --no-default-features
+      - name: Test the library with its features off
+        run: cargo test -p hibi --no-default-features
+
+  # Builds and tests the library with one optional feature on and the others
+  # off, for each feature in turn. One job with a loop, not a matrix: the five
+  # runs share one runner, one cache entry and one target directory, so the
+  # dependencies they have in common are compiled once.
+  features:
+    name: single features
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      # The step stops at the first command that fails. The log group that is
+      # open at that point names the feature.
+      - name: Build and test the library with each single feature
+        run: |
+          for f in file git-store command cache judge; do
+            echo "::group::cargo build -p hibi --no-default-features --features $f"
+            cargo build -p hibi --no-default-features --features "$f"
+            echo "::endgroup::"
+            echo "::group::cargo test -p hibi --no-default-features --features $f"
+            cargo test -p hibi --no-default-features --features "$f"
+            echo "::endgroup::"
+          done
+
+  # Minimum supported Rust version, from `rust-version` in Cargo.toml.
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: "1.90"
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo check --workspace --all-targets --locked
+
+  schemas:
+    name: schema drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo run -p hibi-cli --example write-schemas
+      - name: schemas/ matches the generator
+        run: |
+          git add --all schemas/
+          if ! git diff --exit-code HEAD -- schemas/; then
+            echo "::error::schemas/ is out of date. Run: cargo run -p hibi-cli --example write-schemas"
+            exit 1
+          fi
+
+  cli-reference:
+    name: CLI-reference drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo run -p hibi-cli --example cli-reference
+      - name: plugins/hibi-cli/skills/hibi/references/cli-reference.md matches the generator
+        run: |
+          git add --all plugins/hibi-cli/skills/hibi/references/cli-reference.md
+          if ! git diff --exit-code HEAD -- plugins/hibi-cli/skills/hibi/references/cli-reference.md; then
+            echo "::error::The CLI reference is out of date. Run: cargo run -p hibi-cli --example cli-reference"
+            exit 1
+          fi
+
+  # Prints what hibi reports about this repository's own claims. The job is
+  # report-only: each step prints hibi's output and passes whatever hibi's
+  # exit status is. A non-zero status, such as `hibi cover` exiting 1 with
+  # `no_scopes` while the store has no scopes, is printed and raised as a
+  # warning annotation.
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo build -p hibi-cli
+      - name: hibi status
+        run: |
+          if [ ! -d .hibi ]; then
+            echo "::notice::This repository has no .hibi/ store yet, so there is nothing to report."
+            exit 0
+          fi
+          code=0
+          ./target/debug/hibi status --format human || code=$?
+          echo "hibi status exited with status $code"
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::hibi status exited with status $code; this job is report-only and passes."
+          fi
+      - name: hibi cover
+        run: |
+          if [ ! -d .hibi ]; then
+            echo "::notice::This repository has no .hibi/ store yet, so there is nothing to report."
+            exit 0
+          fi
+          code=0
+          ./target/debug/hibi cover --format human || code=$?
+          echo "hibi cover exited with status $code"
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::hibi cover exited with status $code; this job is report-only and passes."
+          fi

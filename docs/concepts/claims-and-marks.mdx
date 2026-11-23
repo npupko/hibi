@@ -1,0 +1,282 @@
+---
+title: "Claims and marks"
+description: "The three records hibi keeps: claims, marks and retirements."
+---
+
+<Note>
+The examples continue the repository from the [quickstart](/quickstart).
+Later in that repository's history `docs/retry.md` gains a section
+`## Timeouts` with the sentence "Each attempt times out after 10 seconds.",
+and the claim `c1-xwck` on its delay sentence is recorded as in the
+[ranges](/ranges) page. Ids are the ones those runs printed.
+</Note>
+
+hibi keeps three kinds of records. None of them is ever edited or deleted.
+
+## Claim
+
+A claim is a statement that was checked, and what it was checked against.
+
+| Field | Meaning |
+|---|---|
+| `statement` | The statement, as text. Stored trimmed. |
+| `subject` | One [anchor](/concepts/anchors): the unit the statement is about, usually the sentence in a document that makes it. |
+| `evidence` | Zero or more anchors: the units that support the statement, usually declarations in code. Order matters; evidence is numbered from 1. The same evidence anchor twice is `invalid_argument`; the subject may also be evidence. |
+| `recheck` | Optional. An ISO 8601 duration such as `P90D` or `P6M`. After this long the claim is expired even if nothing changed. |
+| `note` | Optional. How to check the claim again, or where the truth lives. |
+
+A claim with no evidence is allowed. Its subject alone is fingerprinted, so it
+goes stale when the sentence changes. With a `recheck` period it also expires
+after that time, which suits statements whose truth lives outside the
+repository:
+
+```bash
+hibi claim "Each attempt times out after 10 seconds." \
+  --subject "file:docs/retry.md::times out after 10 seconds" \
+  --recheck P90D \
+  --note "The timeout is set by the HTTP client defaults; check its release notes."
+```
+
+The "sides" of a claim are its subject (side 0) and its evidence (side 1, 2
+and so on).
+
+## Mark
+
+A mark records that the claim was checked: the time (`at`), optionally who
+(`by`) and a `note`, and the fingerprint of every side as it was at that
+moment. `hibi claim` writes the first mark itself. `hibi mark` adds another
+after a re-check. A claim can have any number of marks.
+
+```bash
+hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
+```
+
+```text output
+c1-xwck2bdefbx39g56m7dn  marked  m1-bsymx580snhj8rg69njf
+  was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked it
+    evidence 1 is now:
+    | pub fn delay_ms(n: u32) -> u64 {
+    |     200 << n
+    | }
+```
+
+`mark` requires every side to resolve to exactly one unit, exactly. A side
+that is missing or matches several units makes the command fail with
+`side_missing` or `side_ambiguous`; use `reanchor` to point that side at the
+right unit. That includes a side whose stored anchor is no longer found
+exactly: `mark` never follows a candidate.
+
+`mark` prints which sides were not the same, not what changed in them. Read
+the change, for example with `git diff`, before you mark.
+
+## Retirement
+
+A retirement records that a claim no longer applies. It is permanent. A
+retired claim stays in the store, is no longer evaluated, and no longer covers
+anything.
+
+```bash
+hibi retire c1-2kfx --note "The docs no longer state the attempt limit."
+```
+
+```text output
+c1-2kfx78rwbb7wyxwst92f  retired  r1-rmtzf1pwfkf7mkgrpw1c
+```
+
+`--replaced-by <claim-id>` names the claim that takes the place of the
+retired one. It must be a live claim, not one of those being retired.
+
+## Changing a claim
+
+Claims are immutable. `hibi reanchor` builds a new claim from an old one and,
+in one write, stores the new claim, a mark for it and a retirement of the old
+claim that names the new one in `replacedBy`. Use it to change the statement,
+replace or add or drop an anchor, or change the `recheck` period or the note:
+
+```bash
+hibi reanchor c1-c5dm \
+  --statement "The client gives up after 3 attempts." \
+  --subject "file:docs/retry.md::gives up after 3 attempts"
+```
+
+If the rebuilt claim is the same as another live claim, by the rule of
+[running the same claim again](#running-the-same-claim-again), `reanchor`
+marks that claim and retires the old one into it instead of writing a new
+claim; the JSON result then has `"merged": true` and `new` is the id of the
+existing claim. Like `mark`, the result reports what
+the old claim was before the write.
+
+Without options, `reanchor` resolves every side again and stores each
+selector as it is completed now, with the current text around each quote and
+its current container. Every side must resolve exactly, as
+for `mark`. When nothing changed since the selectors were stored, it writes
+nothing. For a claim in another example repository whose files did not
+change:
+
+```text output
+$ hibi reanchor c1-rp2q
+error: no_change: re-anchoring c1-rp2qmeyffhx5f4vs0sc3 would produce the same claim
+  fix: The stored anchors are up to date. To record a new check, run hibi mark c1-rp2qmeyffhx5f4vs0sc3
+```
+
+Evidence numbers in `--evidence` and `--drop-evidence` are the numbers of
+the old claim. A kept side that does not resolve exactly is named by its old
+number too, also when a lower number is dropped in the same command. Here
+the declaration of evidence 2 was renamed from `RETRIES` to `MAX_RETRIES`:
+
+```text output
+$ hibi reanchor c1-70dn --drop-evidence 1
+error: side_missing: evidence 2 (file:src/limits.py) resolves to no unit (selector_not_found): the selector matches no unit
+  fix: hibi reanchor c1-70dnhqhzcddqnj6ry2dy --drop-evidence 1 --evidence 2=<anchor>
+```
+
+When several kept sides need a new anchor, `reanchor` fails once and names
+all of them. Its fix line repeats your arguments with a placeholder for each
+such side:
+
+```text output
+$ hibi reanchor c1-81kw --statement 'A is 7 and B is 8.'
+error: selector_not_exact: evidence 1 (file:src/ab.py): the stored quote is no longer in this unit, variable "A", line 1; a mark would keep the stale quote; evidence 2 (file:src/ab.py): the stored quote is no longer in this unit, variable "B", line 2; a mark would keep the stale quote
+  fix: hibi reanchor c1-81kwgcjnj5se2rrza1v1 --statement 'A is 7 and B is 8.' --evidence 1=<anchor> --evidence 2=<anchor>
+```
+
+`reanchor` marks every changed side it keeps, not only the side it
+re-points, and prints after "is now:" the text the new claim has for each
+side that was not `same` before the write, re-pointed or not. A side that
+was `same` gets no such text. Because `reanchor`
+writes a mark, run it only after you checked the statement against every
+changed side.
+
+## Ids
+
+Every record has an id derived from its content: `c1-` for a claim, `m1-` for
+a mark, `r1-` for a retirement, followed by 20 characters of a BLAKE3 hash of
+the record. Two consequences:
+
+- A claim with exactly the same statement, stored anchors, `recheck` and `note`
+  is the same claim.
+- A claim with the same body as a retired claim is that retired claim, and
+  `claim` fails with `claim_retired`. The error says whether the claim was
+  retired or replaced by another claim (see
+  [running the same claim again](#running-the-same-claim-again)).
+
+## Running the same claim again
+
+Running the same `hibi claim` again adds a mark to the existing claim and
+prints `marked` instead of `created`. The stored anchors hold the text around
+a quote and its container (see [anchors](/concepts/anchors)), and you may
+write an anchor differently the second time, so the new claim could get a
+different id. hibi therefore looks for a live claim that is the same in
+every other respect: the same statement, `recheck` and `note`, the same
+number of sides with the same locators, and every stored side resolving to
+the same unit as the anchor you gave. Selectors are not compared, so
+`#MAX_ATTEMPTS` and a quote on that constant name the same side, and so do a
+quote and a longer quote in one sentence. If it finds such a claim, it marks
+it (the one whose id is the id the new claim would get, if there is one,
+and otherwise the one with the smallest id) and does not rewrite
+its stored anchors. The result says what the claim was before the mark. This
+is how a stale claim shows up when you claim it again after the function
+changed:
+
+```text output
+$ hibi claim "Old entries are evicted first." --subject "file:docs/cache.md::evicted first" --evidence "file:src/cache.rs#evict"
+c1-msg51e29yny7wkpesxnw  marked  m1-gtz6ec0p6xzhhdkac0qj  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
+  was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it
+    evidence 1 is now:
+    | pub fn evict() { drop_oldest(); }
+```
+
+In JSON each entry carries `accepted`: `null` for a new claim, otherwise
+`{"was": <state before>, "sides": [...]}` listing the sides that were not
+`same`, each with `index`, `role`, `loc`, `state` and `reason`. The lines
+after "is now:" show the text that was accepted.
+
+Here the claim was made with the quote `gives up after 3 attempts`, and is
+claimed again with the whole sentence:
+
+```text output
+$ hibi claim "The client gives up after 3 attempts." --subject "file:docs/retry.md::It gives up after 3 attempts." --evidence "file:src/retry.rs#MAX_ATTEMPTS"
+c1-2kfx78rwbb7wyxwst92f  marked  m1-cq3p29w1bwx6wwf548jv  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+```
+
+In JSON the entry has `"created": false`. A side of the existing claim must
+resolve to exactly one unit. When it is `missing` or `ambiguous`, for
+example after its heading was renamed, the existing claim is not the same
+claim, and `claim` writes a second one. Re-anchor the existing claim
+instead.
+
+The same rule finds a retired claim. When no live claim is the same claim
+and a retired one is, `claim` fails with `claim_retired`, however the
+anchors are written: a retirement is a decision, and another way of writing
+an anchor does not undo it. Here a claim made with `#MAX_ATTEMPTS` was
+retired, and the same statement is claimed with quotes:
+
+```text output
+$ hibi claim 'Downloads are tried 5 times.' --subject 'file:docs/limits.md::queue holds 100 jobs' --evidence 'file:src/retry.py::MAX_ATTEMPTS = 5'
+error: claim_retired: the claim c1-hs7gg4pstrtdyds0c2wq, with this statement, this note and its sides on the same units, was retired
+  fix: The claim was retired, and that stands. A different --note records the statement and anchors again as a new claim.
+```
+
+A different `note` makes another claim, so it records the statement
+again. For a claim that `reanchor` replaced, the error follows the chain of
+replacements to its last claim. It says `was replaced by <new>` when the
+replacement is live, and `was replaced, and the last claim of that chain is
+<last>` for a longer chain; the fix line then tells you to run
+`hibi status` on that claim, so look at it before anything else. When the
+chain ends in a retired claim, it says `was replaced, and the last claim of
+that chain, <last>, was retired`, with the fix line of a retired claim.
+
+Two elements of one `--stdin` batch that are the same claim make one claim.
+The second reports the first one's id, and the same mark when both
+elements have the same `by`; a different `by` adds a second mark:
+
+```text output
+$ echo '[{"statement": "The queue is bounded.", "subject": "file:docs/limits.md::The queue holds 100 jobs."}, {"statement": "The queue is bounded.", "subject": "file:docs/limits.md::holds 100 jobs"}]' | hibi claim --stdin
+c1-mp1mzh0jpgbwpb0997rg  created  m1-vz3zbr8eqcqaegtwj1pr  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
+c1-mp1mzh0jpgbwpb0997rg  marked  m1-vz3zbr8eqcqaegtwj1pr  subject file:docs/limits.md (sentence "The queue holds 100 jobs.", line 9)
+```
+
+
+Commands accept a unique prefix of an id with at least 4 characters after the
+type prefix, such as `c1-c5dm`. A prefix that matches several records is the
+error `ambiguous_id`, and the message lists them.
+
+## Reading the history
+
+`hibi list` reads the store only: nothing is resolved and no state is
+computed, so it works when files or providers are missing.
+
+```bash
+hibi list --retired
+```
+
+```text output
+c1-2axv59jx0ztvfjd1adn9  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-22T22:31:30Z
+c1-2kfx78rwbb7wyxwst92f  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-22T22:31:30Z  retired
+c1-c5dm2jvhr8hb36rx5rgm  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-22T22:31:29Z  retired
+c1-xqhbms40kkesq10rxjen  Each attempt times out after 10 seconds.  file:docs/retry.md  1 mark  last 2026-08-01T09:00:00Z
+c1-xwck2bdefbx39g56m7dn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-22T22:31:30Z  retired
+```
+
+With an id, `list` prints the stored claim, its marks in time order and its
+retirement:
+
+```bash
+hibi list c1-c5dm
+```
+
+```text output
+c1-c5dm2jvhr8hb36rx5rgm
+  statement: The client gives up after 5 attempts.
+  subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
+  evidence 1: {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
+1 mark:
+  m1-1nhmgpeagp6bbwt6kh0j  2026-11-22T22:31:29Z
+    file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
+    file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
+retired: r1-fmpt7hwtdzded271kw2d  2026-11-22T22:31:29Z  replaced by c1-2kfx78rwbb7wyxwst92f
+```
+
+`--loc <glob>` keeps claims with a side whose locator matches, and
+`--text <substring>` keeps claims whose statement contains the text
+(case-sensitive).

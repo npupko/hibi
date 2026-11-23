@@ -1,327 +1,95 @@
 ---
 title: "CLI reference"
-description: "Every hibi command and flag, generated from the option tables."
+description: "Where the complete command reference lives, the commands at a glance, exit status and error codes."
 ---
 
-This page is generated from `src/cli/options.ts` by `bun run build:cli-reference`. Do not edit it by hand.
+The complete reference, with every command, option, default and help text, is
+generated from the command definition in the code and kept in the repository
+at
+[`plugins/hibi-cli/skills/hibi/references/cli-reference.md`](https://github.com/npupko/hibi/blob/main/plugins/hibi-cli/skills/hibi/references/cli-reference.md).
+A test fails when that file differs from the code. The same text is available
+from the binary:
 
-Schema version: `v4`. Every JSON envelope carries `ok`, `action`, and `schemaVersion`; most carry a `next` hint.
+```bash
+hibi --help
+hibi claim --help
+```
 
-Exit codes: `0` clean or warnings only, `2` gating (on an enforced claim: a `changed`, `orphaned`, or `ambiguous` side, a `refuted` judge verdict, a conflict, or `expired` under `--doc`; under `--fail-on warn`, any warning also exits `2`), `1` operational error (bad flag, no store, missing file, `check --doc` on a path with no registered claims).
+## Commands
 
-Run `hibi <command> --help` for the same tables in the terminal; it never runs the command.
+| Command | What it does | Page |
+|---|---|---|
+| `hibi init` | Create the `.hibi/` store in this git repository | [Quickstart](/quickstart) |
+| `hibi claim` | Record a statement, its subject and its evidence, as checked now | [Claims and marks](/concepts/claims-and-marks) |
+| `hibi status` | Report which claims need a new check and why | [Freshness](/concepts/freshness) |
+| `hibi mark` | Record that claims were checked again and still hold | [Claims and marks](/concepts/claims-and-marks#mark) |
+| `hibi reanchor` | Replace a claim with one that has a new statement, anchors or period | [Claims and marks](/concepts/claims-and-marks#changing-a-claim) |
+| `hibi retire` | Retire claims that no longer apply | [Claims and marks](/concepts/claims-and-marks#retirement) |
+| `hibi cover` | List the units in the declared scopes that no claim covers | [Coverage](/coverage) |
+| `hibi list` | List stored claims, or show one claim with its history | [Claims and marks](/concepts/claims-and-marks#reading-the-history) |
+| `hibi triage` | Rank uncovered prose by how likely it states a checkable fact | [The judge](/judge) |
+| `hibi suggest-evidence` | Rank code units that may be evidence for a statement | [The judge](/judge) |
+| `hibi providers` | Show the file provider, sibling repositories and schemes; `--check` runs the conformance cases | [External providers](/providers/external) |
+| `hibi schema` | Print the JSON Schema of a record, an input or a command's output | |
+| `hibi completions` | Print a shell completion script | |
+| `hibi version` | Print the version; in JSON also the protocol, store version, profiles, grammars and judge model | |
 
-## Global options
+## Output and exit status
 
-Accepted by every command.
+The result is JSON when standard output is not a terminal or with
+`--format json`, except for `completions`, `schema <name>` and `--help`: one
+object with `"ok": true`, `"command"`, `"warnings"` and
+the result keys, or `"ok": false` and `"errors"`. Otherwise it is text, with
+errors and warnings on standard error.
 
-| Flag | Meaning |
+The exit status is 0 when the command ran, whatever it found, and 1 on any
+error, including a usage error. No other status is used.
+
+`hibi schema` lists the schema names; `hibi schema <name>` prints one.
+
+## Error codes
+
+Every error carries one of these codes, a message, and a `remediation` that is
+one sentence or one command, or `null`.
+
+| Code | When |
 |---|---|
-| `--format <f>` | Output format. Default: human on a terminal, json when piped. One of: `human`, `compact`, `json`, `json-pretty`. |
-| `--json` | Alias for --format json. |
-| `--explain` | Add the detail tail (regions, changes, similarity) to JSON verdicts and the full record result. |
-| `--no-hints` | Drop the remediation menu (also HIBI_ADVICE=0). |
-| `--color <when>` | Color in human output (also NO_COLOR / FORCE_COLOR). One of: `auto`, `always`, `never`. |
-| `--cwd <dir>` | Anchor root the paths resolve against. Default: the current directory. |
-| `--store-dir <dir>` | Store location. Default: <anchor root>/.claims. |
-| `--no-ast` | Skip tree-sitter; text resolution only. |
-| `--help` | Print this help and exit. |
-
-Environment: `HIBI_ASCII=1` uses ASCII symbols in human output; `HIBI_ADVICE=0` drops remediation hints; `NO_COLOR` and `FORCE_COLOR` are honored.
-
-## `hibi init`
-
-Create the claim store (.claims/) and its config.json.
-
-Writes config.json with the pinned judge model, the threshold, no repos, and no ignore globs. --instructions appends one line to an agent instruction file (created if missing), unless the line is already there.
-
-```sh
-hibi init [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--instructions <path>` | Append the line "Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale." to this file, e.g. CLAUDE.md or AGENTS.md. |
-
-```sh
-hibi init
-hibi init --instructions AGENTS.md
-```
-
-## `hibi record`
-
-Record a claim: a document sentence, its kind, and where its truth can be observed.
-
-The doc span's text is the claim's sentence. --kind is required: code (one or more code spans), reference (one span in another document), or attested (no span; a ttl, and optionally sources and a procedure). A new claim is enforced (it gates) unless --suggest is passed. It gets one vouch attestation by --by (or the item's by), which is required. Agents should send a JSON array on stdin with --from-file -; each item has doc, docQuote or docRange, kind, code: [{file, quote | range}], ref: {file, quote | range}, sources: [{id?, resource, title?}], procedure: {instructions, steps?}, ttl, owner, by, suggest. Every item is validated first and every problem is reported, one line each; the batch is all or nothing.
-
-```sh
-hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind code --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]
-hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind reference --ref-file <path> (--ref-quote <text> | --ref-range L1:L3) [options]
-hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind attested --ttl <duration> [--source <id>=<resource>] [--instructions <text>] [options]
-hibi record --from-file <path|-> [--by <actor>]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--doc <path>` | The document making the claim. |
-| `--doc-quote <text>` | The documented sentence, verbatim. Must occur in --doc. |
-| `--doc-range L1:L3` | Inclusive 1-based line range of the documented sentence (or char offsets as 100:130). |
-| `--kind <kind>` | The claim kind. One of: `code`, `reference`, `attested`. |
-| `--code-file <path>` | A code file the sentence describes (alias:path for a sibling repo). Repeat for several spans; each takes the --code-quote or --code-range that follows it. Repeatable. |
-| `--code-quote <text>` | The code span, verbatim. Quote the load-bearing token, e.g. the value. Repeatable. |
-| `--code-range L1:L9` | Inclusive 1-based line range of the code span (or char offsets). Repeatable. |
-| `--ref-file <path>` | The document a reference claim points to (alias:path for a sibling repo). |
-| `--ref-quote <text>` | The referenced span, verbatim. |
-| `--ref-range L1:L3` | Inclusive 1-based line range of the referenced span (or char offsets). |
-| `--source <id>=<resource>` | A pointer to where the claim's truth lives; never dereferenced. Repeatable. Repeatable. |
-| `--instructions <text>` | How an agent re-checks an attested claim (the procedure; steps only via --from-file). |
-| `--suggest` | Record an advisory claim that never gates. |
-| `--ttl <duration>` | ISO 8601 duration after which the claim needs re-checking, e.g. P90D. Required on attested. |
-| `--owner <actor>` | The actor to contact when the claim expires: human:<id>, agent:<name>, or process:<name>. |
-| `--by <actor>` | The actor vouching for the claim: human:<id>, agent:<name>, or process:<name>. Required, here or as each item's by; with --from-file it is the default for items without by. |
-| `--from-file <path|->` | Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags except --by. |
-
-```sh
-hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts" --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --by agent:opus
-hibi record --doc docs/pricing.md --doc-quote 'Pro costs $29/month.' --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 --instructions 'Open the Stripe dashboard and report the Pro monthly price.' --by human:alice@example.com
-echo '[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","kind":"code","code":[{"file":"src/retry.ts","quote":"MAX_ATTEMPTS = 5"}]}]' | hibi record --from-file - --by agent:opus
-```
-
-## `hibi check`
-
-Verify every claim against the working tree and exit 0 (clean), 2 (gating), or 1 (error).
-
-Resolves every span, consults the judge cache (asking the judge on a miss; without TYPESAFE_API_KEY the result is pending), runs the contradiction pass, and lists the worklist: claims an agent should re-check. Writes nothing but judge cache entries. --since scopes the verdicts to claims touching files changed since a git ref; --doc scopes them to one document, where expired also gates, and judges only the contradiction pairs with a claim in that document. --doc on a path with no registered claims (retired claims do not count) is an error (exit 1). Warnings (moved, review, pending, unavailable, expired in a whole-store check) exit 0 unless --fail-on warn.
-
-```sh
-hibi check [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--since <ref>` | Check only the claims touching a file changed since this git ref. |
-| `--doc <path>` | Check only the claims on this document. |
-| `--overview` | Render the per-document table instead of the per-claim report (human output). |
-| `--fail-on <level>` | When to exit 2: gating (default); warn: any warning also fails; never: always exit 0. One of: `gating`, `warn`, `never`. |
-
-```sh
-hibi check
-hibi check --since origin/main
-hibi check --doc CLAUDE.md
-hibi check --fail-on warn
-```
-
-## `hibi list`
-
-One lean row per claim, filtered by state or by the file it anchors.
-
-```sh
-hibi list [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--state <state>` | Filter: all (default); gating, warning, clean (the verdict); pending (the check worklist); expired (ttl ran out); conflict (a contradiction finding); duplicate (a duplicate candidate or the same sentence); suggested; stranded (live on a superseded or archived doc). One of: `all`, `gating`, `warning`, `clean`, `pending`, `expired`, `conflict`, `duplicate`, `suggested`, `stranded`. |
-| `--path <path>` | Only claims whose doc or evidence side names this path. |
-| `--ids-only` | Print bare claim ids, one per line, for shell loops. |
-
-```sh
-hibi list --state gating
-hibi list --path src/auth.ts
-hibi list --state pending --ids-only
-```
-
-## `hibi audit`
-
-One row per region of a document: the claim that covers it, or the judge's triage kind.
-
-Splits the document into regions, matches them to live claims by the claim's doc anchor, and triages uncovered regions with the judge (cached). Kinds: code, reference, attested (record them), unverifiable (rewrite as an attributed opinion, or remove), not-a-claim, unsure (triage confidence below judge.threshold), pending (judge unavailable or its answer unusable). The contradiction pass judges only pairs with a claim in this document. Recording is never automatic.
-
-```sh
-hibi audit [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--doc <path>` | The document to audit. Required. |
-| `--fail-uncovered` | Exit 2 when any uncovered region is code, reference, or attested. |
-
-```sh
-hibi audit --doc README.md
-hibi audit --doc docs/pricing.md --fail-uncovered
-```
-
-## `hibi reanchor`
-
-Re-resolve a claim's spans and store the new baseline; relocate every moved side with --moved; or list candidate locations with --suggest.
-
-Without span flags only a side that reads moved is relocated; a side that reads changed, ambiguous, or orphaned is kept as stored and the result names the flag to pass (doc: changed; pass --doc-quote to re-anchor). Exit 1 when a side needed relocating and none was relocated. An evidence side in a sibling repo that is not checked out is kept as stored, with a warning; an explicit --code-file in such a repo keeps the stored span for that file (evidence: repository <alias> not checked out; kept as stored). --moved takes no claim id: it applies the same rule to every live claim in the store, or only to the claims of the document given with --doc, lists each claim with a side relocated or kept, and exits 0. The doc and ref flags may each be given once; a value starting with - takes the --flag=<value> form. --doc moves the claim to a different document (requires a doc span). --code-file is repeatable: each one opens a span that takes the --code-quote or --code-range after it, and the spans given replace all of a code claim's spans, in order. --ref-* flags replace a reference claim's span. The claim's sentence is refreshed from the new doc span.
-
-```sh
-hibi reanchor <claim-id> [span flags] [--dry-run]
-hibi reanchor <claim-id> --suggest
-hibi reanchor --moved [--doc <path>] [--dry-run]
-```
-
-`<claim-id>`: The claim to reanchor. Omitted with --moved.
-
-| Flag | Meaning |
-|---|---|
-| `--doc <path>` | Move the doc anchor to this document (with --doc-quote or --doc-range). With --moved: only the claims of this document. |
-| `--doc-quote <text>` | The documented sentence, verbatim. Must occur in --doc. |
-| `--doc-range L1:L3` | Inclusive 1-based line range of the documented sentence (or char offsets as 100:130). |
-| `--code-file <path>` | A code file the sentence describes (alias:path for a sibling repo). Repeat for several spans; each takes the --code-quote or --code-range that follows it. Repeatable. |
-| `--code-quote <text>` | The code span, verbatim. Quote the load-bearing token, e.g. the value. Repeatable. |
-| `--code-range L1:L9` | Inclusive 1-based line range of the code span (or char offsets). Repeatable. |
-| `--ref-file <path>` | The document a reference claim points to (alias:path for a sibling repo). |
-| `--ref-quote <text>` | The referenced span, verbatim. |
-| `--ref-range L1:L3` | Inclusive 1-based line range of the referenced span (or char offsets). |
-| `--suggest` | Read-only: rank candidate locations for the stored doc and evidence quotes. |
-| `--moved` | Relocate every live claim side that reads moved (no claim id); --doc restricts it to one document. |
-| `--dry-run` | Compute the result without writing the store or any document. |
-
-```sh
-hibi reanchor clm_1a2b3c4d5e6f7a8b
-hibi reanchor clm_1a2b3c4d5e6f7a8b --suggest
-hibi reanchor --moved
-hibi reanchor --moved --doc README.md --dry-run
-hibi reanchor clm_1a2b3c4d5e6f7a8b --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"
-```
-
-## `hibi retire`
-
-Withdraw a claim so it no longer gates. Idempotent.
-
-```sh
-hibi retire <claim-id> [options]
-```
-
-`<claim-id>`: The claim to retire.
-
-| Flag | Meaning |
-|---|---|
-| `--dry-run` | Compute the result without writing the store or any document. |
-
-```sh
-hibi retire clm_1a2b3c4d5e6f7a8b
-```
-
-## `hibi supersede`
-
-Mark a document superseded by another and relocate its live claims to the successor.
-
-A claim whose sentence appears verbatim in --to moves there (same id, evidence, attestations). The rest are reported as misses for a manual reanchor or retire. The old document records supersededBy.
-
-```sh
-hibi supersede [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--from <path>` | The old document. Required. |
-| `--to <path>` | The new document. Required. |
-| `--dry-run` | Compute the result without writing the store or any document. |
-
-```sh
-hibi supersede --from design-v1.md --to design-v2.md
-```
-
-## `hibi archive`
-
-Move an obsolete document to archive/ and leave a tombstone at its path.
-
-```sh
-hibi archive [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--doc <path>` | The document to archive. Required. |
-| `--successor <path>` | The document the tombstone points to. |
-| `--dry-run` | Compute the result without writing the store or any document. |
-
-```sh
-hibi archive --doc old.md --successor new.md
-```
-
-## `hibi evidence`
-
-Submit evidence an agent collected; the judge decides whether it supports each claim.
-
-Reads a JSON array (or one object) of {claimId, evidence, source, summary, by}; an item without by takes --by, which is required unless every item has by. Evidence applies to attested claims; a reference claim is judged from the referenced document. The whole batch is validated before the judge is asked; one bad item rejects it. A supports verdict at or above judge.threshold appends an evidence attestation, which resets the ttl. The verdict is cached by model, sentence, context, evidence, and source; raw evidence text is never stored. Without TYPESAFE_API_KEY or with the network down, an item is pending and nothing is written for it. Evidence is limited to 32000 characters per item.
-
-```sh
-hibi evidence --from-file <path|-> [--by <actor>]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--from-file <path|->` | JSON array of evidence items (- reads stdin). All or nothing. Required. |
-| `--by <actor>` | The actor submitting the evidence, for items without by: human:<id>, agent:<name>, or process:<name>. Required unless every item has by. |
-
-```sh
-echo '[{"claimId":"clm_1a2b3c4d5e6f7a8b","evidence":"Pro plan: $29.00 / month","source":"stripe prices list --product prod_123","summary":"Stripe lists Pro at $29/month"}]' | hibi evidence --from-file - --by agent:opus
-```
-
-## `hibi attest`
-
-Vouch for a claim, or acknowledge a review or conflict finding with a note.
-
-Without --ack this records a vouch. Only a human: vouch resets the ttl; an agent: or process: vouch is recorded and does not. --ack review acknowledges the claim's current supports verdict (for a reference claim, the one for its sentence and referenced span as they read now; for an attested claim, the newest); --ack conflict:<id> acknowledges a contradiction with another claim and records the ack on both. An ack needs --note and never resets the ttl.
-
-```sh
-hibi attest <claim-id> [options]
-```
-
-`<claim-id>`: The claim to attest.
-
-| Flag | Meaning |
-|---|---|
-| `--by <actor>` | The attesting actor: human:<id>, agent:<name>, or process:<name>. Required. |
-| `--note <text>` | What was checked, or why the finding is acceptable. Required with --ack. |
-| `--ack <finding>` | Acknowledge a finding: conflict:<claim-id> or review. |
-
-```sh
-hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note 'checked Stripe, still $29'
-hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack conflict:clm_9f8e7d6c5b4a3210 --note "different plans"
-hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack review --note "the referenced page says the same in other words"
-```
-
-## `hibi schema`
-
-Print the JSON Schema of a model type, or the list of names.
-
-```sh
-hibi schema [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--name <Name>` | A schema name, e.g. Claim, Verdict, Config. |
-
-```sh
-hibi schema
-hibi schema --name Verdict
-```
-
-## `hibi completions`
-
-Print a shell completion script.
-
-```sh
-hibi completions <shell>
-```
-
-`<shell>`: zsh, bash, or fish. One of: `zsh`, `bash`, `fish`.
-
-```sh
-hibi completions zsh > ~/.zfunc/_hibi
-```
-
-## `hibi version`
-
-Print the hibi version and schema version.
-
-```sh
-hibi version
-```
+| `usage` | Unknown command or option, missing argument, or options that cannot be combined |
+| `invalid_argument` | A well-formed argument with an unacceptable value |
+| `invalid_json` | Standard input is not the expected JSON |
+| `invalid_anchor` | A locator, selector or compact anchor does not parse, or the provider refuses a new anchor for the resource, for example a `#symbol` on a markdown file |
+| `invalid_duration` | A `recheck` duration does not parse, is zero, or runs past the year 9999 |
+| `invalid_time` | `--now` does not parse, is earlier than 0000-01-01T00:00:00Z, or is later than 9999-12-30T22:00:00Z |
+| `invalid_range` | A `--since` range is not one of the accepted forms |
+| `not_initialized` | No `.hibi/hibi.toml` was found |
+| `already_initialized` | `init` on an existing store |
+| `not_a_git_repository` | A command that needs git runs where the root is not a git top level, or git is missing |
+| `legacy_store` | The repository has a hibi 0.x store in `.claims/` |
+| `unsupported_store_version` | `version` in `hibi.toml` is an integer other than 1 |
+| `invalid_config` | `.hibi/hibi.toml` does not parse or breaks a rule |
+| `invalid_user_config` | The user config does not parse or breaks a rule |
+| `store_corrupt` | A shard is damaged, misplaced, larger than 64 MiB or a symbolic link, or the shards hold more than 256 MiB together |
+| `store_full` | A write would make a shard larger than 64 MiB or the store larger than 256 MiB; nothing was written |
+| `store_locked` | Another hibi process held the write lock for 10 seconds |
+| `io_error` | A file operation failed |
+| `git_failed` | A git command failed |
+| `git_too_old` | git is older than 2.45.0 |
+| `claim_not_found` | No claim id starts with the given prefix |
+| `ambiguous_id` | Several ids start with the given prefix |
+| `claim_retired` | A write on a retired claim, or a claim equal to a retired one |
+| `no_change` | `reanchor` would produce the same claim |
+| `unknown_scheme` | A new anchor uses a scheme that is not declared |
+| `side_missing` | An anchor resolves to no unit; for a stored anchor that no longer identifies one unit, the message lists the candidates |
+| `side_ambiguous` | An anchor resolves to several units |
+| `side_unavailable` | An anchor cannot be evaluated; the message gives the reason |
+| `selector_not_exact` | A new anchor matches no unit exactly, and the message lists what was found by similarity; or its quote does not occur in the unit its symbol names; or, in `mark` and a `reanchor` that keeps the side, the stored line of a `#name::<line>` anchor is no longer in its declaration |
+| `quote_spans_units` | A quote reaches outside one unit |
+| `quote_in_comment` | A quote lies inside a code comment |
+| `quote_not_distinguishable` | The quoted text is identical, with identical text around it in its unit, to another place in the same scope (its container, or the containers its path names), so a stored anchor could not tell the two apart. A guard: the file provider returns it when the anchor it would store for a new anchor does not select the same unit alone, and reports identical units as `side_ambiguous` |
+| `unsupported_selector` | A new anchor uses a selector key its provider does not accept, such as `key` on a `file:` locator |
+| `no_scopes` | `cover` or `triage` with no scope declared |
+| `unknown_scope` | `--scope` names no scope |
+| `too_many_candidates` | `suggest-evidence` would rank more than 10,000 units |
+| `judge_unavailable` | A judge command without `TYPESAFE_API_KEY` |
+| `judge_failed` | A judge request failed, after its retries when the cause is one that is retried |
+| `internal` | A bug in hibi; please report it |

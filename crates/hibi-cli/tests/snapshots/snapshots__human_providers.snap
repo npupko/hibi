@@ -1,0 +1,20 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"providers\"])"
+---
+$ hibi providers
+exit status: 0
+---- standard output ----
+built in: schemes file, repo; classes markdown, prose, typescript, tsx, python, rust, go, java, text; profiles prose-v1, ast-v1
+user config: [HOME]/config.toml
+repo api: repo_not_allowed (hibi.toml suggests ../api)
+    Add these lines to the user config:
+    [[repo]]
+    root = "[ROOT]"
+    alias = "api"
+    path = "[TMP]/api"
+scheme x: not registered. To register it, add to the user config:
+    [providers.x]
+    command = ["<program>", "<argument>"]
+---- standard error ----
+(empty)

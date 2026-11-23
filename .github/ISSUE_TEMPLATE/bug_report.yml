@@ -1,57 +1,74 @@
 name: Bug report
-description: Report something in Hibi that is broken or behaving incorrectly.
+description: Report something in hibi that is broken or behaves differently from the docs.
 title: "bug: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to file a bug report. Hibi is deterministic, so
-        a clear set of reproduction steps and version info usually pins the issue
-        down quickly. Please fill out the fields below.
+        hibi is deterministic: the same store, files and `--now` give the same
+        output. A short sequence of commands that reproduces the problem is
+        usually enough to find it.
   - type: textarea
     id: what-happened
     attributes:
       label: What happened?
-      description: Describe the bug, including what you expected to happen versus what actually happened.
+      description: What you expected, and what hibi did instead.
       placeholder: |
-        Expected: `hibi check` reports the claim as stale.
-        Actual: it exits 0 and reports clean.
+        Expected: the claim is reported as stale after the function changed.
+        Actual: it is reported as fresh.
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
       label: Steps to reproduce
-      description: A minimal sequence of commands (and any relevant doc/code) that reproduces the behavior.
+      description: The commands you ran, in order, and the smallest files that show the problem.
       placeholder: |
-        1. `hibi init`
-        2. `hibi record --doc README.md --doc-quote "..." --code-file src/x.ts --code-quote "..."`
-        3. Edit `src/x.ts`
-        4. `hibi check`
+        1. hibi init
+        2. hibi claim ...
+        3. Edit src/lib.rs
+        4. hibi status
     validations:
       required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The output of the failing command with `--format json`. It is rendered as code, so no backticks are needed.
+      render: json
+    validations:
+      required: false
   - type: input
     id: hibi-version
     attributes:
-      label: Hibi version
+      label: hibi version
       description: Output of `hibi version`.
-      placeholder: e.g. 0.1.0
     validations:
       required: true
   - type: input
-    id: bun-version
+    id: git-version
     attributes:
-      label: Bun version
-      description: Output of `bun --version`.
-      placeholder: e.g. 1.2.0
+      label: git version
+      description: Output of `git --version`.
+    validations:
+      required: false
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install hibi?
+      options:
+        - Shell or PowerShell installer
+        - scripts/install.sh
+        - Release download
+        - Built from source with cargo
+        - Other
     validations:
       required: false
   - type: dropdown
     id: os
     attributes:
-      label: OS
-      description: Which operating system are you running Hibi on?
+      label: Operating system
       options:
         - macOS
         - Linux
@@ -59,20 +76,12 @@ body:
         - Other
     validations:
       required: false
-  - type: textarea
-    id: logs
-    attributes:
-      label: Relevant logs/output
-      description: Paste any relevant command output. This is rendered as shell, so no backticks needed.
-      render: shell
-    validations:
-      required: false
   - type: checkboxes
     id: acknowledgements
     attributes:
-      label: Acknowledgements
+      label: Checks
       options:
-        - label: I searched existing issues and did not find a duplicate.
+        - label: I searched existing issues and found no duplicate.
           required: true
-        - label: I can reproduce this on the latest version of Hibi.
+        - label: I can reproduce this with the latest release.
           required: true

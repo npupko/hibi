@@ -1,12 +1,13 @@
 {
   "name": "hibi-cli",
-  "description": "Operate the hibi CLI: audit documents, record code, reference, and attested claims, run check before trusting a doc or after a change, submit agent-collected evidence for the judge, attest, resolve contradictions and expired claims, and wire CI. Bundles the `hibi` Agent Skill.",
+  "version": "5.0.0",
+  "description": "Use the hibi CLI as memory across sessions: check status at the start of a session, re-check stale claims and mark, reanchor or retire them, record new claims after checking a statement against evidence, and find uncovered units with cover. Bundles the `hibi` Agent Skill.",
   "author": {
     "name": "Nick Pupko",
     "email": "lazynick7@gmail.com"
   },
-  "homepage": "https://github.com/npupko/hibi#readme",
+  "homepage": "https://hibi.mintlify.app",
   "repository": "https://github.com/npupko/hibi",
   "license": "MIT",
-  "keywords": ["hibi", "documentation", "docs-drift", "ai-agents", "skill"]
+  "keywords": ["hibi", "documentation", "docs-drift", "ai-agents", "memory", "skill"]
 }

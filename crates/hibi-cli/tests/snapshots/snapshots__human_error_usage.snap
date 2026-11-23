@@ -1,0 +1,36 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shots(&repo,\n&[&[\"status\", \"--no-such-option\"],\n&[\"claim\", \"A statement without a subject.\"], &[\"frobnicate\"],])"
+---
+$ hibi status --no-such-option
+exit status: 1
+---- standard output ----
+(empty)
+---- standard error ----
+error: usage: unexpected argument '--no-such-option' found
+
+  tip: to pass '--no-such-option' as a value, use '-- --no-such-option'
+
+Usage: hibi status [OPTIONS] [claim-id]...
+  help: hibi status --help
+
+$ hibi claim 'A statement without a subject.'
+exit status: 1
+---- standard output ----
+(empty)
+---- standard error ----
+error: usage: the following required arguments were not provided:
+  --subject <anchor>
+
+Usage: hibi claim --subject <anchor> <statement>
+  help: hibi claim --help
+
+$ hibi frobnicate
+exit status: 1
+---- standard output ----
+(empty)
+---- standard error ----
+error: usage: unrecognized subcommand 'frobnicate'
+
+Usage: hibi [OPTIONS] <command>
+  help: hibi --help

@@ -1,0 +1,36 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"schema\"])"
+---
+$ hibi schema
+exit status: 0
+---- standard output ----
+claim
+mark
+retirement
+anchor
+selector
+config
+user-config
+claim-input
+mark-input
+error
+unit
+provider-request
+provider-response
+conformance-case
+init-output
+claim-output
+status-output
+mark-output
+reanchor-output
+retire-output
+cover-output
+list-output
+triage-output
+suggest-evidence-output
+providers-output
+schema-output
+version-output
+---- standard error ----
+(empty)

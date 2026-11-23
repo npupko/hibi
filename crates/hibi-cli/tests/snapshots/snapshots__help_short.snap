@@ -1,0 +1,37 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "help(&repo, &[\"-h\"])"
+---
+$ hibi -h
+exit status: 0
+---- standard output ----
+Record that a statement was checked against evidence, and report what changed since
+
+Usage: hibi [OPTIONS] <command>
+
+Commands:
+  init              Create the .hibi/ store in this git repository
+  claim             Record a statement, what it is about and its evidence, as checked now
+  status            Report which claims need a new check and why
+  mark              Record that claims were checked again and still hold
+  reanchor          Replace a claim with one that has a new statement, anchors or period
+  retire            Retire claims that no longer apply
+  cover             List the units in the declared scopes that no claim covers
+  list              List stored claims, or show one claim with its history
+  triage            Rank uncovered prose by how likely it states a checkable fact (judge)
+  suggest-evidence  Rank code units that may be evidence for a statement (judge)
+  providers         Show the built-in file provider, sibling repositories and schemes
+  schema            Print the JSON Schema of a record, an input or a command's output
+  completions       Print a shell completion script
+  version           Print the hibi version
+
+Options:
+  -h, --help  Print help (see more with '--help')
+
+Global options:
+      --root <dir>       Use this directory as the root (the directory that contains .hibi/) instead of searching upward from the working directory
+      --format <format>  Output format. Without this option the output is JSON when standard output is not a terminal, and text when it is [possible values: human, json]
+      --now <timestamp>  Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped. The largest value is 9999-12-30T22:00:00Z
+      --no-cache         Do not read or write the cache database. Every command that does not call the judge gives the same result with and without the cache. The judge commands (triage, suggest-evidence, status --judge-order) may rank differently from one run to the next without it
+---- standard error ----
+(empty)

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi selector",
+  "description": "A selector (spec section 5.2). No key may be null.",
+  "type": "object",
+  "properties": {
+    "count": {
+      "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 2
+    },
+    "key": {
+      "description": "A unit key, for providers that address units by key.",
+      "type": "string",
+      "minLength": 1
+    },
+    "prefix": {
+      "description": "Up to 48 characters of the unit's own text before the quote.",
+      "type": "string",
+      "maxLength": 48
+    },
+    "quote": {
+      "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
+      "type": "string",
+      "maxLength": 2048,
+      "minLength": 1
+    },
+    "suffix": {
+      "description": "Up to 48 characters of the unit's own text after the quote.",
+      "type": "string",
+      "maxLength": 48
+    },
+    "symbol": {
+      "description": "Declaration path in a code resource, as typed.",
+      "type": "string",
+      "minLength": 1
+    },
+    "within": {
+      "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 7,
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false,
+  "dependentRequired": {
+    "prefix": [
+      "quote"
+    ],
+    "suffix": [
+      "quote"
+    ],
+    "within": [
+      "quote"
+    ]
+  },
+  "dependentSchemas": {
+    "count": {
+      "anyOf": [
+        {
+          "required": [
+            "symbol"
+          ]
+        },
+        {
+          "required": [
+            "within"
+          ]
+        }
+      ]
+    }
+  }
+}

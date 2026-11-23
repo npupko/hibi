@@ -1,0 +1,288 @@
+[
+  {
+    "name": "claim: quote with context, no evidence, no recheck, no note",
+    "input": {
+      "kind": "claim",
+      "body": {
+        "statement": "Retries are capped at 5.",
+        "subject": {
+          "loc": "file:docs/retry.md",
+          "sel": {
+            "quote": "Retries are capped at 5.",
+            "prefix": "## Retries\n\n",
+            "suffix": "\n\nThe cap is configurable."
+          }
+        },
+        "evidence": [],
+        "recheck": null,
+        "note": null
+      }
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[],\"note\":null,\"recheck\":null,\"statement\":\"Retries are capped at 5.\",\"subject\":{\"loc\":\"file:docs/retry.md\",\"sel\":{\"prefix\":\"## Retries\\n\\n\",\"quote\":\"Retries are capped at 5.\",\"suffix\":\"\\n\\nThe cap is configurable.\"}}}",
+      "blake3": "4ecde1c2b66ac3a51daa9003841a5c2b060270df95bded3854a958f74c709a07",
+      "id": "c1-9v6y3gnpdb1ta7daj01r"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "claim: symbol and quote evidence, recheck and note",
+    "input": {
+      "kind": "claim",
+      "body": {
+        "statement": "The cache expires entries after one hour.",
+        "subject": {
+          "loc": "file:README.md",
+          "sel": {
+            "quote": "expires entries after one hour",
+            "prefix": "The cache ",
+            "suffix": "."
+          }
+        },
+        "evidence": [
+          {
+            "loc": "file:src/cache.rs",
+            "sel": {
+              "symbol": "Cache.ttl",
+              "quote": "fn ttl(&self) -> Duration {",
+              "prefix": "",
+              "suffix": "\n        Duration::from_secs(3600)"
+            }
+          },
+          {
+            "loc": "repo:api//config/cache.toml",
+            "sel": {
+              "quote": "ttl = 3600",
+              "prefix": "[cache]\n",
+              "suffix": "\n"
+            }
+          }
+        ],
+        "recheck": "P90D",
+        "note": "Re-check when the cache backend changes."
+      }
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[{\"loc\":\"file:src/cache.rs\",\"sel\":{\"prefix\":\"\",\"quote\":\"fn ttl(&self) -> Duration {\",\"suffix\":\"\\n        Duration::from_secs(3600)\",\"symbol\":\"Cache.ttl\"}},{\"loc\":\"repo:api//config/cache.toml\",\"sel\":{\"prefix\":\"[cache]\\n\",\"quote\":\"ttl = 3600\",\"suffix\":\"\\n\"}}],\"note\":\"Re-check when the cache backend changes.\",\"recheck\":\"P90D\",\"statement\":\"The cache expires entries after one hour.\",\"subject\":{\"loc\":\"file:README.md\",\"sel\":{\"prefix\":\"The cache \",\"quote\":\"expires entries after one hour\",\"suffix\":\".\"}}}",
+      "blake3": "22b717033905995364c793b0a9f8c060ef57bddc62c7322863875e26e5a36b2b",
+      "id": "c1-4avhe0ss0pcn6s67jera"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "claim: external scheme with a key selector and an empty selector",
+    "input": {
+      "kind": "claim",
+      "body": {
+        "statement": "Auth issues and verifies session tokens.",
+        "subject": {
+          "loc": "archctl:model",
+          "sel": {
+            "key": "component/auth"
+          }
+        },
+        "evidence": [
+          {
+            "loc": "file:src/auth.ts",
+            "sel": {}
+          }
+        ],
+        "recheck": "P1Y2M3DT4H5M6S",
+        "note": null
+      }
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[{\"loc\":\"file:src/auth.ts\",\"sel\":{}}],\"note\":null,\"recheck\":\"P1Y2M3DT4H5M6S\",\"statement\":\"Auth issues and verifies session tokens.\",\"subject\":{\"loc\":\"archctl:model\",\"sel\":{\"key\":\"component/auth\"}}}",
+      "blake3": "3e084efe3e8893a048dcee5a52a53a4d42b0ee37f52ffea835c60ab50620d96b",
+      "id": "c1-7r44xzhyh29t0j6wxsd5"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "claim: non-ASCII text, escapes and characters outside the BMP",
+    "input": {
+      "kind": "claim",
+      "body": {
+        "statement": "Le délai est « 5 s » — 🚀 ok\ttab \"quoted\" \\ back",
+        "subject": {
+          "loc": "file:docs/fr/délai.md",
+          "sel": {
+            "quote": "délai est « 5 s »",
+            "prefix": "😀😀 Le ",
+            "suffix": " — 🚀 ok\ttab"
+          }
+        },
+        "evidence": [
+          {
+            "loc": "file:src/日本/設定.py",
+            "sel": {
+              "symbol": "設定.TIMEOUT"
+            }
+          }
+        ],
+        "recheck": null,
+        "note": "é stays decomposed; U+2028  and U+FEFF﻿ stay raw"
+      }
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[{\"loc\":\"file:src/日本/設定.py\",\"sel\":{\"symbol\":\"設定.TIMEOUT\"}}],\"note\":\"é stays decomposed; U+2028  and U+FEFF﻿ stay raw\",\"recheck\":null,\"statement\":\"Le délai est « 5 s » — 🚀 ok\\ttab \\\"quoted\\\" \\\\ back\",\"subject\":{\"loc\":\"file:docs/fr/délai.md\",\"sel\":{\"prefix\":\"😀😀 Le \",\"quote\":\"délai est « 5 s »\",\"suffix\":\" — 🚀 ok\\ttab\"}}}",
+      "blake3": "42de2dda45f989302d738465cba8f639c51eb41a5eb361dfc1aff180ef4942a1",
+      "id": "c1-8bf2vpj5z64k0bbkghjw"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "claim: same body with a different note is a different claim",
+    "input": {
+      "kind": "claim",
+      "body": {
+        "statement": "Retries are capped at 5.",
+        "subject": {
+          "loc": "file:docs/retry.md",
+          "sel": {
+            "quote": "Retries are capped at 5.",
+            "prefix": "## Retries\n\n",
+            "suffix": "\n\nThe cap is configurable."
+          }
+        },
+        "evidence": [],
+        "recheck": null,
+        "note": "second claim"
+      }
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[],\"note\":\"second claim\",\"recheck\":null,\"statement\":\"Retries are capped at 5.\",\"subject\":{\"loc\":\"file:docs/retry.md\",\"sel\":{\"prefix\":\"## Retries\\n\\n\",\"quote\":\"Retries are capped at 5.\",\"suffix\":\"\\n\\nThe cap is configurable.\"}}}",
+      "blake3": "4b0df05bbeafbaee116ddf9e7d8f66cee70f411a53502a17c9a3b6529f8f842a",
+      "id": "c1-9c6z0pxynyxew4bdvyf7"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "mark: one side, no by, no note",
+    "input": {
+      "kind": "mark",
+      "body": {
+        "claim": "c1-jch28x5k55zqkmymy20x",
+        "at": "2026-11-20T18:04:11Z",
+        "by": null,
+        "sides": [
+          {
+            "loc": "file:docs/retry.md",
+            "fp": "b3:prose-v1:0123456789abcdef0123456789abcdef"
+          }
+        ],
+        "note": null
+      }
+    },
+    "expected": {
+      "canonical": "{\"at\":\"2026-11-20T18:04:11Z\",\"by\":null,\"claim\":\"c1-jch28x5k55zqkmymy20x\",\"note\":null,\"sides\":[{\"fp\":\"b3:prose-v1:0123456789abcdef0123456789abcdef\",\"loc\":\"file:docs/retry.md\"}]}",
+      "blake3": "da6700f1fec0fde85b3493283004969e216f1f2fdcfd2a932d1e2776022275a4",
+      "id": "m1-v9kg1wfyr3yygpsmjcm3"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "mark: three sides, by and note",
+    "input": {
+      "kind": "mark",
+      "body": {
+        "claim": "c1-bdt0gcr2cfbm2170gp7y",
+        "at": "2026-01-31T00:00:00Z",
+        "by": "agent:claude",
+        "note": "checked against 5.0.0",
+        "sides": [
+          {
+            "loc": "file:README.md",
+            "fp": "b3:prose-v1:ffffffffffffffffffffffffffffffff"
+          },
+          {
+            "loc": "file:src/cache.rs",
+            "fp": "b3:ast-v1:00000000000000000000000000000000"
+          },
+          {
+            "loc": "repo:api//config/cache.toml",
+            "fp": "b3:ext-profile-2:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "canonical": "{\"at\":\"2026-01-31T00:00:00Z\",\"by\":\"agent:claude\",\"claim\":\"c1-bdt0gcr2cfbm2170gp7y\",\"note\":\"checked against 5.0.0\",\"sides\":[{\"fp\":\"b3:prose-v1:ffffffffffffffffffffffffffffffff\",\"loc\":\"file:README.md\"},{\"fp\":\"b3:ast-v1:00000000000000000000000000000000\",\"loc\":\"file:src/cache.rs\"},{\"fp\":\"b3:ext-profile-2:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1\",\"loc\":\"repo:api//config/cache.toml\"}]}",
+      "blake3": "f34f868aaa5a44b04764b380b24a60569cd80b4dfebe00b5c885c84785ab7d2a",
+      "id": "m1-yd7rd2nab92b0hv4pe0b"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "mark: same claim and sides, one second later, is a different mark",
+    "input": {
+      "kind": "mark",
+      "body": {
+        "claim": "c1-jch28x5k55zqkmymy20x",
+        "at": "2026-11-20T18:04:12Z",
+        "by": null,
+        "sides": [
+          {
+            "loc": "file:docs/retry.md",
+            "fp": "b3:prose-v1:0123456789abcdef0123456789abcdef"
+          }
+        ],
+        "note": null
+      }
+    },
+    "expected": {
+      "canonical": "{\"at\":\"2026-11-20T18:04:12Z\",\"by\":null,\"claim\":\"c1-jch28x5k55zqkmymy20x\",\"note\":null,\"sides\":[{\"fp\":\"b3:prose-v1:0123456789abcdef0123456789abcdef\",\"loc\":\"file:docs/retry.md\"}]}",
+      "blake3": "40776a31c31bc9475dd1a2881f1f468969e84a99e77dc34a2295f098dac05db0",
+      "id": "m1-81vpmce33f4meqehma41"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "retirement: no replacement",
+    "input": {
+      "kind": "retirement",
+      "body": {
+        "retires": "c1-jch28x5k55zqkmymy20x",
+        "replacedBy": null,
+        "at": "2026-11-21T09:00:00Z",
+        "by": "nick",
+        "note": "the cap was removed"
+      }
+    },
+    "expected": {
+      "canonical": "{\"at\":\"2026-11-21T09:00:00Z\",\"by\":\"nick\",\"note\":\"the cap was removed\",\"replacedBy\":null,\"retires\":\"c1-jch28x5k55zqkmymy20x\"}",
+      "blake3": "b1ab4f475d0260256e62de5ebf77a4b40280c38900135ca17392190d4604f695",
+      "id": "r1-p6nmyhtx09g2avk2vsfb"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "retirement: replaced by another claim",
+    "input": {
+      "kind": "retirement",
+      "body": {
+        "retires": "c1-jch28x5k55zqkmymy20x",
+        "replacedBy": "c1-bdt0gcr2cfbm2170gp7y",
+        "at": "9999-12-31T23:59:59Z",
+        "by": null,
+        "note": null
+      }
+    },
+    "expected": {
+      "canonical": "{\"at\":\"9999-12-31T23:59:59Z\",\"by\":null,\"note\":null,\"replacedBy\":\"c1-bdt0gcr2cfbm2170gp7y\",\"retires\":\"c1-jch28x5k55zqkmymy20x\"}",
+      "blake3": "1e6218cb864595e16ebb7a0d2afe7dea00ae0b3208defae48ad0acdfad3c2bf7",
+      "id": "r1-3sh1hjw68pay2vnvf86j"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  }
+]

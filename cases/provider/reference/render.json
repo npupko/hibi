@@ -1,0 +1,62 @@
+{
+  "name": "render returns the text and the ancestors' texts as context, outermost first",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "render",
+        "params": {
+          "loc": "ref:notes",
+          "unit": "n2"
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "text": "The cap is configurable.",
+          "context": [
+            "Retries are capped at 5."
+          ]
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "render",
+        "params": {
+          "loc": "ref:notes",
+          "unit": "n1"
+        }
+      },
+      "expect": {
+        "id": 3,
+        "result": {
+          "text": "Retries are capped at 5.",
+          "context": []
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

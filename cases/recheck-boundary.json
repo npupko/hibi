@@ -1,0 +1,106 @@
+[
+  {
+    "name": "one unit before the boundary is not expired",
+    "input": {
+      "from": "2026-01-01T00:00:00.000Z",
+      "duration": "P1D",
+      "now": "2026-01-01T23:59:59.999Z"
+    },
+    "expected": {
+      "expired": false
+    },
+    "source": "test/expiry.test.ts › counting rule (SPEC 5) › the boundary is inclusive: now >= at + ttl",
+    "origin": "copied"
+  },
+  {
+    "name": "exactly at the boundary is expired",
+    "input": {
+      "from": "2026-01-01T00:00:00.000Z",
+      "duration": "P1D",
+      "now": "2026-01-02T00:00:00.000Z"
+    },
+    "expected": {
+      "expired": true
+    },
+    "source": "test/expiry.test.ts › counting rule (SPEC 5) › the boundary is inclusive: now >= at + ttl",
+    "origin": "copied"
+  },
+  {
+    "name": "P30D from Mar 1, one second before",
+    "input": {
+      "from": "2026-03-01T00:00:00Z",
+      "duration": "P30D",
+      "now": "2026-03-30T23:59:59Z"
+    },
+    "expected": {
+      "expired": false
+    },
+    "source": "test/expiry.test.ts › counting rule (SPEC 5) › the newest counting attestation wins; later non-counting ones are ignored",
+    "origin": "copied"
+  },
+  {
+    "name": "P30D from Mar 1, at the boundary",
+    "input": {
+      "from": "2026-03-01T00:00:00Z",
+      "duration": "P30D",
+      "now": "2026-03-31T00:00:00Z"
+    },
+    "expected": {
+      "expired": true
+    },
+    "source": "test/expiry.test.ts › counting rule (SPEC 5) › the newest counting attestation wins; later non-counting ones are ignored",
+    "origin": "copied"
+  },
+  {
+    "name": "P30D, one day later",
+    "input": {
+      "from": "2026-01-01T00:00:00.000Z",
+      "duration": "P30D",
+      "now": "2026-01-02T00:00:00Z"
+    },
+    "expected": {
+      "expired": false
+    },
+    "source": "test/expiry.test.ts › counting rule (SPEC 5) › vouch by human: counts",
+    "origin": "copied"
+  },
+  {
+    "name": "now before from is not expired",
+    "input": {
+      "from": "2026-01-10T00:00:00Z",
+      "duration": "P1D",
+      "now": "2026-01-01T00:00:00Z"
+    },
+    "expected": {
+      "expired": false
+    },
+    "source": "computed: src/engine/expiry.ts isExpired",
+    "origin": "computed"
+  },
+  {
+    "name": "P1M from Jan 31 expires at Feb 28 (clamped)",
+    "input": {
+      "from": "2026-01-31T00:00:00Z",
+      "duration": "P1M",
+      "now": "2026-02-28T00:00:00Z"
+    },
+    "expected": {
+      "expired": true
+    },
+    "source": "computed: src/engine/expiry.ts isExpired",
+    "origin": "computed"
+  },
+  {
+    "name": "P0D is expired immediately",
+    "input": {
+      "from": "2026-01-01T00:00:00Z",
+      "duration": "P0D",
+      "now": "2026-01-01T00:00:00Z"
+    },
+    "expected": {
+      "expired": true
+    },
+    "source": "computed: src/engine/expiry.ts isExpired",
+    "origin": "computed"
+  }
+]
