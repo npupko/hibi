@@ -239,7 +239,9 @@ command writes a second claim; re-anchor the existing claim instead.
 sentence, so its quoted words changed: the subject is `missing`
 (`not_exact`), and the edited sentence is listed as a candidate. An edit
 elsewhere in a long sentence, away from a shorter quote, gives `changed`
-instead, and then `mark` is the step, as for code:
+instead (unless it is in the first 120 characters of the first sentence of
+a paragraph or list item with several sentences, which renames the
+paragraph and gives `missing`), and then `mark` is the step, as for code:
 
 ```bash
 hibi status

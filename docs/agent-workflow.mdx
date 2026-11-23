@@ -19,7 +19,8 @@ when it cannot decide.
     By default `status` lists the stale and expired claims. For each one it
     lists the sides that are not the same as at the mark, with a state and a
     reason, and a `next` command. A side that cannot be found exactly also
-    lists candidates: units it could mean, each with an anchor. Add `--detail` to
+    lists candidates: units it could mean, each with an anchor, or with none when
+the unit is identical, where it stands, to another unit. Add `--detail` to
     include the current text of every side:
 
     ```bash
@@ -49,7 +50,9 @@ when it cannot decide.
     declarations as when the claim was made. A quote follows its words in
     their container (the heading and paragraph, or the enclosing
     declaration), with the text right around them unchanged. Anything else
-    makes the side `missing` (`not_exact`) or `ambiguous`, with candidates:
+    makes the side `missing` (`not_exact`, or `selector_not_found` when the
+    anchor matches nothing where it points) or `ambiguous`, usually with
+    candidates:
 
     - the quoted words of a sentence, or the words right around a quoted
       phrase, were edited;
@@ -122,8 +125,12 @@ when it cannot decide.
 
 ## Reading `next`
 
-`next` is one command line quoted for a POSIX shell, or `null`. A part you
-must supply is written `<anchor>` or `<text>`. Commands that hibi prints, in
+`next` is one command line, or `null`. It is a template and is not
+shell-quoted. Replace each `<anchor>` before you run it, quoting the anchor
+for your shell, because a shell reads `<` and `>` as redirections. A fix
+line that repeats a `reanchor` command quotes the arguments you gave for a
+POSIX shell, and can hold `<anchor>` or `<text>`, which you replace the same
+way. Commands that hibi prints, in
 `next` and in fix lines, assume the same working directory and the same
 `--root` as the command that printed them; add `--root` yourself when you
 used it. hibi picks the first row that
@@ -132,9 +139,9 @@ applies:
 | Condition | `next` |
 |---|---|
 | Fresh or retired | `null` |
-| A side is missing or ambiguous, its stored line is gone from its declaration, or the provider refuses its stored anchor (`selector_refused`) | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side |
+| A side is missing or ambiguous, its stored line is gone from its declaration, or the provider refuses its stored anchor (`selector_refused`) | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side, and one per side that is unavailable because its file is not text or too large, its provider answered with an error, or its code file does not parse |
 | A side is unavailable because its provider is not registered, or a sibling repository is not allowed | `hibi providers` |
-| A side is unavailable because its provider failed | `hibi providers --check <scheme>`, which starts the provider and reports what fails |
+| A side is unavailable because its provider failed | `hibi providers --check <scheme>`, which starts the provider and reports what fails; `hibi providers` for the `file` and `repo` schemes |
 | A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, a code file does not parse, or git's file list cannot be read | `null`; the side's `remediation` says what to do |
 | Otherwise: expired, a side changed, or a side is unavailable with `profile_mismatch` | `hibi mark <id>` |
 
@@ -208,16 +215,17 @@ Re-check each statement before running its next command. If it no longer holds, 
 ## JSON for agents
 
 In an agent's shell tool standard output is not a terminal, so each command
-prints one JSON object. The fields an agent reads from `status`:
+prints one JSON object, except `hibi completions`, `hibi schema <name>` and
+`--help`, which print text. The fields an agent reads from `status`:
 
 | Field | Meaning |
 |---|---|
 | `summary` | Counts of every claim in the store by state, before any filter |
 | `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
-| `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `unit`, `fp`, `markedFp`, `remediation` and `detail`; `candidates` and `candidatesTotal` for a side that is missing (`not_exact`) or ambiguous; `text` with `--detail` |
+| `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `unit`, `fp`, `markedFp`, `remediation` and `detail`; `candidates` and `candidatesTotal` for a side that is ambiguous, missing with `not_exact`, or missing with `selector_not_found` when a unit in the file has the content at the reference mark; `text` with `--detail` |
 | `claims[].sides[].candidates[]` | A unit the anchor could mean: `key`, `kind`, `label`, `line`, `endLine`, `text` (whole with `--detail`, otherwise at most 240 characters; cut text ends with `… (<n> characters)`), `anchor` and `sameFingerprint`. `anchor` is a string that selects that unit alone, or `null` when no anchor selects the unit alone, because it is identical, where it stands, to another unit. At most 20 are listed; `candidatesTotal` counts all of them. |
 | `claims[].sides[].detail` | For an unavailable side: the message that says why, from the provider or from hibi. For a `not_exact` side: why nothing resolved, "the stored anchor no longer identifies one unit", or "the name and the quoted text now point to different units: ..." when a `#name::<line>` anchor's line moved into another declaration. For a changed side whose stored line is gone from its declaration: "the stored quote is no longer in this unit". Otherwise `null` |
-| `claims[].sides[].remediation` | For a side that cannot be evaluated: the limit or the cause and what you can do, otherwise `null` |
+| `claims[].sides[].remediation` | For a side that cannot be evaluated, except one with `profile_mismatch`: the limit or the cause and what you can do. For a missing or ambiguous side with a candidate whose `anchor` is `null`: what to anchor instead. Otherwise `null` |
 | `claims[].next` | The command to run after a successful re-check, or `null` |
 | `nextNote` | The reminders: re-check a statement before running its `next`; when it no longer holds, fix the text or the code, or retire the claim; and a candidate is a guess to read before you anchor to it |
 
@@ -233,15 +241,19 @@ tell you, because the claim is fresh either way.
 
 Every write that adds a mark to an existing claim (`claim` on an existing
 claim, `mark`, `reanchor`) reports what it accepted:
-`"accepted": {"was": <state before>, "sides": [{"index", "role", "loc", "state", "reason"}]}`,
-listing the sides that were not `same`; for a new claim `accepted` is `null`.
+`"accepted": {"was": <state before>, "sides": [{"index", "role", "loc", "state", "reason", "text"}]}`,
+listing the sides that were not `same`. `text`, the whole text that was
+marked, is present for a `changed` side and, from `reanchor`, for every
+listed side the new claim keeps. For a new claim `accepted` is `null`.
 In text this is a line such as
-`was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked`.
+`was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it`,
+followed by the text of each changed side after "is now:".
 Every result that carries a `next` also carries `nextNote`.
 
-Errors are `{"ok": false, "errors": [{"code", "message", "remediation"}]}` with
-exit status 1. `remediation` is one sentence or one command that fixes the
-cause.
+Errors are `{"ok": false, "command": <command>, "errors": [{"code", "message", "remediation"}]}`,
+and an error from a `--stdin` element also has its `index`, with
+exit status 1. `remediation` is text or a command that says how to fix the
+cause, or `null` when hibi has none for that error.
 
 ## Batches
 
@@ -273,7 +285,7 @@ EOF
 ```
 
 Each element of a `cover` item list carries an `anchor` object that can be
-used as `subject` as it is. `hibi schema claim-input` and
+used as `subject` as it is, or `null` when no anchor selects the unit alone. `hibi schema claim-input` and
 `hibi schema mark-input` print the schemas of these documents.
 
 ## Who checked

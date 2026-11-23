@@ -26,7 +26,8 @@ gating mode: every command exits 0 when it ran, whatever it found.
 The earlier model tied a claim's subject to a sentence in a text file, so a
 tool whose facts live elsewhere, such as an architecture database, could not
 use it. Now a claim's subject and evidence are both anchors: a locator plus a
-selector, served by a provider. The core knows nothing about documents; the
+selector, served by a provider. The core works with the units that providers
+serve, not with documents; the
 built-in file provider serves documents and code, and any other tool can serve
 its own resources through an [external provider](/providers/external).
 
@@ -76,8 +77,8 @@ TypeSafe's Jev model is useful for bulk an agent would not read, such as
 ranking thousands of uncovered sentences. A model's answer is a judgement,
 and hibi's only source of repeatable answers is its own cache. A wrong order
 hides nothing, but a wrong verdict would. So the judge never changes a
-claim's state or what a command reports; it only ranks, and only when you set
-a key. See [the judge](/judge).
+claim's state or which claims `status` lists; it only ranks, and only when you
+set a key. See [the judge](/judge).
 
 ## The store travels in git
 

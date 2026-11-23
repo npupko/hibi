@@ -4,8 +4,10 @@ description: "Optional, advisory ranking by TypeSafe's Jev model: what it does, 
 ---
 
 Three optional features ask a language model for a ranking. They are
-advisory: no answer is written to the store, changes a claim's state, or
-changes which claims or units a command reports. They only rank and label.
+advisory: no answer is written to the store or changes a claim's state, and
+`status --judge-order` lists the same claims as `status`. They only rank and
+label; `triage` and `suggest-evidence` print the top of the ranking, up to
+`--limit`.
 
 | Command | Ranks |
 |---|---|
@@ -25,8 +27,11 @@ These commands send text to TypeSafe's API at
 
 ## What is sent
 
-Every request names the model `jev-1.14.0`. Each item is its own question,
-and an item's text is cut to its first 4,000 characters.
+Every request names the model `jev-1.14.0` and carries hibi's fixed
+question wording, with the key in the `Authorization` header. Each
+`suggest-evidence` candidate and each stale claim is one question, and each
+`triage` unit is two. Each text in a question is cut to its first 4,000
+characters. A question whose answer is cached is not sent.
 
 | Command | Sent per request | Sent per item |
 |---|---|---|
@@ -122,7 +127,9 @@ with "These are units to read, not findings."
 
 ### `status --judge-order`
 
-Only the order of the stale claims changes: most likely broken first. A side
+Only the order of the listed claims changes: stale claims come first, most
+likely broken first, and every listed claim that is not stale follows, by
+id. A side
 cannot be rendered when it does not resolve to exactly one unit (it is
 missing, ambiguous or unavailable), when its provider does not offer
 `render` or `render` fails, or when it is a `file:` or `repo:` side whose
@@ -146,4 +153,5 @@ partial result. A failed call is never read as a "no".
 
 `HIBI_JEV_URL` replaces the service address. It exists for tests. It must be
 an `https://` URL, or an `http://` URL to `127.0.0.1`, `[::1]` or
-`localhost`; any other value is `invalid_argument` before anything is sent.
+`localhost`; an empty value means the default address, and any other value
+is `invalid_argument` before anything is sent.

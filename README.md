@@ -218,7 +218,8 @@ shell script, `hibi schema <name>`, which prints the schema itself, and
 | Retirement | A permanent record that a claim no longer applies, optionally naming the claim that replaces it. |
 | Scope | A declaration in `.hibi/hibi.toml` that every unit of given kinds in matching resources must be covered by a claim. |
 
-The core knows nothing about documents. A provider turns a locator into
+The core works with the units that providers serve, not with documents. A
+provider turns a locator into
 units, their text and their fingerprints. The built-in file provider serves
 `file:` and `repo:` locators: prose, plain text, and code in TypeScript,
 TSX, Python, Rust, Go and Java. Any other tool can serve its own units,

@@ -44,17 +44,31 @@ including how to report a vulnerability, is in
   provider.
 - **Send data off the machine.** Only `triage`, `suggest-evidence` and
   `status --judge-order` use the network, and only with `TYPESAFE_API_KEY`
-  set. What they send is listed on [the judge](/judge#what-is-sent) page: for
-  files, only text of files git lists (tracked, or untracked and not
-  ignored); for `status --judge-order`, also the claims' statements and the
-  rendered text of sides served by external providers.
+  set, which is sent in the `Authorization` header. Each request carries the
+  model name and hibi's fixed question wording, plus: for `triage`, a
+  document's locator and, per uncovered prose unit, its text and the
+  headings above it; for `suggest-evidence`, your statement and, per
+  candidate unit, its locator, label and text; for `status --judge-order`,
+  per stale claim whose sides can all be rendered, its statement and the
+  current text of each side. Text of a `file:` or `repo:` unit is sent only
+  when git lists the file (tracked, or untracked and not ignored); text of a
+  side served by an external provider is what its `render` returns. See
+  [the judge](/judge#what-is-sent).
 
 ## Caveats
 
-- **The git hardening is reasoned, not proven.** The list of git options was
-  derived from git's documentation. The tests ran with git 2.55.0, one of them
-  against one hostile repository layout. Whether the options stop every
-  program that repository configuration can name was not verified for every
+- **The git hardening is tested, not proven.** Every git process starts
+  with `--no-pager`, `-c core.quotePath=false`,
+  `-c safe.bareRepository=explicit`, `-c core.fsmonitor=false` and
+  `-c core.untrackedCache=false`, and a git older than 2.45.0 is refused
+  with `git_too_old`. The tests run with the git installed where they run.
+  They check that every call carries these options and the environment
+  above; that a bare-repository layout committed inside the tree, whose
+  config names an fsmonitor program, runs nothing, while plain git runs it;
+  that `core.fsmonitor=false` wins over an fsmonitor set in the root's
+  `.git/config` or in `GIT_CONFIG_*` variables; and that inherited
+  `GIT_DIR`, `GIT_WORK_TREE` and `GIT_INDEX_FILE` do not redirect git. No
+  test covers every program that repository configuration can name, or each
   git version from 2.45.0 on.
 - **`--since` can run a clean filter.** `git diff`, which `--since` uses on
   the root repository, can run a `clean` filter named in that repository's own

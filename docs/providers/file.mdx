@@ -90,7 +90,9 @@ only an HTML or JSX tag, and thematic breaks (`---`, `***`, `___`). A fenced
 code block is one unit of kind `fenced`. A heading, a list item, a blockquote
 line and a table row each start a new piece; a table's separator row is
 dropped. Pieces other than headings and fences are cut into sentences after
-`.`, `!` or `?` followed by whitespace, except inside an inline code span.
+`.`, `!` or `?` followed by whitespace, or followed by one `"`, `'`, `)` or
+`]` and then whitespace. There is no cut inside an inline code span, inside
+a list item's marker such as `3.`, or at the end of a table row.
 
 Three consequences of these rules can surprise:
 
@@ -291,9 +293,11 @@ Unit keys identify a unit within one file:
 | A prose unit, statement or block | `<kind>:<12 hex digits of its fingerprint>`, such as `sentence:619145cf695d` |
 
 A declaration key stays the same when the declaration is edited or moved
-within the file. A content key stays the same when the unit moves and changes
-when its text changes. When two units of a file would get the same key, the
-second and later get `~2`, `~3` and so on. Exclusions in a scope use these
+within the file. A content key stays the same when the unit moves or is edited in a way
+its fingerprint ignores, such as whitespace, and changes when its
+fingerprint changes. When two units of a file would get the same key, the
+second and later in the file get `~2`, `~3` and so on, so moving one of them
+ahead of the other swaps their keys. Exclusions in a scope use these
 keys.
 
 ## Sibling repositories

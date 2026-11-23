@@ -54,13 +54,14 @@ declaration by name (`#name` or `#name::<line>`) stays fresh. The one line
 break that counts is a Python backslash continuation.
 
 A bare quote is different, because it is found by the text right around it
-inside its unit. Such an edit right next to the quote makes the side
+inside its unit. Such an edit near the quote makes the side
 `missing` (`not_exact`), with the unit as a candidate: a comment inserted
-inside the quoted text, or between tokens with no whitespace around it
-within 48 characters of the quote, a TSX `{/* */}` removed, a trailing comma
-removed next to the quote, or whitespace added between tokens where there
-was none, within 48 characters of it. A changed run of whitespace has no
-effect. Such an edit never makes a claim fresh that should be stale.
+inside the quoted text, a comment or whitespace inserted between two tokens
+with no whitespace between them within 48 characters of the quote, a TSX
+`{/* */}` removed, or a trailing comma removed next to the quote. A comment
+or whitespace added right at the edge of the quote, between the quote and
+the token next to it, changes nothing; the same edit one token further away
+makes the side `missing`. A changed run of whitespace has no effect. Such an edit never makes a claim fresh that should be stale.
 
 A formatter that changes semicolons, quote style or parentheses stales
 claims, and each stale claim needs a re-check and a `mark`.
@@ -119,11 +120,7 @@ anchored until it parses. Every side on it, whatever its anchor (a name, a
 quote or the whole file), is `unavailable` with reason
 `resource_unavailable`. The message names the line where the parser reports
 its first error. The mistake itself can be before or after that line, and by
-many lines: for an unclosed string in Java the parser reports the line of
-the class around it, for an unclosed block comment in Rust the end of the
-file at the top level or the first line of the item inside an item, and a
-deleted `}` in TypeScript, Go or Java can be reported four or five lines
-away. In this file the string on line 4 is not closed:
+many lines. In this file the string on line 4 is not closed:
 
 ```java src/Conf.java
 class Conf {

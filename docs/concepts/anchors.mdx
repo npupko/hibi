@@ -19,7 +19,7 @@ after the file is edited.
 
 | Key | Meaning |
 |---|---|
-| `quote` | Text that occurs in the unit. Matched as given, untrimmed. |
+| `quote` | Text that occurs in the unit. Leading and trailing whitespace is ignored, and a run of whitespace matches a run of any length. |
 | `symbol` | The declaration path of a code unit, such as `MAX_ATTEMPTS`, `Config.timeout_secs` or `Store.get`. |
 | `prefix`, `suffix` | Added by hibi. The text right before and after the quote, up to 48 characters each, cut from the unit's own text. A window never reaches into a neighbouring unit. |
 | `within` | Added by hibi to a quote whose unit has a container: its heading path, and the paragraph, list item or table row when that holds several sentences; in code, the enclosing declaration. |
@@ -69,7 +69,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
   of the declaration only asks you to re-check.
 - **Prose, and code outside any declaration: a quote.** Quote the words the
   claim is about. A whole sentence is a good quote; a short phrase works when
-  it occurs once in its paragraph.
+  no other unit of the file holds it.
 
 Quote whole lines or whole tokens when you type a quote. A quote is
 matched as text, so the line of a `#name::<line>` anchor that ends inside a
@@ -124,9 +124,9 @@ does not.
 
 An anchor as you type it must select one unit. Occurrences of the quote
 inside one unit resolve to that unit. Occurrences in more than one unit are
-`side_ambiguous`, whatever the length of the quote. The error lists every
-unit with an anchor that selects it, so you can pass one of those, make the
-quote longer, or add a symbol:
+`side_ambiguous`, whatever the length of the quote. The error lists the units, at most 20 and then how many more, each with an
+anchor that selects it, so you can pass one of those or make the quote
+longer; in code you can also add a symbol:
 
 ```text output
 $ hibi claim "x" --subject "file:docs/cache.md::The cache"
@@ -148,9 +148,10 @@ marked as not selectable alone. Anchor the unit that contains them instead.
 The last sentence of the message names it: a declaration only when one
 declaration holds every unit of the file that cannot be told apart from a
 listed one, also those not listed, and otherwise the whole file.
-The code `quote_not_distinguishable` is a guard behind this: it refuses a
-quote whose stored form could not tell it apart from another place in the
-same scope. The file provider does not produce it in practice.
+The code `quote_not_distinguishable` is a guard behind this: before a new
+anchor is stored, the file provider resolves the anchor it would store, and
+refuses the new anchor with this code when that anchor does not select the
+same unit alone.
 
 ## How a stored anchor finds its unit
 
@@ -258,8 +259,8 @@ Re-check each statement before running its next command. If it no longer holds, 
 The first 120 characters of a paragraph's first sentence name the
 paragraph. In the example above
 it changed from "Each attempt times out after 30 s." to "... 45 s.", so a
-claim on the unchanged third sentence of that paragraph is a candidate as
-well. The sentence has the content that was marked, so it is listed first:
+claim on the unchanged third sentence of that paragraph is `missing` as
+well, with that sentence as a candidate. The sentence has the content that was marked, so it is listed first:
 
 ```text output
 $ hibi status c1-7sf7
@@ -539,9 +540,9 @@ Re-check each statement before running its next command. If it no longer holds, 
 
 ### Why a side is `not_exact`
 
-The line under a `not_exact` side, its `detail` in JSON, and the start of
-the `side_missing` error of `mark`, `claim` and `reanchor` say why nothing
-resolved:
+The line under a `not_exact` side, its `detail` in JSON, and the
+`side_missing` error of `mark`, `claim` and `reanchor`, after "resolves to
+no unit (not_exact):", say why nothing resolved:
 
 | Message | Meaning |
 |---|---|
@@ -549,8 +550,8 @@ resolved:
 | "the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text" | A `#name::<line>` anchor whose line is now in another declaration |
 
 A new anchor that only similar text was found for fails with
-`selector_not_exact`, and its message starts with "the anchor matches no
-unit exactly".
+`selector_not_exact`, and its message says "the anchor matches no unit
+exactly" after the side and its locator.
 
 ### Candidates
 
@@ -569,15 +570,18 @@ refuses it, and `next` asks you for an anchor. Freshness is always exact
 Candidates are guesses, and the right unit may not be among them. A unit
 that moved to another file is never a candidate, because only the side's
 own file is searched. A declaration that was renamed is not a candidate
-unless its content is unchanged. Look for it yourself and give its anchor.
+for a claim that names it with `#name` alone; with `#name::<line>`, or a
+quote inside it, the units that still hold the quoted text are candidates. Look for it yourself and give its anchor.
 
 Each candidate carries an anchor that selects it alone. The anchor is
 `<loc>#<symbol>` when that symbol occurs once in the whole file, and the
 unit's full anchor as JSON otherwise. A printed anchor quotes the unit's
-first line, its whole text, or for a duplicated declaration the first line
-only it holds. That can be wider than the words the claim was about, or
-another line of the declaration. A printed quote is cut at 120 characters
-and can end inside a word; it still selects its unit. The advice to quote
+first line, its whole text, a run of its lines when neither of those
+selects it alone, or for a duplicated declaration the first line only it
+holds. That can be wider than the words the claim was about, or another
+line of the declaration. A first-line quote is cut at 120 characters and
+any other quote at 2,048, so it can end inside a word; it still selects its
+unit. The advice to quote
 whole lines or tokens is for quotes you type. When the claim is about particular words,
 such as a number or one line of code, anchor the candidate with a quote of
 your own instead (`<loc>::<words>` or `<loc>#<name>::<line>`). Units that are identical where they
@@ -618,7 +622,7 @@ text that is cut ends with `… (<n> characters)`, the length of the whole
 text.
 
 A new anchor whose symbol names several declarations is `ambiguous` and
-lists every one. Two Python functions with the same name give JSON anchors:
+lists them, at most 20 and then how many more. Two Python functions with the same name give JSON anchors:
 
 ```text output
 $ hibi claim "x" --subject "file:README.md::A job runs" --evidence "file:src/jobs.py#run"
@@ -683,8 +687,8 @@ that states them; other pages link here.
 - Two numbered lists in one section are one scope. It takes two edits for
   a claim to move between them: a step removed from the first list, which
   renumbers its items, and an item of the second list edited to read as the
-  claimed item did. A claim on "3. Ship." in the first list then follows
-  "3. Ship." in the second list, fresh. One removal alone makes the claim
+  claimed item did. A claim on the item `3. Ship.` in the first list then
+  follows the item `3. Ship.` in the second list, fresh. One removal alone makes the claim
   `missing` or `ambiguous`.
 - `count` cannot see a swap. When one of several sections with the same
   path is removed and another with that path is added, or one is emptied
@@ -699,8 +703,9 @@ that states them; other pages link here.
   be claimed: a quote of one is `side_ambiguous`, and no anchor is offered
   for either. When a unit there is copied and the original is then edited,
   the copy takes the claim.
-- A renamed or deleted heading, paragraph or declaration makes its claims
-  candidates until they are re-anchored, unless another container then has
+- A renamed or deleted heading, paragraph or declaration makes the claims
+  in it `missing` until they are re-anchored, with the units that still
+  hold the quoted text as candidates, unless another container then has
   the old name: a section or function renamed to it, or a pasted copy
   (above). Then the claims follow that name.
 - A function renamed while its claim names it alone shows no candidate.

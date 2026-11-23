@@ -3,7 +3,8 @@ title: "External providers"
 description: "Serve your own resources to hibi through a command that speaks a JSON-lines protocol."
 ---
 
-hibi's core knows nothing about documents. Any tool whose facts live
+hibi's core works with the units that providers serve, not with documents.
+Any tool whose facts live
 somewhere other than files, such as a database of architecture decisions, can
 serve them as units through an external provider: a program that hibi starts
 and talks to over standard input and output. Claims can then anchor to those
@@ -161,8 +162,10 @@ Protocol version 1. The full specification is section 13 of
   expires, like one that does not answer. A response line longer than 16 MiB
   is a violation.
 - When it is done, hibi closes standard input. The provider must then exit
-  with status 0 within 2 seconds; hibi kills it after that. Output written
-  after the last response is limited to 65,536 bytes.
+  with status 0 within 2 seconds; hibi kills it after that. In a normal run
+  hibi does not read output written after the last response;
+  `hibi providers --check <scheme>` reads at most 65,536 bytes of it and
+  fails the case when there is more, and it also checks the exit status.
 - A provider that writes a line when no request is waiting, or exits while a
   child process still holds its output pipes, is treated as failed at once.
 - On a timeout, an oversized line, a line that is not a JSON object, a
@@ -239,16 +242,17 @@ the keys the provider listed in `selectors` in its `hello`:
 | Key | Meaning |
 |---|---|
 | `quote` | Text that occurs in the unit |
-| `prefix`, `suffix` | The text right before and after the quote, as your provider returned it in a `sel` |
-| `within` | The container of the unit, as your provider returned it in a `sel` |
+| `prefix`, `suffix` | The text right before and after the quote |
+| `within` | The container of the unit |
 | `symbol` | A declaration path |
-| `count` | With `symbol`, how many declarations the symbol named; with `within`, how many containers the path named; as your provider returned it in a `sel` |
+| `count` | With `symbol`, how many declarations the symbol named; with `within`, how many containers the path named |
 | `key` | A unit key |
 
 Listing `quote` in `selectors` also allows `prefix`, `suffix`, `within`
 and, together with `within`, `count`; listing `symbol` also allows
-`count`. hibi sends these keys only when they
-are in a stored `sel` your provider returned. The empty selector `{}` is
+`count`. hibi sends these keys when they
+are in a stored `sel` your provider returned, or in an anchor given as JSON,
+which hibi sends as typed. The empty selector `{}` is
 always allowed. A selector is closed: hibi never sends
 a key the provider did not list, and rejects a returned `sel` with an unknown
 key or an unlisted one. A stored selector with a key your provider no
@@ -304,8 +308,8 @@ was made for changed, or `stale` because of an unrelated change.
 When your provider cannot tell, return the units it could mean with
 `approx: true`. hibi never resolves a side to such a unit: when any unit of
 an answer has `approx: true`, the side is `missing` with reason `not_exact`,
-and every unit of the answer is listed as a candidate for the agent to
-choose. One unit without `approx` resolves the side. Several units without
+and the units of the answer are listed as candidates for the agent to
+choose, at most 20, with the count of all of them. One unit without `approx` resolves the side. Several units without
 `approx` make it `ambiguous`.
 
 The reference provider resolves by `key`, by `quote` (every unit containing

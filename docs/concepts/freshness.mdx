@@ -74,7 +74,9 @@ practice:
   re-check, and `hibi reanchor` the side if the statement still holds.
   `mark` refuses the claim.
 - **A sentence edited elsewhere, away from the quote, is `changed`**, as
-  for code.
+  for code. An edit in the first 120 characters of the first sentence of a
+  paragraph or list item with several sentences is the exception: it
+  renames the paragraph, and the claims there are `missing`.
 - **An edit to another sentence usually changes nothing.** Edits that
   rename or restructure its paragraph or section are the exception: the
   claims there are `missing`, usually with the right sentence listed first.
@@ -93,10 +95,12 @@ re-anchor it.
 
 An unavailable side also carries `detail`, the message that says why, from
 the provider or from hibi, and `remediation`, what the limit or the cause is
-and what you can do. A `missing` side with reason `not_exact`, and a changed
+and what you can do. A side with reason `profile_mismatch` has neither. A `missing` side with reason `not_exact`, and a changed
 side whose stored line is gone from its declaration, carry a `detail` as
 well. A `changed` side is followed by the unit's text as it is now. The text output prints both under
-the side. For a scheme whose declaration was
+the side, except the detail of a `resource_unavailable` side, which its
+remediation repeats, and the remediation of a `provider_not_registered`,
+`provider_failed` or `repo_not_allowed` side. For a scheme whose declaration was
 removed:
 
 ```text output

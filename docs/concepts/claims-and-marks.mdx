@@ -141,8 +141,9 @@ error: selector_not_exact: evidence 1 (file:src/ab.py): the stored quote is no l
 ```
 
 `reanchor` marks every changed side it keeps, not only the side it
-re-points, and prints after "is now:" the text of each side of the new
-claim that it accepted, the re-pointed side included. Because `reanchor`
+re-points, and prints after "is now:" the text the new claim has for each
+side that was not `same` before the write, re-pointed or not. A side that
+was `same` gets no such text. Because `reanchor`
 writes a mark, run it only after you checked the statement against every
 changed side.
 
@@ -171,7 +172,8 @@ number of sides with the same locators, and every stored side resolving to
 the same unit as the anchor you gave. Selectors are not compared, so
 `#MAX_ATTEMPTS` and a quote on that constant name the same side, and so do a
 quote and a longer quote in one sentence. If it finds such a claim, it marks
-it (the one with the smallest id if there are several) and does not rewrite
+it (the one whose id is the id the new claim would get, if there is one,
+and otherwise the one with the smallest id) and does not rewrite
 its stored anchors. The result says what the claim was before the mark. This
 is how a stale claim shows up when you claim it again after the function
 changed:
@@ -225,7 +227,8 @@ chain ends in a retired claim, it says `was replaced, and the last claim of
 that chain, <last>, was retired`, with the fix line of a retired claim.
 
 Two elements of one `--stdin` batch that are the same claim make one claim.
-The second reports the first one's id and the same mark:
+The second reports the first one's id, and the same mark when both
+elements have the same `by`; a different `by` adds a second mark:
 
 ```text output
 $ echo '[{"statement": "The queue is bounded.", "subject": "file:docs/limits.md::The queue holds 100 jobs."}, {"statement": "The queue is bounded.", "subject": "file:docs/limits.md::holds 100 jobs"}]' | hibi claim --stdin
