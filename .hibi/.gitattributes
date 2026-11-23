@@ -1,0 +1,2 @@
+claims/*.jsonl text eol=lf merge=union linguist-generated
+marks/*.jsonl text eol=lf merge=union linguist-generated
