@@ -1,0 +1,34 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"status\"])"
+---
+$ hibi status
+exit status: 0
+---- standard output ----
+2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
+
+c1-grbrgqr9cw0g47arm9tx  stale  The threshold is 50.
+  marked 2026-11-20T12:00:00Z (m1-fche2xvrp22ac1qvynp3)
+  evidence 1  file:src/report.py  unavailable (resource_unavailable)
+    file:src/report.py does not parse as python (the parser reports its first error at line 1), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: hibi reanchor c1-grbrgqr9cw0g47arm9tx --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor c1-grbrgqr9cw0g47arm9tx --drop-evidence 1 drops it.
+
+c1-rd7108gmy3g6n4kr30mk  stale  The retry count is 3.
+  marked 2026-11-20T12:00:00Z (m1-4ga5k9vwzprxzfwk7m3b)
+  subject  file:docs/retry.md  ambiguous (several_units)
+    Units that are identical where they stand cannot be anchored one by one. Anchor the whole file instead: file:docs/retry.md
+    stored: quote "The retry count is 3."
+    2 candidates; the stored anchor matches each of them:
+    - sentence "The retry count is 3.", line 5; same content as at the reference mark
+      | line 5 of the resource
+      cannot be told apart from another unit: no anchor selects it alone
+    - sentence "The retry count is 3.", line 11; same content as at the reference mark
+      | line 11 of the resource
+      cannot be told apart from another unit: no anchor selects it alone
+  evidence 1  file:docs/data.md  unavailable (not_text)
+    file:docs/data.md is not valid UTF-8
+    The resource is not UTF-8 text, so it has no units. Anchor a text file; in a scope, add an exclusion for the resource. To move on without that: hibi reanchor c1-rd7108gmy3g6n4kr30mk --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor c1-rd7108gmy3g6n4kr30mk --drop-evidence 1 drops it.
+  next: hibi reanchor c1-rd7108gmy3g6n4kr30mk --subject <anchor> --evidence 1=<anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+---- standard error ----
+(empty)

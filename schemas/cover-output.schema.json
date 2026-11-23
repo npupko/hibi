@@ -1,0 +1,483 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi cover output",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "command": {
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean",
+      "const": true
+    },
+    "scopes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ScopeReport"
+      }
+    },
+    "since": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SinceView"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "summary": {
+      "$ref": "#/$defs/CoverSummary"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "since",
+    "summary",
+    "scopes",
+    "warnings"
+  ],
+  "$defs": {
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "CoverItem": {
+      "description": "One uncovered unit in the output of `cover`.",
+      "type": "object",
+      "properties": {
+        "anchor": {
+          "description": "The unit's locator with its completed selector; can be passed to\n`claim --stdin`.\n`null` when no anchor selects this unit alone: the provider says so,\nor another uncovered unit of the resource carries the same printed\nanchor. The unit is identical to another one where it stands.\nOnly an exclusion that names its key takes it out of the scope: a\nclaim on the unit that contains it does not cover it.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "text": {
+          "description": "The unit text cut to 240 characters; `null` when the provider did\nnot return the unit for its own completed selector.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "$ref": "#/$defs/UnitRef"
+        }
+      },
+      "required": [
+        "loc",
+        "unit",
+        "text",
+        "anchor"
+      ]
+    },
+    "CoverSummary": {
+      "description": "`summary` in the output of `cover`: the sums over the listed scopes.",
+      "type": "object",
+      "properties": {
+        "covered": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "excluded": {
+          "description": "Units excluded by exclusions that name a unit.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "excludedResources": {
+          "description": "How many resources exclusions without `unit` took out of the listed scopes, summed\nover the scopes.\nThey are not read, so their units are in none of the unit counts.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "uncovered": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "units": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "units",
+        "covered",
+        "excluded",
+        "uncovered",
+        "excludedResources"
+      ]
+    },
+    "ExclusionReport": {
+      "description": "One exclusion of a scope with what it took out (section 10.1). For an\nexclusion without `unit`, `matched` is the number of resources it took\nout of the scope; they are not read. For one with `unit` it is the\nnumber of units it excluded. What several exclusions of a kind match\ncounts for the first in declaration order.",
+      "type": "object",
+      "properties": {
+        "matched": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "reason": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "resource",
+        "unit",
+        "reason",
+        "matched"
+      ]
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^(?:file:(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|repo:[a-z0-9][a-z0-9-]*//(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|(?!file:|repo:)[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+)$"
+    },
+    "Reason": {
+      "description": "Why a side is not `same` (section 9.2). A closed list.",
+      "type": "string",
+      "enum": [
+        "scheme_not_declared",
+        "provider_not_registered",
+        "provider_failed",
+        "resource_not_found",
+        "not_text",
+        "too_large",
+        "repo_not_found",
+        "repo_not_allowed",
+        "provider_error",
+        "resource_unavailable",
+        "selector_refused",
+        "selector_not_found",
+        "not_exact",
+        "several_units",
+        "no_mark",
+        "fingerprint_differs",
+        "profile_mismatch"
+      ]
+    },
+    "ScopeReport": {
+      "description": "One scope in the output of `cover`.",
+      "type": "object",
+      "properties": {
+        "covered": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "excluded": {
+          "description": "Units excluded by exclusions that name a unit.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "excludedResources": {
+          "description": "How many resources exclusions without `unit` took out of the scope.\nThey are not read, so their units are in none of the unit counts.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExclusionReport"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CoverItem"
+          }
+        },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "skipped": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skipped"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "truncated": {
+          "description": "True when `items` was cut to `--limit`.",
+          "type": "boolean"
+        },
+        "unavailable": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UnavailableResource"
+          }
+        },
+        "uncovered": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "units": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "name",
+        "resource",
+        "kinds",
+        "units",
+        "covered",
+        "excluded",
+        "uncovered",
+        "excludedResources",
+        "truncated",
+        "skipped",
+        "items",
+        "exclusions",
+        "unavailable"
+      ]
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 2
+        },
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "prefix": {
+          "description": "Up to 48 characters of the unit's own text before the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "quote": {
+          "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
+          "type": "string",
+          "maxLength": 2048,
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters of the unit's own text after the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource, as typed.",
+          "type": "string",
+          "minLength": 1
+        },
+        "within": {
+          "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "dependentRequired": {
+        "prefix": [
+          "quote"
+        ],
+        "suffix": [
+          "quote"
+        ],
+        "within": [
+          "quote"
+        ]
+      },
+      "dependentSchemas": {
+        "count": {
+          "anyOf": [
+            {
+              "required": [
+                "symbol"
+              ]
+            },
+            {
+              "required": [
+                "within"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "SinceView": {
+      "description": "`since` in the output of `status` and `cover`.",
+      "type": "object",
+      "properties": {
+        "base": {
+          "description": "The base commit id.",
+          "type": "string"
+        },
+        "range": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "range",
+        "base"
+      ]
+    },
+    "Skipped": {
+      "description": "Why a scope was not evaluated.",
+      "oneOf": [
+        {
+          "description": "`--since` on a `repo:` or external scope (section 10.3).",
+          "type": "string",
+          "const": "since_unsupported"
+        }
+      ]
+    },
+    "UnavailableResource": {
+      "description": "A resource whose units cannot be listed, with the reason of section 9.2.\nFor a `repo:` scope whose alias is refused, `loc` is the scope's resource\npattern.",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        }
+      },
+      "required": [
+        "loc",
+        "reason"
+      ]
+    },
+    "UnitRef": {
+      "description": "UnitRef of section 15.2. `label` is `null` when the provider gave none;\n`line` and `endLine` are `null` without a range.",
+      "type": "object",
+      "properties": {
+        "endLine": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "kind",
+        "label",
+        "line",
+        "endLine"
+      ]
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old",
+        "unknown_kind"
+      ]
+    }
+  }
+}

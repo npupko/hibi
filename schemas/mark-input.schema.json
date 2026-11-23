@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi mark --stdin input",
+  "description": "Standard input of `mark --stdin`: a non-empty array.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/MarkStdinElement"
+  },
+  "minItems": 1,
+  "$defs": {
+    "MarkInput": {
+      "description": "One claim to mark: an argument of `hibi mark`, or one element of its\nstandard-input array (a claim id string, or this object).",
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "claim": {
+          "description": "A claim id or id prefix (section 3.6).",
+          "type": "string",
+          "pattern": "^c1-[0-9a-hjkmnp-tv-z]{4,20}$"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "claim"
+      ]
+    },
+    "MarkStdinElement": {
+      "description": "One element of the standard input of `mark --stdin`: a claim id, or an\nobject with the id and an optional note and actor.",
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^c1-[0-9a-hjkmnp-tv-z]{4,20}$"
+        },
+        {
+          "$ref": "#/$defs/MarkInput"
+        }
+      ]
+    }
+  }
+}

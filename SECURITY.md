@@ -1,44 +1,71 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-Hibi is pre-1.0 and under active development. Security fixes land on the latest
-**0.x** release line; older 0.x releases do not receive backported patches.
-Always upgrade to the most recent release before reporting an issue.
+Security fixes land in the latest release of hibi and are not backported.
+The earlier TypeScript line, which ended at 0.7.0, receives no fixes.
+Upgrade to the latest release before reporting an issue.
 
-| Version    | Supported          |
-| ---------- | ------------------ |
-| latest 0.x | :white_check_mark: |
-| older 0.x  | :x:                |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Do not open a public issue for a security vulnerability.
 
-**Please do not open a public GitHub issue for security vulnerabilities.**
+Report it privately through GitHub's private vulnerability reporting:
+open the repository's **Security** tab and choose **Report a vulnerability**,
+or go to https://github.com/npupko/hibi/security/advisories/new.
 
-Report vulnerabilities privately through GitHub's **Private Vulnerability
-Reporting**: go to the repository's **Security** tab and click
-**"Report a vulnerability"**, or use this direct link:
+If you cannot use GitHub's private reporting, email the maintainer at
+lazynick7@gmail.com.
 
-➡️ https://github.com/npupko/hibi/security/advisories/new
+Include what you can of:
 
-This keeps the report confidential between you and the maintainer until a fix is
-available and a coordinated disclosure can be arranged.
+- a description of the problem and its impact;
+- the steps or the repository content that reproduce it;
+- the hibi version (`hibi version`), the git version and the operating system;
+- a suggested fix.
 
-If you can't use GitHub's private reporting for any reason, email the maintainer
-directly at **lazynick7@gmail.com**.
+hibi is maintained by one person on a best-effort basis. Expect an
+acknowledgement within a few days. Valid reports are fixed in the next
+release, and the disclosure date is agreed with you.
 
-When reporting, please include as much of the following as you can:
+## Threat model
 
-- a description of the vulnerability and its impact;
-- steps to reproduce, or a proof of concept;
-- the affected version or commit;
-- any suggested remediation.
+hibi runs inside repositories that other people wrote: a cloned project, a
+pull request branch, a dependency checked out next to your own code. The
+content of such a repository is untrusted. That covers every tracked file,
+including `.hibi/hibi.toml`, the claim records and the documents and code
+that claims point at.
 
-## Response Expectations
+**What untrusted repository content must never cause:**
 
-Hibi is maintained by a single person on a best-effort basis. You can expect an
-initial acknowledgement within a few days, though response times may vary. Valid
-issues will be investigated and patched on the latest 0.x line as quickly as is
-practical, and we'll coordinate disclosure timing with you.
+- **Running a command.** hibi never reads a command from the repository. A
+  provider command comes only from your user config, and only for a scheme
+  that you registered there. Every `git` process hibi starts carries options
+  that stop repository content from naming a program for git to run.
+- **Writing outside the repository.** hibi writes only inside the
+  repository's `.hibi/` directory and to its own cache database in your
+  user cache directory. If `.hibi`, `hibi.toml`, a shard directory, a shard
+  file or the lock file is a symbolic link, hibi stops before it writes.
+- **Sending data off the machine.** Only `triage`, `suggest-evidence` and
+  `status --judge-order` contact the network, and only when you have set
+  `TYPESAFE_API_KEY`. They never send the text of an ignored file or of a
+  sibling repository you did not allow.
+- **Reading files you did not offer.** When git can be used, a `file:` path
+  is read only when git lists it in the root: tracked, or untracked and not
+  ignored. Paths under `.git/` and `.hibi/` are never read. A sibling
+  repository is read only when your user config allows it, and only the files
+  that git lists there. A path through a symbolic link is treated as missing.
 
-Thank you for helping keep Hibi and its users safe.
+**What is trusted:**
+
+- Your user config (`HIBI_CONFIG`, or `hibi/config.toml` in your config
+  directory). It is the only source of provider commands and of the
+  directories of sibling repositories.
+- The repository's own `.git/config`, and that of a sibling repository you
+  allowed. git writes it locally and a clone does not transfer it. A
+  repository copied together with its `.git` directory from an untrusted
+  source is outside this model, as it is for git itself.
+- The provider programs you register, and the agent or person running hibi.
+
+A way to break any of the rules above with repository content alone is a
+vulnerability. Please report it as described above.

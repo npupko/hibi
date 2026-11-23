@@ -1,0 +1,92 @@
+[
+  {
+    "name": "reindent scores 1",
+    "input": {
+      "a": "if (x) {\n    return 5;\n}",
+      "b": "if (x) {\n        return 5;\n}"
+    },
+    "expected": 1,
+    "source": "test/algo.test.ts › text normalization and similarity › reindent normalizes to identical and scores 1.0",
+    "origin": "copied"
+  },
+  {
+    "name": "reflow scores 1",
+    "input": {
+      "a": "retries are capped at 5",
+      "b": "retries are\ncapped at 5"
+    },
+    "expected": 1,
+    "source": "test/algo.test.ts › text normalization and similarity › reflow (line breaks) scores 1.0",
+    "origin": "copied"
+  },
+  {
+    "name": "changed constant scores below 1",
+    "input": {
+      "a": "MAX_ATTEMPTS = 5",
+      "b": "MAX_ATTEMPTS = 50"
+    },
+    "expected": 0.9411764705882353,
+    "source": "test/algo.test.ts › text normalization and similarity › a changed constant lowers similarity below 1",
+    "origin": "narrowed"
+  },
+  {
+    "name": "both empty",
+    "input": {
+      "a": "",
+      "b": ""
+    },
+    "expected": 1,
+    "source": "computed: src/algo/normalize.ts textSimilarity",
+    "origin": "computed"
+  },
+  {
+    "name": "whitespace-only vs empty",
+    "input": {
+      "a": "   \n ",
+      "b": ""
+    },
+    "expected": 1,
+    "source": "computed: src/algo/normalize.ts textSimilarity",
+    "origin": "computed"
+  },
+  {
+    "name": "one side empty",
+    "input": {
+      "a": "abc",
+      "b": ""
+    },
+    "expected": 0,
+    "source": "computed: src/algo/normalize.ts textSimilarity",
+    "origin": "computed"
+  },
+  {
+    "name": "disjoint strings score 0",
+    "input": {
+      "a": "aaaa",
+      "b": "zzzz"
+    },
+    "expected": 0,
+    "source": "computed: src/algo/normalize.ts textSimilarity",
+    "origin": "computed"
+  },
+  {
+    "name": "half different",
+    "input": {
+      "a": "abcd",
+      "b": "abzz"
+    },
+    "expected": 0.5,
+    "source": "computed: src/algo/normalize.ts textSimilarity",
+    "origin": "computed"
+  },
+  {
+    "name": "prefix context with one changed word",
+    "input": {
+      "a": "the retry policy caps attempts at ",
+      "b": "the retry policy limits attempts at "
+    },
+    "expected": 0.8571428571428572,
+    "source": "computed: src/algo/normalize.ts textSimilarity",
+    "origin": "computed"
+  }
+]

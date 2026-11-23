@@ -1,0 +1,53 @@
+---
+title: "Hibi: Find the Sentences in Your Documents That Are No Longer True"
+sidebarTitle: "Overview"
+description: "Hibi tracks checkable sentences in any document, ties each to code, another document, or an attestation with a ttl, and tells an agent which ones are stale before it trusts the file."
+icon: "house"
+---
+
+Hibi (日々, "day after day") tracks **claims**: sentences in documents that assert something checkable. The documents can be anything: a README, `CLAUDE.md`, an ADR, a pricing page, a process note in a knowledge repository. Hibi reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify.
+
+Hibi runs no verifiers and no resolvers. Its only network call is the judge API, and its only subprocess is `git`. An agent collects evidence and submits it. The primary user is a coding agent; JSON is the contract.
+
+## Three kinds of claim
+
+| kind | where its truth is observed | what makes it stale |
+|---|---|---|
+| `code` | one or more code spans | an anchored span changed, disappeared, or matches several places |
+| `reference` | one span in another document | the span changed, or the judge finds it no longer supports the sentence |
+| `attested` | outside the repository: a dashboard, a vendor page, a person | its `ttl` ran out since the last judged evidence or human vouch, or submitted evidence refutes it |
+
+## The agent loop
+
+Before an agent relies on a document, it runs `hibi check --doc <file>`; exit 2 means a sentence in it is stale, and the verdicts say which one and what to do. When it writes or reviews a document, it runs `hibi audit --doc <file>` to see which sentences are claims of which kind and records them with `hibi record`. After a code change, `hibi check --since origin/main` names the sentences the change invalidated. Periodically, `hibi check` lists a worklist of claims to re-check; the agent follows each claim's procedure, collects what it observed, and submits it with `hibi evidence`. The judge decides whether the evidence supports the sentence. Only judged evidence or a human vouch resets a claim's ttl.
+
+## What hibi will and will not do
+
+- **Same tree, same verdicts.** Anchor resolution is deterministic. Judge verdicts are cached in `.claims/judge/` by model and exact request and never re-asked.
+- **A flag means re-verify.** Hibi never rewrites prose and never declares a sentence false on its own authority. Only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.
+- **Nothing clears without evidence or a human.** An agent vouch is recorded and does not reset a ttl.
+- **One knob.** `judge.threshold` (default 0.8) is the one configurable confidence bar for every judgment. Every rule that fires is a reason label in the output.
+- **No key, no silent pass.** Without `TYPESAFE_API_KEY`, or when the judge fails, a judgment the cache cannot answer is `pending`, a warning.
+
+## Start here
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install, record one claim of each kind, and run the loop.
+  </Card>
+  <Card title="Workflows" icon="route" href="/workflows">
+    The agent loop, the human loop, and CI.
+  </Card>
+  <Card title="Claims" icon="quote-left" href="/claims">
+    Kinds, sides, sources, procedures, and the store.
+  </Card>
+  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
+    Axes, gating, exit codes, and the worklist.
+  </Card>
+  <Card title="Judge" icon="gavel" href="/judge">
+    Jev, the threshold, the cache, and what stays in code.
+  </Card>
+  <Card title="Why hibi" icon="compass" href="/design">
+    The problem, the principles, and what was removed.
+  </Card>
+</CardGroup>

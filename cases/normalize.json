@@ -1,0 +1,164 @@
+[
+  {
+    "name": "reindent: deeper indentation",
+    "input": {
+      "text": "if (x) {\n    return 5;\n}"
+    },
+    "expected": "if (x) { return 5; }",
+    "source": "test/algo.test.ts › text normalization and similarity › reindent normalizes to identical and scores 1.0 (asserts both sides normalize equal)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "reindent: deeper indentation, other side",
+    "input": {
+      "text": "if (x) {\n        return 5;\n}"
+    },
+    "expected": "if (x) { return 5; }",
+    "source": "test/algo.test.ts › text normalization and similarity › reindent normalizes to identical and scores 1.0 (asserts both sides normalize equal)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "mixed whitespace collapses",
+    "input": {
+      "text": "  a   b\tc \n d "
+    },
+    "expected": "a b c d",
+    "source": "test/algo.test.ts › text normalization and similarity › collapseWhitespace (asserted for collapseWhitespace; normalizeText gives the same value)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "empty",
+    "input": {
+      "text": ""
+    },
+    "expected": "",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "only whitespace",
+    "input": {
+      "text": " \t\n  \r\n "
+    },
+    "expected": "",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "reflow: line break inside sentence",
+    "input": {
+      "text": "retries are\ncapped at 5"
+    },
+    "expected": "retries are capped at 5",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "CRLF line endings",
+    "input": {
+      "text": "line one\r\n   line two\r\n"
+    },
+    "expected": "line one line two",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "leading and trailing whitespace trimmed",
+    "input": {
+      "text": "\n\n   text   \n\n"
+    },
+    "expected": "text",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "tabs, form feed, vertical tab",
+    "input": {
+      "text": "a\t\tb\fc\u000bd"
+    },
+    "expected": "a b c d",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "no-break space U+00A0 is whitespace",
+    "input": {
+      "text": "a  b"
+    },
+    "expected": "a b",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "line separator U+2028 is whitespace",
+    "input": {
+      "text": "a b"
+    },
+    "expected": "a b",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "ideographic space U+3000 is whitespace",
+    "input": {
+      "text": "a　b"
+    },
+    "expected": "a b",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "zero-width space U+200B is not whitespace",
+    "input": {
+      "text": "a​b"
+    },
+    "expected": "a​b",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "no Unicode normalization: decomposed e-acute stays decomposed",
+    "input": {
+      "text": "café  bar"
+    },
+    "expected": "café bar",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "non-ASCII text kept",
+    "input": {
+      "text": "  Größe   😀  ok "
+    },
+    "expected": "Größe 😀 ok",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "indented code block",
+    "input": {
+      "text": "    if (x) {\n        return 5;\n    }\n"
+    },
+    "expected": "if (x) { return 5; }",
+    "source": "computed: src/algo/normalize.ts normalizeText",
+    "origin": "computed"
+  },
+  {
+    "name": "BOM U+FEFF is not whitespace",
+    "input": {
+      "text": "﻿a﻿b"
+    },
+    "expected": "﻿a﻿b",
+    "source": "computed: src/algo/normalize.ts normalizeText | v5-adjusted: SPEC §4.1 (WS is Unicode White_Space): v4 normalizeText run on the text with U+FEFF remapped to a non-whitespace placeholder and U+0085 to U+2029, then mapped back; v4 itself gives \"a b\"; formerly named \"BOM U+FEFF is whitespace in JS\"",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "NEL U+0085 is whitespace",
+    "input": {
+      "text": "ab"
+    },
+    "expected": "a b",
+    "source": "computed: src/algo/normalize.ts normalizeText | v5-adjusted: SPEC §4.1 (WS is Unicode White_Space): v4 normalizeText run on the text with U+FEFF remapped to a non-whitespace placeholder and U+0085 to U+2029, then mapped back; v4 itself gives \"ab\"; formerly named \"NEL U+0085 is NOT whitespace in JS\"",
+    "origin": "v5-adjusted"
+  }
+]

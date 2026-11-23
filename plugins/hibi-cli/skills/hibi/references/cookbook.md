@@ -1,388 +1,400 @@
 # hibi cookbook
 
-Eight recipes. Each gives the situation, the commands, the JSON they return, and what to do next. The JSON has the shape real runs return, trimmed to the keys the recipe uses; the judge's kinds and probabilities are examples. Ids are examples. Commands assume `hibi` is on PATH; otherwise use `bunx @npupko/hibi`.
+Worked tasks. Every output below was copied from a real run of hibi 5.0.0 on
+a small example repository with `docs/retry.md` and `src/retry.rs`; the tasks
+follow each other in that repository. Outputs are shown in the human format;
+in a shell tool without a terminal the same facts come as one JSON object.
+Blocks marked `output` are output, not commands.
 
-Shared setup: a knowledge repo `handbook/` with `docs/pricing.md`, `docs/billing-policy.md`, and `AGENTS.md`, and a sibling code repo `../api` with `src/limits.ts` (`export const RATE_LIMIT_PER_MIN = 100;`).
+## 1. Set up hibi in a repository
 
----
-
-## 1. Initialize a knowledge repo
-
-**When**: a repo of docs (handbook, product, process, decisions) has no `.claims/` yet.
-
-```sh
-hibi init --instructions AGENTS.md
+```bash
+hibi init
 ```
 
-```json
-{ "ok": true, "action": "init", "schemaVersion": "v4", "store": "/…/handbook/.claims", "version": "v4",
-  "judge": { "model": "jev-1.14.0", "threshold": 0.8 },
-  "instructions": { "file": "AGENTS.md", "appended": true },
-  "next": "hibi audit --doc <file>" }
+Then declare what must be covered by appending a scope to `.hibi/hibi.toml`:
+
+```toml
+[[scope]]
+name = "docs"
+resource = "file:docs/**/*.md"
+kinds = ["sentence", "list-item", "table-row"]
 ```
 
-`--instructions` appends this line to the file (created if missing, skipped if already there):
-
-```
-Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.
+```bash
+hibi cover
 ```
 
-Then edit `.claims/config.json` when evidence lives in another repo or some documents should not be audited:
-
-```json
-{
-  "version": "v4",
-  "repos": { "api": "../api" },
-  "judge": { "model": "jev-1.14.0", "threshold": 0.8 },
-  "ignore": ["docs/generated/**"]
-}
+```text output
+docs (file:docs/**/*.md; sentence, list-item, table-row): 3 units, 0 covered, 0 excluded, 3 uncovered
+  file:docs/retry.md
+        3  sentence  The client retries a failed download.
+        4  sentence  It gives up after 5 attempts.
+        5  sentence  The delay between attempts doubles each time, starting at 200 ms.
 ```
 
-`judge.threshold` is the one confidence bar for every judgment. Export `TYPESAFE_API_KEY` before the next steps; without it every judgment is `pending`. Commit `.claims/`. `.claims/judge/` is a local cache that `.claims/.gitignore` excludes; CI restores it with an `actions/cache` step.
+Commit `.hibi/`.
 
----
+## 2. Record a statement you checked
 
-## 2. Audit a marketing page and record its claims
+You read `src/retry.rs` and confirmed `MAX_ATTEMPTS` is 5:
 
-**When**: a page states prices, limits, or facts that drift without anyone noticing.
-
-```sh
-hibi audit --doc docs/pricing.md
+```bash
+hibi claim "The client gives up after 5 attempts." \
+  --subject "file:docs/retry.md::gives up after 5 attempts" \
+  --evidence "file:src/retry.rs#MAX_ATTEMPTS"
 ```
 
-```json
-{
-  "ok": true, "action": "audit", "schemaVersion": "v4", "doc": "docs/pricing.md",
-  "summary": { "regions": 6, "covered": 0, "uncovered": 6,
-    "byKind": { "code": 0, "reference": 1, "attested": 2, "unverifiable": 1,
-                "not-a-claim": 2, "unsure": 0, "pending": 0 },
-    "requests": 1 },
-  "rows": [
-    { "region": { "id": "r0", "line": 1, "kind": "heading", "text": "# Pricing" },
-      "claimId": null, "kind": "not-a-claim", "probability": 0.94, "duplicateOf": null },
-    { "region": { "id": "r1", "line": 3, "kind": "sentence", "text": "The Pro plan costs $29 per month." },
-      "claimId": null, "kind": "attested", "probability": 0.94, "duplicateOf": null },
-    { "region": { "id": "r2", "line": 5, "kind": "sentence", "text": "Acme is the most loved API platform." },
-      "claimId": null, "kind": "unverifiable", "probability": 0.94, "duplicateOf": null },
-    { "region": { "id": "r3", "line": 7, "kind": "sentence", "text": "Every plan allows 100 API requests per minute." },
-      "claimId": null, "kind": "attested", "probability": 0.94, "duplicateOf": null },
-    { "region": { "id": "r4", "line": 9, "kind": "sentence", "text": "Annual billing details are in the billing policy." },
-      "claimId": null, "kind": "reference", "probability": 0.94, "duplicateOf": null },
-    { "region": { "id": "r5", "line": 11, "kind": "sentence", "text": "Contact sales for a custom quote." },
-      "claimId": null, "kind": "not-a-claim", "probability": 0.94, "duplicateOf": null }
-  ]
-}
+```text output
+c1-c5dm2jvhr8hb36rx5rgm  created  m1-1nhmgpeagp6bbwt6kh0j  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
-A row with `kind: "unsure"` carries `unsure` (`kind` or `evidenceKind`) and `probabilities` instead of `probability`; decide it yourself.
+## 3. Start of a session: a statement is no longer true
 
-**Act**, in this order:
+```bash
+hibi status
+```
 
-1. Rewrite or remove the `unverifiable` rows first, so later edits do not move recorded spans. Line 5 becomes an attributed statement: "In our 2026 survey, most customers said they would recommend Acme." Never record an `unverifiable` region.
-2. Decide each recordable row's kind and anchors yourself. The triage said `attested` for line 7, but the value lives in `../api`, so it is a `code` claim with an aliased file.
-3. Record in one batch:
+```text output
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
-```sh
-hibi record --from-file - <<'EOF'
-[
-  {"doc":"docs/pricing.md","docQuote":"The Pro plan costs $29 per month.","kind":"attested",
-   "ttl":"P90D","owner":"human:alice@example.com","by":"agent:claude",
-   "sources":[{"id":"stripe","resource":"https://dashboard.stripe.com/products/prod_123","title":"Stripe: Pro product"}],
-   "procedure":{"instructions":"Open the Stripe Pro product and report its monthly price in USD.",
-     "steps":[{"id":"price","command":"stripe prices list --product prod_123 --json"}]}},
-  {"doc":"docs/pricing.md","docQuote":"Every plan allows 100 API requests per minute.","kind":"code",
-   "code":[{"file":"api:src/limits.ts","quote":"RATE_LIMIT_PER_MIN = 100"}],"by":"agent:claude"},
-  {"doc":"docs/pricing.md","docQuote":"Annual billing details are in the billing policy.","kind":"reference",
-   "ref":{"file":"docs/billing-policy.md","quote":"Annual plans are billed once a year, up front."},"by":"agent:claude"}
-]
+c1-c5dm2jvhr8hb36rx5rgm  stale  The client gives up after 5 attempts.
+  marked 2026-11-22T22:31:29Z (m1-1nhmgpeagp6bbwt6kh0j)
+  evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
+    | pub const MAX_ATTEMPTS: u32 = 3;
+  next: hibi mark c1-c5dm2jvhr8hb36rx5rgm
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+Re-check: the code now says `MAX_ATTEMPTS: u32 = 3`. The statement is false,
+so do not mark. If you know the code is right (the user changed it on
+purpose), fix the document to "It gives up after 3 attempts." and replace the
+claim. If you do not know which is right, ask the user.
+
+```bash
+hibi reanchor c1-c5dm \
+  --statement "The client gives up after 3 attempts." \
+  --subject "file:docs/retry.md::gives up after 3 attempts"
+```
+
+```text output
+c1-c5dm2jvhr8hb36rx5rgm is retired and replaced by the new claim c1-2kfx78rwbb7wyxwst92f
+  mark m1-qnnn2w60hevd1h14q3ek, retirement r1-fmpt7hwtdzded271kw2d
+  was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
+    subject is now:
+    | It gives up after 3 attempts.
+    evidence 1 is now:
+    | pub const MAX_ATTEMPTS: u32 = 3;
+  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
+    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
+  evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+    {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
+```
+
+```bash
+hibi status
+```
+
+```text output
+2 claims: 1 fresh, 0 stale, 0 expired, 1 retired
+nothing stale
+```
+
+## 4. Claim an uncovered sentence from a batch
+
+Anchors in a batch are compact strings, objects, or objects written as JSON
+strings, as candidates print them. A `cover` item's `anchor`
+object can be used as `subject` unchanged.
+
+```bash
+hibi claim --stdin <<'EOF'
+[{"statement": "The delay doubles each time, starting at 200 ms.",
+  "subject": {"loc": "file:docs/retry.md",
+              "sel": {"quote": "The delay between attempts doubles each time, starting at 200 ms."}},
+  "evidence": ["file:src/retry.rs#delay_ms"],
+  "by": "agent:claude"}]
 EOF
 ```
 
-```json
-{ "ok": true, "action": "record", "schemaVersion": "v4", "batch": true, "count": 3, "updated": 0,
-  "results": [
-    { "id": "clm_517bbfaa1ac94263", "kind": "attested", "doc": "docs/pricing.md", "evidence": null, "enforcement": "enforced", "updated": false, "existingClaims": [] },
-    { "id": "clm_d55da8f0827540d4", "kind": "code", "doc": "docs/pricing.md", "evidence": "api:src/limits.ts", "enforcement": "enforced", "updated": false, "existingClaims": [] },
-    { "id": "clm_f4cdf35aa5df43d4", "kind": "reference", "doc": "docs/pricing.md", "evidence": "docs/billing-policy.md", "enforcement": "enforced", "updated": false, "existingClaims": [] }
-  ],
-  "next": "hibi check" }
+```text output
+c1-xwck2bdefbx39g56m7dn  created  m1-j8mrrw7qemeg68ypsara  subject file:docs/retry.md (sentence "The delay between attempts doubles each time, starting at 2…", line 5); evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
 ```
 
-A batch with any invalid item records nothing and lists every problem, one line each. After the batch is recorded, `hibi audit --doc docs/pricing.md` shows the three rows with their `claimId`.
+If any element fails, nothing is written and each failure carries its index:
 
-If you edit the document after recording and a claim reports `doc: "moved"`, run `hibi reanchor <id>` to store the new position, or `hibi reanchor --moved --doc docs/pricing.md` for every moved claim of the document.
-
----
-
-## 3. Run the worklist from a scheduled job
-
-**When**: attested claims need re-checking on a schedule, without a person starting it.
-
-Right after recipe 2, `hibi check --json` lists the attested claim as `expired`, because it was recorded by an agent and an agent vouch does not count. Run without `TYPESAFE_API_KEY`, the worklist also holds the reference claim, as `pending`:
-
-```json
-"worklist": [
-  { "claimId": "clm_517bbfaa1ac94263", "sentence": "The Pro plan costs $29 per month.", "kind": "attested",
-    "document": "docs/pricing.md",
-    "procedure": { "instructions": "Open the Stripe Pro product and report its monthly price in USD.",
-                   "steps": [{ "id": "price", "command": "stripe prices list --product prod_123 --json" }] },
-    "sources": [{ "id": "stripe", "resource": "https://dashboard.stripe.com/products/prod_123", "title": "Stripe: Pro product" }],
-    "owner": "human:alice@example.com", "reason": "expired" },
-  { "claimId": "clm_f4cdf35aa5df43d4", "sentence": "Annual billing details are in the billing policy.", "kind": "reference",
-    "document": "docs/pricing.md", "procedure": null, "sources": [], "owner": null, "reason": "pending" }
-]
+```json output
+{"ok":false,"command":"claim","errors":[{"code":"side_missing","message":"the subject (file:docs/nope.md) resolves to no unit (resource_not_found): file:docs/nope.md is not in git's file list of the root (tracked, or untracked and not ignored)","remediation":"Point the anchor at text that exists in the resource.","index":1}]}
 ```
 
-`reason` is one of `expired`, `never-checked`, `review`, `pending`:
+## 5. A refactor that keeps behaviour
 
-| reason | which claims |
-|---|---|
-| `expired` | any claim with a `ttl` that ran out or that no attestation counts toward, `code` claims included |
-| `review` | a `reference` or `attested` claim whose judge state is `review` and not acknowledged |
-| `pending` | a `reference` or `attested` claim the judge could not answer: no key, no network, an unusable answer (`judge error: …` in the verdict's `reasons`), or a referenced span over 32,000 characters |
-| `never-checked` | an `attested` claim with a `procedure` or `sources` and no judged evidence yet; a claim with neither is listed only when expired or in `review` |
+On branch `tidy-retry`, `200 * 2u64.pow(n)` became `200 << n`:
 
-A `pending` reference claim needs only a run with a working judge; there is nothing to collect. `lastEvidence: { summary, source, at, by }` appears once evidence for the claim has been judged.
-
-A Lobster workflow (`hibi-worklist.lobster`) that a scheduler runs nightly. hibi runs none of these steps; the workflow does. `claude -p` is one possible agent; any agent that reads the worklist on stdin and prints an evidence array works.
-
-```yaml
-name: hibi-worklist
-steps:
-  - id: worklist
-    command: hibi check --json --fail-on never | jq '[.worklist[] | select(.kind == "attested")]'
-  - id: collect
-    command: >-
-      claude -p --allowedTools "Bash(stripe prices list:*)"
-      "The JSON on stdin is a hibi worklist. For each item, follow procedure.instructions
-      (steps are hints). Print only a JSON array of
-      {claimId, evidence, source, summary}: evidence is the observed text that bears on the
-      sentence, at most 32000 characters, with no secrets or tokens; source is the sources[].id
-      you used; summary is one line. Skip items you could not check."
-    stdin: $worklist.stdout
-  - id: submit
-    command: >-
-      input=$(cat); [ "$input" = "[]" ] ||
-      printf '%s' "$input" | hibi evidence --from-file - --by agent:nightly
-    stdin: $collect.stdout
-  - id: expired
-    command: hibi list --state expired --json
+```bash
+hibi status --since main
 ```
 
-`--fail-on never` keeps `check` at exit 0 so the workflow continues. The `jq` filter keeps `attested` items only, because `hibi evidence` accepts attested claims only and rejects a batch naming a `code` or `reference` claim, which can also carry a procedure. `submit` skips an empty array because `hibi evidence` rejects an empty batch with exit 1. `--by agent:nightly` applies to every item without a `by` key. Run it with `lobster run hibi-worklist.lobster`.
+```text output
+3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
+since main (base 4a29495b3d0fed48190769e1d91818e6c66f5381)
 
-The `submit` step returns:
+c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-22T22:31:30Z (m1-j8mrrw7qemeg68ypsara)
+  evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
+    | pub fn delay_ms(n: u32) -> u64 {
+    |     200 << n
+    | }
+  next: hibi mark c1-xwck2bdefbx39g56m7dn
 
-```json
-{ "ok": true, "action": "evidence", "schemaVersion": "v4",
-  "results": [
-    { "claimId": "clm_517bbfaa1ac94263", "judge": "supported", "relation": "supports",
-      "confidence": 0.9249999999999999, "probabilities": { "supports": 0.95, "refutes": 0.03, "does_not_address": 0.02 },
-      "reasons": ["evidence supports the sentence (confidence 0.92 >= threshold 0.8)",
-                  "source matches declared source \"stripe\""],
-      "attested": true, "cached": false }
-  ],
-  "summary": { "supported": 1, "refuted": 0, "review": 0, "pending": 0, "requests": 1 },
-  "next": "hibi check" }
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
-| `judge` | effect |
-|---|---|
-| `supported` | an `evidence` attestation is appended; ttl restarts; the claim leaves the worklist |
-| `refuted` | nothing is attested; the next `check` gates the claim (fix the sentence or the source of truth). Evidence holding a different money amount, unit-bearing number, version, or date than the sentence is `refuted` in code with `value differs: …`, unless the judge answers `does_not_address`; bare unitless numbers in the evidence are not compared |
-| `review` | below threshold or `does_not_address`; collect evidence that addresses the sentence directly, or `hibi attest <id> --by <actor> --ack review --note "<why>"` |
-| `pending` | no key, no network, or a judge error (`judge error: …` in `reasons`); nothing written; resubmit |
+Re-check: `200 << n` equals `200 * 2^n`. The statement holds:
 
-`evidence` exits 0 for every verdict. Commit `.claims/` after the run: the claim file gained an attestation. `.claims/judge/` gained a cache entry, which stays local. The raw evidence text is not stored, only its sha256, the source, the summary, and the numbers, money amounts, versions, and dates in it.
-
-The `expired` step of the workflow lists claims still expired after the `submit` step, for recipe 5.
-
----
-
-## 4. Handle a contradiction
-
-**When**: `check` exits 2 with `conflicts[]` on a verdict. Setup: `docs/faq.md` says "The Pro plan costs $39 per month." and is recorded as an attested claim.
-
-```sh
-hibi check --json
+```bash
+hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
-```json
-{
-  "exitCode": 2,
-  "summary": { "gating": 2, "conflicts": 2, "conflictPass": { "pairs": 1, "requests": 1, "pending": 0, "scope": "store" } },
-  "verdicts": [
-    { "claimId": "clm_cd53af142f2f4ad3", "kind": "attested", "doc": "unchanged", "expired": true,
-      "conflicts": [{ "claimId": "clm_517bbfaa1ac94263", "probability": 1, "reason": "numbers differ: 29 vs 39" }],
-      "gates": true, "warns": false,
-      "remediation": { "recommended": "reconcile", "actions": [
-        { "id": "reconcile", "title": "Reconcile with clm_517bbfaa1ac94263",
-          "rationale": "this sentence contradicts clm_517bbfaa1ac94263; rewrite whichever is wrong" },
-        { "id": "ack", "title": "Acknowledge the conflict with clm_517bbfaa1ac94263", "rationale": "…",
-          "command": "hibi attest clm_cd53af142f2f4ad3 --by <actor> --ack conflict:clm_517bbfaa1ac94263 --note \"<why>\"" },
-        { "id": "attest", "title": "Have a human re-check and vouch", "rationale": "…", "command": "…" },
-        { "id": "evidence", "title": "Collect evidence and submit it", "rationale": "…", "command": "…" } ] },
-      "reasons": [
-        "expired: ttl P90D is set and no attestation counts (only evidence or a human vouch resets ttl)",
-        "conflicts with clm_517bbfaa1ac94263 (p=1.00 at or above threshold 0.8): numbers differ: 29 vs 39",
-        "expired warns in a whole-store check and gates under check --doc",
-        "worklist: expired; re-check the claim and submit evidence, or have a human attest" ] }
-  ]
-}
+```text output
+c1-xwck2bdefbx39g56m7dn  marked  m1-bsymx580snhj8rg69njf
+  was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked it
+    evidence 1 is now:
+    | pub fn delay_ms(n: u32) -> u64 {
+    |     200 << n
+    | }
 ```
 
-The other claim carries the mirror finding. A claim that conflicts with several others gets one `ack` action per other claim. `hibi list --state conflict` returns both. A pair the judge could not answer is not a finding: each claim warns with one reason, `conflict checks pending: <n>`, counting its pending pairs, and `summary.conflictPass.pending` counts the pairs. Once the judge says both sentences share a subject and rates `contradicts` at or above 0.5, differing numbers, versions, or dates are decided in code (`numbers differ`, probability 1); other contradictions come from the judge with their probabilities in `reason`.
+## 6. New text on a branch with no claim
 
-**Act**: find out which sentence is wrong. In this walkthrough, the price claim has judged Stripe evidence for $29 (recipe 3), so the FAQ is wrong. Pick one:
+The branch also added a "Timeouts" section:
 
-- Fix the wrong sentence, then `hibi reanchor clm_cd53af142f2f4ad3 --doc-quote "The Pro plan costs $29 per month."` to accept the new text. Plain `hibi reanchor <id>` relocates only a side that reads `moved`; an edited sentence reads `changed` and needs `--doc-quote`.
-- Remove the duplicate sentence (here the FAQ now says "Current prices are on the pricing page."), then `hibi retire clm_cd53af142f2f4ad3`. The claim's doc anchor is `orphaned` until you retire it.
-- If both sentences are true (for example, they describe different plans), acknowledge it: `hibi attest clm_cd53af142f2f4ad3 --by human:alice@example.com --ack conflict:clm_517bbfaa1ac94263 --note "the FAQ describes the annual plan"`. The ack is written to both claims and lapses when either sentence changes.
-
-After the FAQ sentence is removed and its claim retired, `check` returns `exitCode: 0`, `summary.retired: 1`, `summary.conflicts: 0` for this walkthrough. Do not reword either sentence just to make the numbers match without checking the source.
-
----
-
-## 5. Handle an expired attested claim
-
-**When**: an attested claim's ttl ran out. Setup: `docs/process/releases.md` says "Releases ship every Tuesday.", recorded with `ttl`, `owner: "human:ops@example.com"`, and a procedure. `check --doc` gates on it:
-
-```sh
-hibi check --doc docs/process/releases.md --json
+```bash
+hibi cover --since main
 ```
 
-```json
-{
-  "exitCode": 2,
-  "verdicts": [
-    { "claimId": "clm_67d8afc4c50b4abb", "expired": true, "gates": true,
-      "reasons": [
-        "expired: ttl P30D ran out at 2026-11-21T18:21:46.275Z, counted from the vouch by human:alice@example.com at 2026-10-22T18:21:46.275Z",
-        "expired gates under check --doc",
-        "worklist: expired; re-check the claim and submit evidence, or have a human attest" ],
-      "remediation": { "recommended": null, "actions": [
-        { "id": "attest", "title": "Have a human re-check and vouch", "rationale": "…",
-          "command": "hibi attest clm_67d8afc4c50b4abb --by human:<you> --note \"<what you checked>\"" },
-        { "id": "evidence", "title": "Collect evidence and submit it", "rationale": "…", "command": "…" } ] } }
-  ],
-  "worklist": [
-    { "claimId": "clm_67d8afc4c50b4abb", "sentence": "Releases ship every Tuesday.", "kind": "attested",
-      "document": "docs/process/releases.md",
-      "procedure": { "instructions": "Read the release calendar and report the weekdays of the last three releases." },
-      "sources": [], "owner": "human:ops@example.com", "reason": "expired" }
-  ]
-}
+```text output
+since main (base 4a29495b3d0fed48190769e1d91818e6c66f5381)
+docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
+  file:docs/retry.md
+        9  sentence  Each attempt times out after 10 seconds.
 ```
 
-In a whole-store `check`, expired only warns; under `check --doc` it gates.
+`hibi cover --since <range>` lists only units whose key and content are new since
+the base, so a sentence copied within its file, with the original then
+edited, is not listed even when no claim covers it. After copying text, run
+`hibi cover` without `--since`.
 
-**Act**:
+A unit that states nothing checkable can be excluded instead, with the
+user's agreement, by an `exclude` entry with its `unit` key in
+`.hibi/hibi.toml`. An entry without `unit` excludes a whole file, which is
+then not read at all: use it for a file `cover` lists as unavailable for
+good, such as a code file that does not parse.
 
-1. If you can follow the procedure with your tools, submit evidence (recipe 3). Judged support resets the ttl.
-2. If you cannot, contact the `owner`. hibi sends nothing; use the channel the team uses, for example an issue built from `hibi list --state expired --json` (rows carry `claimId`, `sentence`, `owner`, `ttl`, `expiresAt`).
-3. The owner checks and vouches:
+The timeout is set by an HTTP library, not by code in this repository, so
+there is no evidence to anchor. Record it with a recheck period and a note
+on where the truth lives:
 
-```sh
-hibi attest clm_67d8afc4c50b4abb --by human:ops@example.com --note "calendar: last three releases were on Tuesdays"
+```bash
+hibi claim "Each attempt times out after 10 seconds." \
+  --subject "file:docs/retry.md::times out after 10 seconds" \
+  --recheck P90D \
+  --note "The timeout is set by the HTTP client defaults; check its release notes." \
+  --now 2026-08-01T09:00:00Z
 ```
 
-```json
-{ "ok": true, "action": "attest", "schemaVersion": "v4",
-  "claimIds": ["clm_67d8afc4c50b4abb"],
-  "attestation": { "by": "human:ops@example.com", "at": "2026-11-24T09:12:00.000Z", "basis": "vouch",
-                   "note": "calendar: last three releases were on Tuesdays" },
-  "countsTowardTtl": true, "next": "hibi check" }
+`--now` dated this example's mark in the past. When the period runs out the
+claim is listed as expired:
+
+```text output
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
 ```
 
-After the human vouch, `check --doc docs/process/releases.md` exits 0 for this walkthrough, and the claim's `list` row shows the new `expiresAt`. An agent never runs this with a `human:` actor. `--by agent:<name>` is recorded with `countsTowardTtl: false` and does not clear the expiry. After a human vouch, a claim with a procedure stays in the worklist as `never-checked` until evidence for it is judged; that is a reminder, not a warning. A claim with no procedure and no sources would leave the worklist.
+## 7. The same claim again, with another anchor
 
-If the sentence is no longer true, rewrite it and run `hibi reanchor <id> --doc-quote "<new sentence>"`, or remove it and `hibi retire <id>`.
+The claim on "It gives up after 3 attempts." was made with the quote
+`gives up after 3 attempts`. Claiming it again with the whole sentence marks
+the existing claim instead of creating a second one, because every side
+resolves to the same unit:
 
----
-
-## 6. Cross-repo evidence with `repos` aliases
-
-**When**: a sentence in the knowledge repo describes code in another repository.
-
-With `"repos": { "api": "../api" }` in `.claims/config.json`, a code or ref `file` may be `api:src/limits.ts` (recipe 2). Record refuses an alias that is not in `repos` (below), and an alias whose directory is missing ("sibling repo \"api\" is not checked out at ../api; …"), because a claim is recorded against text on disk. Exit 1:
-
-```json
-{ "ok": false,
-  "error": "record: 1 problem; nothing was recorded.\n  item 0: unknown repo alias \"web\" in web:src/x.ts; add it to \"repos\" in .claims/config.json (known: api)",
-  "errors": ["item 0: unknown repo alias \"web\" in web:src/x.ts; add it to \"repos\" in .claims/config.json (known: api)"] }
+```bash
+hibi claim "The client gives up after 3 attempts." \
+  --subject "file:docs/retry.md::It gives up after 3 attempts." \
+  --evidence "file:src/retry.rs#MAX_ATTEMPTS"
 ```
 
-At check time:
-
-| sibling repo | verdict | effect |
-|---|---|---|
-| checked out, span intact | `evidence: "unchanged"` | clean |
-| not checked out | `evidence: "unavailable"`, reason `evidence: sibling repo "api" is not checked out at ../api` | warns, never gates |
-| value changed (`100` to `120`) | `evidence: "changed"`, `changed: "api:src/limits.ts value: value changed (was \`100\`)"` | gates; `recommended: "update-claim"` |
-
-An evidence file must stay inside its root: a plain path inside the knowledge repo, an aliased path inside the alias directory. Record refuses `../api/src/limits.ts` (`path escapes its root; an evidence file must be inside the anchor root.`) and `api:../handbook/AGENTS.md`; use `api:src/limits.ts`. If a stored side escapes its root, `check` reports it `unavailable` with `evidence: path escapes its root`.
-
-`hibi reanchor <id>` while the sibling is not checked out keeps that evidence side as stored and says so in `warnings[]` (`evidence side api:src/limits.ts kept unchanged: sibling repo "api" is not checked out at ../api`); the doc side is still re-resolved. A remediation command that names `--code-file api:src/limits.ts` keeps that span as stored and lists it in `kept` (`evidence: repository api not checked out; kept as stored`); it exits 0 when another side was relocated.
-
-`hibi list --path api:src/limits.ts` finds the claims anchored there. `check --since <ref>` diffs only the knowledge repo, so it does not select claims whose evidence changed in a sibling repo; run a full `hibi check` when the sibling moved. In CI, check out the sibling at the aliased path (recipe 7), or its claims stay `unavailable`.
-
----
-
-## 7. CI with the GitHub Action
-
-**When**: pull requests should fail when they make a recorded sentence stale.
-
-Copy `assets/hibi-ci.yml` to `.github/workflows/hibi.yml`. The action's inputs:
-
-| input | default | effect |
-|---|---|---|
-| `fail-on` | `gating` | `gating`, `warn`, or `never` |
-| `since` | empty | `check --since <ref>` |
-| `doc` | empty | `check --doc <path>`; expired claims then gate |
-| `working-directory` | `.` | the directory holding `.claims/` |
-
-The job exits 0 when every claim is clean or only warns, 2 when a claim gates (any warning also fails under `fail-on: warn`; neither fails under `fail-on: never`), and 1 on an operational error. A `doc` input naming a document with no registered claims is such an error, so the job fails until the document is audited and recorded.
-
-Pass `TYPESAFE_API_KEY` as a repository secret in the step's `env`. Without it, judgments not already in the `.claims/judge/` cache are `pending`, which warns and does not fail the build under `fail-on: gating`. The `actions/cache` step in `assets/hibi-ci.yml` restores `.claims/judge/` before the check, and saves it at the end of the job only when the job succeeds and no cache exists yet for the current claim files.
-
-For a knowledge repo with `repos` aliases such as `"api": "../api"`, check the repo out with `path: handbook`, each sibling next to it with `path: api`, and set `working-directory: handbook`. The asset shows the commented steps.
-
----
-
-## 8. `check --doc` as a pre-trust gate
-
-**When**: before an agent follows `CLAUDE.md`, `AGENTS.md`, or any document. `hibi init --instructions CLAUDE.md` adds the instruction line (recipe 1). Setup: `CLAUDE.md` says "Auth tokens expire after 30 minutes.", recorded against `src/auth.ts` (`TOKEN_TTL_MIN = 30`); the code then changed to 60.
-
-```sh
-hibi check --doc CLAUDE.md --json
+```text output
+c1-2kfx78rwbb7wyxwst92f  marked  m1-cq3p29w1bwx6wwf548jv  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
-```json
-{
-  "ok": true, "action": "check", "schemaVersion": "v4", "doc": "CLAUDE.md", "exitCode": 2,
-  "verdicts": [
-    { "claimId": "clm_6b0ef79f25f54415", "kind": "code", "doc": "unchanged", "evidence": "changed",
-      "expired": false, "conflicts": [], "gates": true, "warns": false,
-      "changed": "src/auth.ts value: value changed (was `30`)",
-      "remediation": { "recommended": "update-claim", "actions": [
-        { "id": "update-claim", "title": "Update the sentence, then reanchor",
-          "rationale": "the evidence changed; if the sentence is now wrong, rewrite it, then run the command",
-          "command": "hibi reanchor clm_6b0ef79f25f54415 --code-file src/auth.ts --code-quote \"TOKEN_TTL_MIN = 60\"" },
-        { "id": "reanchor", "title": "Reanchor as is", "rationale": "…", "command": "hibi reanchor clm_6b0ef79f25f54415 --code-file src/auth.ts --code-quote \"TOKEN_TTL_MIN = 60\"" },
-        { "id": "retire", "title": "Retire the claim", "rationale": "…", "command": "hibi retire clm_6b0ef79f25f54415" } ] },
-      "reasons": ["evidence: value changed (was `30`)", "evidence: identifiers or literals renamed"] }
-  ],
-  "documents": [{ "id": "doc_5c9e4f99d90e2cfd", "path": "CLAUDE.md", "lifecycle": "active",
-                  "suspect": [{ "claimId": "clm_6b0ef79f25f54415", "status": "evidence:changed" }] }]
-}
+This works only while the existing claim's sides resolve. After its
+heading is renamed, for example, the subject is `missing`, and the same
+command writes a second claim; re-anchor the existing claim instead.
+
+## 8. A documented sentence was edited
+
+"doubles each time" became "doubles every time". The claim quoted the whole
+sentence, so its quoted words changed: the subject is `missing`
+(`not_exact`), and the edited sentence is listed as a candidate. An edit
+elsewhere in a long sentence, away from a shorter quote, gives `changed`
+instead (unless it is in the first 120 characters of the first sentence of
+a paragraph or list item with several sentences, which renames the
+paragraph and gives `missing`), and then `mark` is the step, as for code:
+
+```bash
+hibi status
 ```
 
-| result | meaning |
-|---|---|
-| exit 0 | every claim in the document is clean or only warns |
-| exit 2 | at least one claim gates: changed, orphaned, ambiguous, refuted, contradicted, or expired |
-| exit 1, `no claims are registered for CLAUDE.md; run hibi audit --doc CLAUDE.md` | the document has no claims; hibi says nothing about its sentences; audit it before relying on it |
+```text output
+4 claims: 1 fresh, 1 stale, 1 expired, 1 retired
 
-The path is normalized relative to the current directory, so `--doc ./CLAUDE.md` checks the same document and the JSON echoes `"doc": "CLAUDE.md"`. Under `--doc`, the contradiction pass judges only pairs with a claim in this document (`summary.conflictPass.scope: "doc"`); a finding may still name a claim in another document.
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
 
-**Act**: do not follow the 30-minute rule. Read `src/auth.ts`, rewrite the sentence to say 60 minutes, then `hibi reanchor clm_6b0ef79f25f54415 --doc-quote "Auth tokens expire after 60 minutes." --code-file src/auth.ts --code-quote "TOKEN_TTL_MIN = 60"`. Both sides read `changed`, so plain `hibi reanchor <id>` would leave them as stored and exit 1. The result's `after` shows the new doc quote and code quote, and `check --doc CLAUDE.md` exits 0. Never rewrite the sentence without reading the code, and never delete the claim file; `hibi retire` withdraws a claim that no longer applies.
+c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-22T22:31:30Z (m1-bsymx580snhj8rg69njf)
+  subject  file:docs/retry.md  missing (not_exact)
+    the stored anchor no longer identifies one unit
+    stored: quote "The delay between attempts doubles each time, starting at 200 ms."
+    1 candidate; each is a guess, read it before you anchor to it:
+    - sentence "The delay between attempts doubles every time, starting at …", line 5
+      | The delay between attempts doubles every time, starting at 200 ms.
+      anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}
+  next: hibi reanchor c1-xwck2bdefbx39g56m7dn --subject <anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+A candidate is a guess, so `mark` refuses the claim:
+
+```bash
+hibi mark c1-xwck --by agent:claude
+```
+
+```text output
+error: side_missing: the subject (file:docs/retry.md) resolves to no unit (not_exact): the stored anchor no longer identifies one unit; 1 candidate, each a guess to check before use: sentence "The delay between attempts doubles every time, starting at 200 ms.", line 5: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}
+  fix: hibi reanchor c1-xwck2bdefbx39g56m7dn --subject <anchor>
+```
+
+Read the candidate. It is the same sentence, and the statement still holds,
+so anchor the subject to it. Had the edit made the statement false, you
+would fix the text or retire the claim instead. The candidate's anchor works, and so does a quote
+of your own:
+
+```bash
+hibi reanchor c1-xwck --subject 'file:docs/retry.md::doubles every time'
+```
+
+```text output
+c1-xwck2bdefbx39g56m7dn is retired and replaced by the new claim c1-2axv59jx0ztvfjd1adn9
+  mark m1-63dpymkp78q9k8xhhprz, retirement r1-bksenecxxh0be9zcbv2k
+  was stale: subject file:docs/retry.md missing (not_exact); now marked: make sure you re-checked it
+    subject is now:
+    | The delay between attempts doubles every time, starting at 200 ms.
+  subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
+    {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"The delay between attempts","suffix":", starting at 200 ms.","within":["Retries","The client retries a failed download."]}}
+  evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
+    {"loc":"file:src/retry.rs","sel":{"symbol":"delay_ms"}}
+```
+
+The old claim is retired into the new one, and `status` no longer lists it.
+
+## 9. A sentence was deleted
+
+```bash
+hibi status
+```
+
+```text output
+5 claims: 1 fresh, 1 stale, 1 expired, 2 retired
+
+c1-2kfx78rwbb7wyxwst92f  stale  The client gives up after 3 attempts.
+  marked 2026-11-22T22:31:30Z (m1-cq3p29w1bwx6wwf548jv)
+  subject  file:docs/retry.md  missing (selector_not_found)
+    stored: quote "gives up after 3 attempts"
+  next: hibi reanchor c1-2kfx78rwbb7wyxwst92f --subject <anchor>
+
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+If the sentence moved, give its new anchor with `--subject`. Here it was
+removed on purpose, so retire the claim:
+
+```bash
+hibi retire c1-2kfx --note "The docs no longer state the attempt limit."
+```
+
+```text output
+c1-2kfx78rwbb7wyxwst92f  retired  r1-rmtzf1pwfkf7mkgrpw1c
+```
+
+## 10. Anchor to a struct field, not its doc comment
+
+In another repository, a quote inside a doc comment is refused, because
+comments are not part of the fingerprint:
+
+```text output
+$ hibi claim "The request timeout is stored in whole seconds." --subject "file:README.md::stored in whole seconds" --evidence "file:src/config.rs#Config::Seconds before a request"
+error: quote_in_comment: evidence 1 (file:src/config.rs): the quote lies wholly or partly inside a code comment
+  fix: Anchor the code the comment describes.
+```
+
+Anchor the field itself by its symbol:
+
+```text output
+$ hibi claim "The request timeout is stored in whole seconds." --subject "file:README.md::stored in whole seconds" --evidence "file:src/config.rs#Config.timeout_secs"
+c1-796bxye5q996vzq2w0y9  created  m1-rnpjv5dx6zf4etyq7z74  subject file:README.md (sentence "The request timeout is stored in whole seconds.", line 4); evidence 1 file:src/config.rs (field "Config.timeout_secs", line 5)
+```
+
+A Python docstring is a string and can be quoted:
+`file:src/jobs.py#Job::Jobs run at most 3 times`.
+
+## 11. A unit served by an external provider
+
+The repository declares the scheme in `.hibi/hibi.toml` (`[schemes.ref]`) and
+the user registers its command in their own user config. A selector other
+than the empty one is given as JSON:
+
+```bash
+echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc": "ref:notes", "sel": {"key": "n1"}}, "evidence": ["file:src/retry.rs#MAX_ATTEMPTS"]}]' | hibi claim --stdin
+```
+
+```text output
+c1-kh88fbb9hctgd1v08923  created  m1-1s3nz2nqsf271zts5eb7  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+```
+
+Without the user's registration the side is unavailable and nothing runs.
+Tell the user; do not edit their config unasked:
+
+```text output
+c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
+  marked 2026-11-22T22:31:32Z (m1-1s3nz2nqsf271zts5eb7)
+  subject  ref:notes  unavailable (provider_not_registered)
+    the user config has no provider command for scheme ref
+  next: hibi providers
+```
+
+## 12. Look at a claim's history
+
+```bash
+hibi list c1-c5dm
+```
+
+```text output
+c1-c5dm2jvhr8hb36rx5rgm
+  statement: The client gives up after 5 attempts.
+  subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
+  evidence 1: {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
+1 mark:
+  m1-1nhmgpeagp6bbwt6kh0j  2026-11-22T22:31:29Z
+    file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
+    file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
+retired: r1-fmpt7hwtdzded271kw2d  2026-11-22T22:31:29Z  replaced by c1-2kfx78rwbb7wyxwst92f
+```

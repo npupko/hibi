@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi.toml",
+  "type": "object",
+  "properties": {
+    "repos": {
+      "description": "Alias to a suggested location, which is only ever displayed.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": {},
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      }
+    },
+    "schemes": {
+      "description": "One table per external scheme. `file` and `repo` are built in.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/RawScheme"
+      },
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "file",
+            "repo"
+          ]
+        },
+        "pattern": "^[a-z][a-z0-9-]*$"
+      }
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RawScope"
+      }
+    },
+    "version": {
+      "description": "The store format version. Must be 1.",
+      "type": "integer",
+      "format": "int64",
+      "const": 1
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "version"
+  ],
+  "$defs": {
+    "RawExclusion": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "description": "Shown in the output of `cover`. Not only whitespace.",
+          "type": "string",
+          "minLength": 1
+        },
+        "resource": {
+          "type": "string"
+        },
+        "unit": {
+          "description": "An exact unit key.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resource",
+        "reason"
+      ]
+    },
+    "RawScheme": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "RawScope": {
+      "type": "object",
+      "properties": {
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RawExclusion"
+          }
+        },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "name": {
+          "description": "Unique among the scopes.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "resource": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "resource",
+        "kinds"
+      ]
+    }
+  }
+}

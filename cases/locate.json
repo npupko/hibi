@@ -1,0 +1,1076 @@
+[
+  {
+    "name": "single exact occurrence",
+    "input": {
+      "text": "line one\nconst MAX = 5;\nline three",
+      "quote": {
+        "exact": "const MAX = 5;",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 9,
+      "end": 23,
+      "startByte": 9,
+      "endByte": 23
+    },
+    "source": "test/algo.test.ts › text-quote localization › a single exact occurrence is returned as an exact hit (asserts how=exact, not ambiguous, slice equals quote)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "moved quote found by its exact text",
+    "input": {
+      "text": "// a new header line added at the top\nconst MAX = 5;",
+      "quote": {
+        "exact": "const MAX = 5;",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 0,
+        "end": 14,
+        "startByte": 0,
+        "endByte": 14
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 38,
+      "end": 52,
+      "startByte": 38,
+      "endByte": 52
+    },
+    "source": "test/algo.test.ts › text-quote localization › a quote that moved is still found by its exact text (asserts how=exact, slice equals quote; position offsets refer to the original text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "small edit found by the fuzzy cascade",
+    "input": {
+      "text": "prologue\nthe retry policy caps attempts at six and then gives up entirely\nepilogue",
+      "quote": {
+        "exact": "the retry policy caps attempts at five and then gives up entirely",
+        "prefix": "prologue\n",
+        "suffix": "\nepilogue"
+      },
+      "position": {
+        "start": 9,
+        "end": 74,
+        "startByte": 9,
+        "endByte": 74
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 9,
+      "end": 74,
+      "startByte": 9,
+      "endByte": 74
+    },
+    "source": "test/algo.test.ts › text-quote localization › a quote with a small edit is found by the fuzzy cascade (asserts how=fuzzy, slice contains the head)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "quote that is gone is missing",
+    "input": {
+      "text": "completely unrelated content here",
+      "quote": {
+        "exact": "const MAX = 5;",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "missing"
+    },
+    "source": "test/algo.test.ts › text-quote localization › a quote that is gone yields no region",
+    "origin": "copied"
+  },
+  {
+    "name": "fuzzy candidate over the error budget is missing",
+    "input": {
+      "text": "const MAX = 5;\n",
+      "quote": {
+        "exact": "const LIMIT_TOTAL = 999999;",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "missing"
+    },
+    "source": "test/algo.test.ts › text-quote localization › a fuzzy candidate over the error budget counts as not found",
+    "origin": "copied"
+  },
+  {
+    "name": "equal context on a long quote is ambiguous",
+    "input": {
+      "text": "abc\nconst MAX = 5;\nabc\nconst MAX = 5;\nabc\n",
+      "quote": {
+        "exact": "const MAX = 5;",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "ambiguous",
+      "how": "exact",
+      "start": 4,
+      "end": 18,
+      "startByte": 4,
+      "endByte": 18
+    },
+    "source": "test/algo.test.ts › text-quote localization › several equally scored occurrences of a long quote are ambiguous (asserts ambiguous with a region; the region is the earliest tied hit)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "context breaks the tie",
+    "input": {
+      "text": "first:\nconst MAX = 5;\nsecond:\nconst MAX = 5;\nend\n",
+      "quote": {
+        "exact": "const MAX = 5;",
+        "prefix": "second:\n",
+        "suffix": "\nend"
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 30,
+      "end": 44,
+      "startByte": 30,
+      "endByte": 44
+    },
+    "source": "test/algo.test.ts › text-quote localization › context breaks the tie between occurrences (asserts not ambiguous, start at the second occurrence)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "position breaks the tie for a short quote",
+    "input": {
+      "text": "MAX ......................... MAX",
+      "quote": {
+        "exact": "MAX",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 30,
+        "end": 33,
+        "startByte": 30,
+        "endByte": 33
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 30,
+      "end": 33,
+      "startByte": 30,
+      "endByte": 33
+    },
+    "source": "test/algo.test.ts › text-quote localization › position breaks the tie for a short quote (asserts not ambiguous, start 30)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "recorded selectors: same text at the same offset",
+    "input": {
+      "text": "# Doc\n\nRetries are capped at 5 attempts.\n",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "# Doc\n\n",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 7,
+        "end": 40,
+        "startByte": 7,
+        "endByte": 40
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 7,
+      "end": 40,
+      "startByte": 7,
+      "endByte": 40
+    },
+    "source": "test/algo.test.ts › resolveSide: the ordered cascade › same text at the same offset is unchanged (the test asserts the anchor state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "recorded selectors: same text shifted 2 units",
+    "input": {
+      "text": "# Doc\n\n  Retries are capped at 5 attempts.\n",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "# Doc\n\n",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 7,
+        "end": 40,
+        "startByte": 7,
+        "endByte": 40
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 9,
+      "end": 42,
+      "startByte": 9,
+      "endByte": 42
+    },
+    "source": "test/algo.test.ts › resolveSide: the ordered cascade › same text within the move threshold is still unchanged (the test asserts the anchor state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "recorded selectors: same text after a new paragraph",
+    "input": {
+      "text": "# Doc\n\nA new paragraph.\n\nRetries are capped at 5 attempts.\n",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "# Doc\n\n",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 7,
+        "end": 40,
+        "startByte": 7,
+        "endByte": 40
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 25,
+      "end": 58,
+      "startByte": 25,
+      "endByte": 58
+    },
+    "source": "test/algo.test.ts › resolveSide: the ordered cascade › same text at a new offset past the move threshold is moved (the test asserts the anchor state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "recorded selectors: number changed in the sentence",
+    "input": {
+      "text": "# Doc\n\nRetries are capped at 7 attempts.\n",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "# Doc\n\n",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 7,
+        "end": 40,
+        "startByte": 7,
+        "endByte": 40
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 7,
+      "end": 40,
+      "startByte": 7,
+      "endByte": 40
+    },
+    "source": "test/algo.test.ts › resolveSide: the ordered cascade › a changed number in a sentence is changed even at high similarity (the test asserts the anchor state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "recorded selectors: one word changed",
+    "input": {
+      "text": "# Doc\n\nRetries are limited at 5 attempts.\n",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "# Doc\n\n",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 7,
+        "end": 40,
+        "startByte": 7,
+        "endByte": 40
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 7,
+      "end": 41,
+      "startByte": 7,
+      "endByte": 41
+    },
+    "source": "test/algo.test.ts › resolveSide: the ordered cascade › text below the similarity floor is changed (the test asserts the anchor state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "recorded selectors: sentence gone",
+    "input": {
+      "text": "# Doc\n\nSomething else entirely.\n",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "# Doc\n\n",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 7,
+        "end": 40,
+        "startByte": 7,
+        "endByte": 40
+      }
+    },
+    "expected": {
+      "status": "missing"
+    },
+    "source": "test/algo.test.ts › resolveSide: the ordered cascade › a quote that is not found is orphaned (the test asserts the anchor state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "recorded selectors: sentence twice, context picks the first",
+    "input": {
+      "text": "# Doc\n\nRetries are capped at 5 attempts.\n\nRetries are capped at 5 attempts.\n",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "# Doc\n\n",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 7,
+        "end": 40,
+        "startByte": 7,
+        "endByte": 40
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 42,
+      "end": 75,
+      "startByte": 42,
+      "endByte": 75
+    },
+    "source": "test/algo.test.ts › resolveSide: the ordered cascade › context selects one of several exact matches (the test asserts the anchor state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "no stored context, sentence twice",
+    "input": {
+      "text": "Retries are capped at 5 attempts.\n\nRetries are capped at 5 attempts.\n",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "ambiguous",
+      "how": "exact",
+      "start": 0,
+      "end": 33,
+      "startByte": 0,
+      "endByte": 33
+    },
+    "source": "test/algo.test.ts › resolveSide: the ordered cascade › several equal exact matches are ambiguous",
+    "origin": "narrowed"
+  },
+  {
+    "name": "code: 5 to 50 still matches exactly as a substring",
+    "input": {
+      "text": "export const MAX_ATTEMPTS = 50;\n",
+      "quote": {
+        "exact": "MAX_ATTEMPTS = 5",
+        "prefix": "export const ",
+        "suffix": ";\n"
+      },
+      "position": {
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 13,
+      "end": 29,
+      "startByte": 13,
+      "endByte": 29
+    },
+    "source": "test/precision.test.ts › never report a drifted claim as `unchanged` › numeric literal 5 to 50 (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: string literal changed",
+    "input": {
+      "text": "export const MODE = \"lenient\";\n",
+      "quote": {
+        "exact": "MODE = \"strict\"",
+        "prefix": "export const ",
+        "suffix": ";\n"
+      },
+      "position": {
+        "start": 13,
+        "end": 28,
+        "startByte": 13,
+        "endByte": 28
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 13,
+      "end": 28,
+      "startByte": 13,
+      "endByte": 28
+    },
+    "source": "test/precision.test.ts › never report a drifted claim as `unchanged` › string literal changed (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: boolean flipped",
+    "input": {
+      "text": "export const ENABLED = false;\n",
+      "quote": {
+        "exact": "ENABLED = true",
+        "prefix": "export const ",
+        "suffix": ";\n"
+      },
+      "position": {
+        "start": 13,
+        "end": 27,
+        "startByte": 13,
+        "endByte": 27
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 13,
+      "end": 27,
+      "startByte": 13,
+      "endByte": 27
+    },
+    "source": "test/precision.test.ts › never report a drifted claim as `unchanged` › boolean flipped (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: signature gained a parameter",
+    "input": {
+      "text": "function retry(max: number, delay: number) { return max; }\n",
+      "quote": {
+        "exact": "function retry(max: number)",
+        "prefix": "",
+        "suffix": " { return max; }\n"
+      },
+      "position": {
+        "start": 0,
+        "end": 27,
+        "startByte": 0,
+        "endByte": 27
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 0,
+      "end": 27,
+      "startByte": 0,
+      "endByte": 27
+    },
+    "source": "test/precision.test.ts › never report a drifted claim as `unchanged` › signature gained a parameter (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: re-indentation",
+    "input": {
+      "text": "function f() {\n        return 5;\n}\n",
+      "quote": {
+        "exact": "return 5",
+        "prefix": "function f() {\n  ",
+        "suffix": ";\n}\n"
+      },
+      "position": {
+        "start": 17,
+        "end": 25,
+        "startByte": 17,
+        "endByte": 25
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 23,
+      "end": 31,
+      "startByte": 23,
+      "endByte": 31
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › re-indentation never produces false-changed (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: spaces inside the quote",
+    "input": {
+      "text": "export   const   MAX   =   5;\nexport const NAME = 'a';\n",
+      "quote": {
+        "exact": "MAX = 5",
+        "prefix": "export const ",
+        "suffix": ";\nexport const NAME = 'a';\n"
+      },
+      "position": {
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 17,
+      "end": 28,
+      "startByte": 17,
+      "endByte": 28
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › a battery of neutral edits yields zero false-changed/orphaned (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: identifier renamed",
+    "input": {
+      "text": "export const MAX_TRIES = 5;\n",
+      "quote": {
+        "exact": "const MAX_ATTEMPTS = 5;",
+        "prefix": "export ",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 7,
+        "end": 30,
+        "startByte": 7,
+        "endByte": 30
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 7,
+      "end": 28,
+      "startByte": 7,
+      "endByte": 28
+    },
+    "source": "test/precision.test.ts › a rename grades `changed` with the rename reason label › renaming the anchored identifier is changed, labelled as a rename (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: called function renamed",
+    "input": {
+      "text": "const result = computeSum(items);\n",
+      "quote": {
+        "exact": "const result = computeTotal(items);",
+        "prefix": "",
+        "suffix": "\n"
+      },
+      "position": {
+        "start": 0,
+        "end": 35,
+        "startByte": 0,
+        "endByte": 35
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 0,
+      "end": 34,
+      "startByte": 0,
+      "endByte": 34
+    },
+    "source": "test/precision.test.ts › a rename grades `changed` with the rename reason label › a rename of a called function inside a whole-statement anchor (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: anchored line deleted",
+    "input": {
+      "text": "export const OTHER = 99;\nexport function brandNew() { return 0; }\n",
+      "quote": {
+        "exact": "MAX_ATTEMPTS = 5",
+        "prefix": "export const ",
+        "suffix": ";\nexport const OTHER = 99;\n"
+      },
+      "position": {
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      }
+    },
+    "expected": {
+      "status": "missing"
+    },
+    "source": "test/precision.test.ts › orphaned detection › deleting the anchored region is orphaned (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "code: 400-unit prologue added",
+    "input": {
+      "text": "// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nexport const MAX_ATTEMPTS = 5;\n",
+      "quote": {
+        "exact": "MAX_ATTEMPTS = 5",
+        "prefix": "export const ",
+        "suffix": ";\n"
+      },
+      "position": {
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 417,
+      "end": 433,
+      "startByte": 417,
+      "endByte": 433
+    },
+    "source": "test/precision.test.ts › a moved-but-intact region grades moved (the test asserts the claim state; this records only the locate step, computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "empty text",
+    "input": {
+      "text": "",
+      "quote": {
+        "exact": "abc",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "missing"
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "short quote tie, no position: bias 0 picks the first",
+    "input": {
+      "text": "MAX ... MAX ... MAX",
+      "quote": {
+        "exact": "MAX",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 0,
+      "end": 3,
+      "startByte": 0,
+      "endByte": 3
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "empty stored context scores a hit at the text start or end as a perfect context match",
+    "input": {
+      "text": "MAX ... MAX ... MAX",
+      "quote": {
+        "exact": "MAX",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 8,
+        "end": 11,
+        "startByte": 8,
+        "endByte": 11
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 0,
+      "end": 3,
+      "startByte": 0,
+      "endByte": 3
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "short quote tie away from the text edges: position picks the nearest",
+    "input": {
+      "text": "x MAX . MAX . MAX x",
+      "quote": {
+        "exact": "MAX",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 8,
+        "end": 11,
+        "startByte": 8,
+        "endByte": 11
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 8,
+      "end": 11,
+      "startByte": 8,
+      "endByte": 11
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "short quote tie at equal distance picks the earlier hit",
+    "input": {
+      "text": "x MAX . MAX . MAX x",
+      "quote": {
+        "exact": "MAX",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 5,
+        "end": 8,
+        "startByte": 5,
+        "endByte": 8
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 2,
+      "end": 5,
+      "startByte": 2,
+      "endByte": 5
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "7-unit quote tie is resolved by position",
+    "input": {
+      "text": "abcdefg | abcdefg",
+      "quote": {
+        "exact": "abcdefg",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 10,
+        "end": 17,
+        "startByte": 10,
+        "endByte": 17
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 10,
+      "end": 17,
+      "startByte": 10,
+      "endByte": 17
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "8-unit quote tie is ambiguous even with a position",
+    "input": {
+      "text": "abcdefgh | abcdefgh",
+      "quote": {
+        "exact": "abcdefgh",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 11,
+        "end": 19,
+        "startByte": 11,
+        "endByte": 19
+      }
+    },
+    "expected": {
+      "status": "ambiguous",
+      "how": "exact",
+      "start": 0,
+      "end": 8,
+      "startByte": 0,
+      "endByte": 8
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "short quote: context beats position",
+    "input": {
+      "text": "x: MAX\ny: MAX\n",
+      "quote": {
+        "exact": "MAX",
+        "prefix": "x: ",
+        "suffix": "\ny"
+      },
+      "position": {
+        "start": 10,
+        "end": 13,
+        "startByte": 10,
+        "endByte": 13
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 3,
+      "end": 6,
+      "startByte": 3,
+      "endByte": 6
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "prefix alone breaks the tie",
+    "input": {
+      "text": "alpha retry=5; beta retry=5;",
+      "quote": {
+        "exact": "retry=5;",
+        "prefix": "beta ",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 20,
+      "end": 28,
+      "startByte": 20,
+      "endByte": 28
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "suffix alone breaks the tie",
+    "input": {
+      "text": "retry=5; alpha retry=5; beta",
+      "quote": {
+        "exact": "retry=5;",
+        "prefix": "",
+        "suffix": " beta"
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 0,
+      "end": 8,
+      "startByte": 0,
+      "endByte": 8
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "occurrences are non-overlapping",
+    "input": {
+      "text": "aaaaaaaa",
+      "quote": {
+        "exact": "aaa",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 2,
+        "end": 5,
+        "startByte": 2,
+        "endByte": 5
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 0,
+      "end": 3,
+      "startByte": 0,
+      "endByte": 3
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "three tied long hits are ambiguous; region is the first",
+    "input": {
+      "text": "const MAX = 5; const MAX = 5; const MAX = 5;",
+      "quote": {
+        "exact": "const MAX = 5;",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 30,
+        "end": 44,
+        "startByte": 30,
+        "endByte": 44
+      }
+    },
+    "expected": {
+      "status": "ambiguous",
+      "how": "exact",
+      "start": 0,
+      "end": 14,
+      "startByte": 0,
+      "endByte": 14
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "fuzzy: one changed word in a sentence",
+    "input": {
+      "text": "Intro.\nRetries are capped at five attempts per call.\nOutro.",
+      "quote": {
+        "exact": "Retries are capped at six attempts per call.",
+        "prefix": "Intro.\n",
+        "suffix": "\nOutro."
+      },
+      "position": {
+        "start": 7,
+        "end": 51,
+        "startByte": 7,
+        "endByte": 51
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 7,
+      "end": 52,
+      "startByte": 7,
+      "endByte": 52
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "fuzzy: reformatted whitespace inside a long quote",
+    "input": {
+      "text": "fn  retry_with_backoff(\n    max_attempts: u32,\n    delay_ms: u64,\n) -> Result",
+      "quote": {
+        "exact": "fn retry_with_backoff(max_attempts: u32, delay_ms: u64) -> Result",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 0,
+      "end": 74,
+      "startByte": 0,
+      "endByte": 74
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "fuzzy: rejected when most words changed",
+    "input": {
+      "text": "Totally different sentence about caching layers here.",
+      "quote": {
+        "exact": "Retries are capped at five attempts per call.",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "missing"
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "fuzzy: quote moved far and edited",
+    "input": {
+      "text": "filler line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nfiller line.\nRetries are capped at 6 attempts.",
+      "quote": {
+        "exact": "Retries are capped at 5 attempts.",
+        "prefix": "",
+        "suffix": ""
+      },
+      "position": {
+        "start": 0,
+        "end": 33,
+        "startByte": 0,
+        "endByte": 33
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 2600,
+      "end": 2633,
+      "startByte": 2600,
+      "endByte": 2633
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "non-ascii: offsets after emoji and accented letters",
+    "input": {
+      "text": "Größe 😀: retries are capped at 5.",
+      "quote": {
+        "exact": "retries are capped at 5.",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "exact",
+      "start": 10,
+      "end": 34,
+      "startByte": 14,
+      "endByte": 38
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  },
+  {
+    "name": "non-ascii: fuzzy match after emoji",
+    "input": {
+      "text": "😀😀 retries are capped at 6.",
+      "quote": {
+        "exact": "retries are capped at 5.",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "status": "found",
+      "how": "fuzzy",
+      "start": 5,
+      "end": 29,
+      "startByte": 9,
+      "endByte": 33
+    },
+    "source": "computed: src/algo/localize.ts localizeTextQuote",
+    "origin": "computed"
+  }
+]

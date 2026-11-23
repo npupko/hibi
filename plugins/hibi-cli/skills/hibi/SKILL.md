@@ -1,107 +1,380 @@
 ---
 name: hibi
 description: >-
-  Operate hibi, the CLI that tracks checkable sentences (claims) in documents
-  and reports which are stale, refuted, expired, or contradicted. Use before
-  trusting CLAUDE.md, AGENTS.md, or any doc; after a feature; when docs or a
-  knowledge repo go stale; for process, marketing, or decision docs that drift; for
-  contradictions between docs; for anything about claims or .claims/.
+  Use hibi, the memory of which statements were checked against which
+  evidence. Use at the start of a session in a repository that has .hibi/,
+  before trusting a document or a comment that a claim covers, after changing
+  code or docs that claims anchor to, before finishing a branch, and whenever
+  the user mentions claims, stale docs, doc and code drift, or coverage of
+  docs by checks. Also use when the user asks to set up hibi, start tracking
+  docs against code, or add hibi to a repository.
 allowed-tools: >-
-  Bash(hibi check:*), Bash(hibi list:*), Bash(hibi audit:*),
-  Bash(bunx @npupko/hibi check:*), Bash(bunx @npupko/hibi list:*),
-  Bash(bunx @npupko/hibi audit:*)
+  Bash(hibi status:*), Bash(hibi list:*), Bash(hibi cover:*),
+  Bash(hibi providers:*), Bash(hibi version:*), Bash(hibi schema:*)
 ---
 
 # hibi
 
-A claim is one document region (sentence, list item, table row) that asserts something checkable. hibi never edits a sentence, fetches a source, or runs a procedure step; `archive` replaces a whole document with a tombstone.
+hibi records that a statement was checked against evidence (a **claim**, with
+a first **mark** holding the fingerprint of every side), and later reports
+which side of which claim changed (`hibi status`) and what in a declared scope
+has no claim (`hibi cover`). It does not show what changed in a side: you read
+that yourself before you mark. It is memory, not a gatekeeper. You are trusted to judge
+whether a statement holds. hibi tells you what to re-check. When you cannot
+decide, ask the user.
 
-## Vocabulary
+Every command exits 0 when it ran, whatever it found, and 1 on an error. In
+your shell tool standard output is not a terminal, so each command prints one
+JSON object; `hibi completions`, `hibi schema <name>` and `--help` print text.
+Add `--format human` for a shorter text form.
 
-| kind | evidence side | stale when |
-|---|---|---|
-| `code` | code spans | an anchor `changed`, `orphaned`, `ambiguous` |
-| `reference` | one span in another doc | an anchor change, or the judge finds no support |
-| `attested` | none; optional `sources`, `procedure`; `ttl` required | ttl elapsed, or evidence refutes it |
+## Setup, when the repository has no `.hibi/`
 
-Anchor states: `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned`; evidence also `unavailable`. Judge: `supported`, `refuted`, `review` (unsure, or evidence did not address it), `pending` (judge not reached, or its answer unusable).
+Ask the user before each of these steps; they change the repository.
 
-Attestations are append-only `{by, at, basis: vouch|evidence|ack, note}`; actors are `human:<id>`, `agent:<name>`, `process:<name>`. Counting rule: ttl runs from the newest `evidence` attestation or `human:` vouch. Agent and process vouches and acks never count. A claim of any kind with a ttl and nothing counting is `expired`.
+1. `hibi init` creates `.hibi/` at the top of the git repository.
+2. Agree with the user which files must be covered, then append a scope to
+   `.hibi/hibi.toml`:
 
-`check` lists a `worklist`: claims that are `expired`; reference or attested claims in `review` or `pending`; attested claims with a `procedure` or `sources` and no judged evidence (`never-checked`). `list --state pending` is the same set.
+   ```toml
+   [[scope]]
+   name = "docs"
+   resource = "file:docs/**/*.md"
+   kinds = ["sentence", "list-item", "table-row"]
+   ```
 
-## Invoking
+3. `hibi cover` lists what has no claim. Claim what you check.
+4. Commit `.hibi/` with the change.
 
-Use `hibi`, else `bunx @npupko/hibi`. JSON when piped; `--json` forces it. Every flag: `references/cli-reference.md`. The judge needs `TYPESAFE_API_KEY`; without it uncached judgments are `pending`, a warning, never a failure. Verdicts cache in `.claims/judge/`, which is local and gitignored; commit the rest of `.claims/`. Paths are normalized relative to the current directory (or `--cwd`); evidence files must stay inside it or their alias directory.
+## When to use it
 
-## The loop
+- At the start of a session in a repository with `.hibi/`: run `hibi status`.
+- Before relying on a sentence in a document:
+  `hibi status --state fresh --state stale --state expired --loc 'file:docs/x.md'`
+  lists every live claim on it with its state. Plain `status --loc` prints
+  "no claim matches" both when every claim there is fresh and when there is
+  no claim; `hibi list --loc 'file:docs/x.md'` tells the two apart.
+- After you changed code or docs: `hibi status` lists what your edit made stale.
+- After you wrote or verified a statement: record it with `hibi claim`.
+- Before finishing a branch: `hibi status --since main...` (the claims the
+  branch made stale, and stale claims made on the branch) and
+  `hibi cover --since main...`, then plain `hibi status`, which is the
+  complete check (after copying text, plain `hibi cover` too; see step 7).
+  Then commit `.hibi/` with the change.
 
-**a. Before trusting a doc:** `hibi check --doc <path>`. Exit 2: a claim in it gates; do not rely on its gating sentences. Exit 1 with `no claims are registered for <path>`: audit it.
+## The session loop
 
-**b. After a change:** `hibi check --since origin/main`. Fix prose in the same change.
+1. **Status.** `hibi status --detail` lists stale and expired claims with the
+   current text of every side. Each side that is not `same` has a `state`
+   (`changed`, `missing`, `ambiguous`, `unavailable`) and a `reason`.
 
-**c. Audit:** `hibi audit --doc <path>`, one row per region. `claimId` set: covered. Else `kind`: `code`/`reference`/`attested` → record; `unverifiable` → rewrite as attributed opinion or remove; `not-a-claim` → nothing; `unsure` → decide from `probabilities`; `pending` → no judge answer. Never record an `unverifiable` region.
+   A stored anchor identifies its unit by **name** (`#name`: the
+   declarations with that name, while the name has as many as when the
+   claim was made) or by **place** (a quote: those words in their scope,
+   with the text right around them unchanged). The scope is every container
+   the stored path names: all sections with the same heading path, all
+   paragraphs whose first sentences start with the same 120 characters, all declarations sharing a
+   symbol (overloads, a Python function defined twice, Rust `Id.fmt` in two
+   `impl` blocks). Anything else is a candidate for you to choose. A copy in
+   another scope is only a candidate. A copy in the same scope can take the
+   claim over without notice, and so can a pasted copy once the original is
+   renamed (last rows). The full list of limits is at
+   https://hibi.mintlify.app/concepts/anchors#limits. What an edit does to a side:
 
-**d. Record** (stdin array, all or nothing):
+   | Edit | Side | Then |
+   |---|---|---|
+   | The body of a declaration anchored `#name` | `changed` | Read the change, re-check, `hibi mark` |
+   | A code line quoted by a bare quote commented out | `missing` (`not_exact`) | Read, `hibi reanchor` |
+   | The line of a `#name::<line>` anchor edited, removed or commented out | `changed`, "the stored quote is no longer in this unit"; `mark` refuses. When the name has several declarations: `missing` (`not_exact`) with candidates | Read it, re-check, `hibi reanchor` with the new line |
+   | Other lines of a `#name::<line>` declaration | `changed`; when the name has several declarations, an edit within 48 characters of the quoted line gives `missing` (`not_exact`) | Read the change, re-check, `hibi mark` |
+   | A sentence edited at its quoted words, or right around a quoted phrase | `missing` (`not_exact`) | Read the candidates and the file, re-check, `hibi reanchor` |
+   | A long sentence edited away from its quote (not in the first 120 characters of a paragraph's first sentence) | `changed` | Read the change, re-check, `hibi mark` |
+   | Another sentence edited, not the first of its paragraph or list item | nothing | |
+   | The first 120 characters of a paragraph's or list item's first sentence edited, that sentence deleted or inserted, the first cell of a row edited, a paragraph left with one sentence, an ordered list renumbered, a blockquote reflowed | the claims on that paragraph, item or row are `missing` (`not_exact`); the right sentence usually listed first | Read, `hibi reanchor` |
+   | Two paragraphs joined | the second paragraph's claims are `missing` (`not_exact`) | Read, `hibi reanchor` |
+   | A sentence moved out of, or split from, a paragraph or section that keeps its name | `missing` (`selector_not_found`), the sentence listed as a candidate with the same content | Read, `hibi reanchor` |
+   | A heading renamed, a section or paragraph pasted again under the same heading, a function around a quote renamed | `missing` (`not_exact`), unless another container now has the name (last rows) | Read, `hibi reanchor`. A pasted template that is not edited yet makes its sentences twins of the original's, and the remedy then names the whole file: finish editing the copy first, then run `hibi status`, instead of anchoring the whole file, which would widen precise claims. |
+   | A declaration anchored `#name` renamed or deleted | `missing` (`selector_not_found`), usually with no candidate | Find it yourself, `hibi reanchor` |
+   | The other declaration of a shared name removed | `missing` (`not_exact`): the count changed; the remaining declaration is a candidate | Read, `hibi reanchor` |
+   | A second declaration of the name added | `ambiguous` or `missing` (`not_exact`), the declarations listed | Read, `hibi reanchor`. In Python a later `def` of a name replaces an earlier one when the module runs, and the earlier, unused one is listed first: check which one the code uses. |
+   | A sentence, list item or table row copied within its scope, with the same 48 characters around the quote inside its unit, the original then edited | nothing: the claim follows the copy and stays fresh; with other text around the quote (an item copied under another number of an ordered list) the side is `missing` (`not_exact`) | `hibi cover` lists the edited original as uncovered |
+   | A line of code copied into another declaration of the same name, with the same 48 characters around it inside the declaration, the original then edited | `changed`, `next` is `hibi mark`, and the mark is accepted: only the line numbers show that it is the other declaration; with other text around the copy the side is `missing` (`not_exact`) | Read the line and its line numbers before you mark |
+   | A declaration's whole body copied into another declaration of the same name (two `fmt` in two `impl` blocks, a Python function defined twice, two Go `init`), the original then edited | first `missing` or `ambiguous` with both listed; after the edit, fresh on the copy | Read the line numbers; check which declaration the claim is about |
+   | A paragraph or section pasted again, then the original's first sentence or heading edited | nothing: only the copy has the name now, and the claim is fresh on it | Same check |
+   | Two numbered lists in a section: a step removed from one, and an item of the other edited to read as the claimed item did | the claim is fresh on the other list's item (one removal alone gives `missing` or `ambiguous`) | Same check |
+2. **Read the change.** For a `changed` side, `status` prints the unit's text
+   as it is now, cut to 240 characters, and `hibi status --detail <id>`
+   prints every side's text whole.
+   That is the current text, not a diff: for the change itself, run
+   `git diff -- <path>` for an edit that is not committed, or
+   `git log -p -- <path>` for a committed one. `mark` and `reanchor` print
+   the text they accepted ("evidence 1 is now:"); read it. `reanchor` marks
+   every changed side it keeps, not only the side it re-points, so before
+   any `reanchor` run `hibi status --detail <id>` and read every changed
+   side.
+3. **Re-check** the statement against what you read. Decide whether it still
+   holds. Never run `next` without this step, and never mark claims in bulk
+   without having read each change.
+4. **A side that is missing, ambiguous or unavailable.** Act on its `reason`:
 
-```sh
-hibi record --from-file - <<'EOF'
-[{"doc":"docs/pricing.md","docQuote":"Pro costs $29/month.","kind":"attested","ttl":"P90D",
-  "owner":"human:alice@example.com","by":"agent:claude",
-  "sources":[{"id":"stripe","resource":"https://dashboard.stripe.com/products/prod_123"}],
-  "procedure":{"instructions":"Open the Stripe Pro product and report its monthly price.",
-    "steps":[{"id":"price","command":"stripe prices list --product prod_123 --json"}]}}]
+   | `reason` | What to do |
+   |---|---|
+   | `not_exact` | The stored anchor no longer identifies one unit. `candidates` lists units it could mean: first units with the marked content (`sameFingerprint: true`), then hibi's guesses. A copy of the text has `sameFingerprint: true` too, so read each one and the file. If one is the unit the claim is about, re-check the statement against it, then run `next` with its `anchor` or with an anchor of your own. A printed `anchor` quotes the unit's first line (cut at 120 characters), its whole text or a run of its lines (cut at 2,048), so it can end inside a word and still selects its unit; it can widen a short quote to a whole sentence, or move a `#name::<line>` to another line, without saying so. For a declaration whose name is unique it is a bare `#name`: add `::<line>` again if the claim was about a line; when the claim is about particular words (a number, a name, one line of code), anchor them yourself (`<loc>::<words>`, `<loc>#<name>::<line>`). After you re-anchor to a candidate with the marked content, check that it is the original and not a copy: look at its line in the file, or run `hibi cover` and see whether the original is now uncovered. `status` cannot tell you, because the claim is fresh either way. When the detail says "the name and the quoted text now point to different units", the quoted line moved into another declaration: the first candidate has the name, the others hold the line. The right unit may not be listed; then find it yourself. |
+   | `selector_not_found` | The stored anchor matches nothing where it points: a declaration anchored `#name` was renamed or removed, a sentence was moved out of, or split from, a paragraph or section that keeps its name (then it is listed as a candidate with the same content), or the unit was rewritten or moved to another file (only the side's own file is searched). Find it with `git diff` or `git log -p`, re-check, and re-anchor. If it is gone, ask the user before you retire. |
+   | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
+   | `several_units` | The anchor matches several units, listed in `candidates`, for example a name that now has a second declaration. Choose the one the statement is about and re-anchor to its `anchor`. A candidate with `anchor: null` is identical, where it stands, to another one, and cannot be anchored alone: follow the sentence hibi prints with it. After you anchor a containing unit, the claim stays on it: re-anchoring it back to the original unit later is `claim_retired` (step 6 says what to do). |
+   | `selector_refused` | The provider refuses the stored anchor, or no longer allows one of its selector keys; `detail` says which. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
+   | `resource_unavailable` | The resource cannot be used now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses. The line named is where the parser reports its first error; the mistake can be before or after it, by many lines, so read the code around it. Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
+   | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. For these, `provider_error` and a code file that does not parse, the `remediation` also gives the whole commands to move on: anchor an evidence side to another resource or drop it, re-point or retire a subject. Once the file can be used again (it parses, fits the size limit or is UTF-8), add dropped evidence back with `hibi reanchor <id> --add-evidence <anchor> --note <text>`: without a note the result would be the earlier, replaced claim, and the command fails with `claim_retired`. A file list that cannot be read has no such commands. When such a side and a missing side block a claim, `next` and the `reanchor` error name both. |
+   | `profile_mismatch` | The fingerprint profile changed, for example after an external provider renamed its profile, or after a hibi upgrade. Re-check and mark. |
+   | `provider_failed` | `next` is `hibi providers --check <scheme>`, which starts the provider and reports what fails. Tell the user, and run it when they ask. Do not mark. |
+   | `provider_not_registered`, `repo_not_allowed` | `next` is `hibi providers`. Run it and tell the user: providers and sibling repositories are set up in their user config. |
+   | `scheme_not_declared` | The scheme is no longer declared in `.hibi/hibi.toml`. Ask the user whether to declare it again or retire the claim. |
+   | `repo_not_found`, `provider_error` | The sibling repository is missing, or the provider answered with an error. `remediation` says what to do; tell the user. |
+
+   `mark` refuses a claim with a side that is missing, ambiguous, or
+   unavailable for any reason but `profile_mismatch`, and a changed side
+   whose `#name::<line>` line is gone. It never follows a candidate.
+5. **Record what you found.**
+   - Still holds: `hibi mark <id>`.
+   - Holds, but the subject moved or matches several units:
+     `hibi reanchor <id> --subject <anchor>`. This also marks every other
+     changed side of the claim: re-check those first. When several kept
+     sides need a new anchor, `reanchor` fails once, naming them all, and
+     its fix line repeats your arguments with an `<anchor>` for each.
+   - Holds, but evidence number n moved or matches several units:
+     `hibi reanchor <id> --evidence <n>=<anchor>`.
+   - The statement must change: fix the text first, then
+     `hibi reanchor <id> --statement "..." --subject <anchor>`.
+   - The sentence was deleted, or the statement no longer applies: ask the
+     user before you retire, especially when the evidence still shows the
+     fact is true (the document may have lost something it should say). Then
+     `hibi retire <id> --note "why"`.
+   - You cannot tell whether the document or the code is right: ask the user.
+     Do not mark.
+6. **Claim.** After you check a new statement, record it:
+   `hibi claim "<statement>" --subject <anchor> --evidence <anchor>`.
+   For code write `#name`, or `#name::<line>` to say which line the claim is
+   about; for prose, and code outside any declaration, a bare quote. A bare
+   quote inside a function follows the text, and `claim` prints a note
+   (`notes` in JSON) with the `#name::<line>` anchor that follows the
+   declaration instead.
+   Running the same claim again (the same statement, `recheck` and `note`,
+   and sides on the same units, however you wrote the anchors) marks the
+   existing live claim (`created: false`) instead of adding one. It reports
+   what the claim was before (`accepted.was`, for example `stale`).
+   Re-check before you do that, as for `mark`. Two elements of one batch
+   that are the same claim make one claim. When the same claim was retired,
+   `claim` fails with `claim_retired`, and so does a `reanchor` back to the
+   units of a claim that the claim replaced. The error follows the chain of
+   replacements to its last claim. `was replaced by <new>` or `the last
+   claim of that chain is <last>` means a `reanchor` replaced it: look at
+   that claim first with `hibi status`; to make the earlier claim again
+   anyway, give a `--note` that says why. `was retired`, also as the end of
+   a chain, means someone decided it: ask the user before you record it
+   again with a different `--note`. When a
+   side of the existing claim is missing or ambiguous, `claim` writes a
+   second claim: re-anchor the existing one instead.
+7. **Cover.** `hibi cover` (or `--since main...`) lists units of the declared
+   scopes that no claim covers. Claim the checkable ones. To exclude one unit,
+   with the user's agreement, add an entry to the scope's `exclude` list in
+   `.hibi/hibi.toml`. The unit key is in the JSON output of `cover`
+   (`scopes[].items[].unit.key`); for an uncovered unit the text output
+   prints the key only under a unit that cannot be anchored alone, or in
+   place of a unit's text when it has no text and no label:
+   `{ resource = "file:docs/retry.md", unit = "sentence:0863e2920c1f", reason = "a pointer, not a statement" }`.
+   A prose unit's key comes from its content, so the exclusion stops
+   matching when that sentence is reworded, and `cover` lists it again. A
+   declaration's key (`function:run_job`) names a place by source order:
+   when that declaration is deleted, another of the same name takes the key
+   and is excluded, so check `cover` after deleting one.
+   Leave out `unit` to exclude a whole file: it is then not read at all, its
+   units are not counted, it is not listed as unavailable, and a claim on it
+   does not show as covered in that scope. That is the remedy, with the
+   user's agreement, for a file `cover` lists as unavailable for good (does
+   not parse, too large, not text).
+   An item printed with "cannot be anchored alone" (`anchor: null` in JSON)
+   is identical, where it stands, to another unit. A claim on the unit that
+   contains it records a statement about them, but does not cover them. To
+   stop `cover` listing them, ask the user to exclude each one by the key
+   the hint names, or to exclude the whole file.
+   `hibi cover --since <range>` lists only units whose key and content are new since
+   the base, so a sentence copied within its file, with the original then
+   edited, is not listed even when no claim covers it. After copying text,
+   run `hibi cover` without `--since`.
+
+Pass `--by agent:claude` (or set `HIBI_BY`) so marks record who checked.
+
+## Reading `next`
+
+Each listed claim has `next`, the command to run after a successful re-check,
+or `null`:
+
+| `next` | Meaning |
+|---|---|
+| `hibi mark <id>` | A side changed or the period expired. Read the change, re-check, then mark, or repair or retire. |
+| `hibi reanchor <id> --subject <anchor>` | The subject is missing or ambiguous, its stored anchor is refused, or its stored line is gone. Read the candidates or the unit, choose, and give its anchor. |
+| `hibi reanchor <id> --evidence <n>=<anchor>` | Evidence number n is missing or ambiguous, its stored anchor is refused, or its stored line is gone. Read the candidates or the unit, choose, and give its anchor. |
+| `hibi providers` | A provider or sibling repository is not set up. Tell the user; setup is in their user config. |
+| `hibi providers --check <scheme>` | A provider failed. The command starts it and reports what fails. Tell the user, and run it when they ask. |
+| `null` | Fresh, retired, or unavailable for a reason no command fixes. The side's `remediation` says what to do, for example fix a syntax error or declare a scheme. |
+
+`next` never contains a candidate: `<anchor>` is yours to fill. Commands
+hibi prints (`next`, fix lines) assume the same working directory and
+`--root` as the command that printed them; add `--root` yourself when you
+used it. Plain
+`hibi status` lists stale and expired claims. `hibi status <id>` shows one
+claim in any state.
+
+## Renames
+
+hibi keeps no alias for a renamed or moved unit. The claim is stale until
+you re-anchor it.
+
+- **A declaration anchored `#name` was renamed** (function `limit` to
+  `queue_limit`): the side is `missing` (`selector_not_found`) with no
+  candidate, because the name is part of its content. Find it yourself, for
+  example with `git diff`; if it is the same thing, re-check and run
+  `hibi reanchor <id> --evidence <n>=file:src/jobs.py#queue_limit`.
+- **A function around a bare quote was renamed**: the side is `missing`
+  (`not_exact`) and lists the function that holds the quote. Read it and
+  re-anchor.
+- **A container was renamed** (struct `Config` to `Settings`): a member's
+  side is `missing` with the member under its new path as a candidate, such
+  as `Settings.timeout_secs`, and `sameFingerprint: true` (text: "same
+  content as at the reference mark"). Its content is what was checked;
+  re-anchor to it.
+- **A heading was renamed**: every claim under it is `missing` (`not_exact`)
+  with its unchanged sentence listed first. Re-anchor each.
+- **A file was renamed or moved**: the side is `missing`
+  (`resource_not_found`) with no candidates. Give the new path with
+  `--subject` or `--evidence <n>=<anchor>`.
+
+## Anchors
+
+| Compact anchor | Selects |
+|---|---|
+| `file:docs/retry.md::gives up after 5 attempts` | The unit that contains this exact quote |
+| `file:src/retry.rs#MAX_ATTEMPTS` | The declaration with this symbol |
+| `file:src/config.rs#Config.timeout_secs` | A member: struct field, enum variant, method |
+| `file:src/retry.rs#delay_ms::200 * 2u64.pow(n)` | The declaration, and the line of it the claim is about |
+| `file:docs/retry.md` | The whole file |
+| `repo:api//src/lib.rs#timeout_secs` | A file in an allowed sibling repository |
+| `ref:notes` | An external resource with the empty selector |
+
+Rules for a new anchor (in `claim`, and a replaced or added side in
+`reanchor`):
+
+- It must match exactly (`selector_not_exact` otherwise). A quote that differs
+  only in the length of runs of whitespace counts as exact; whitespace where
+  the text has none does not.
+- A quote that occurs in more than one unit is `side_ambiguous`, whatever its
+  length. The error lists up to 20 candidates, then how many more, each with an
+  anchor you can use, or says that the units cannot be told apart.
+- With `#symbol::quote`, the quote must occur inside that declaration;
+  otherwise the anchor is `selector_not_exact`. A doc comment above the
+  declaration is outside it.
+- A `#symbol` works only in code. On a markdown, prose or text file it is
+  refused (`invalid_anchor`): "this kind of file has no symbols; anchor it
+  with a quote".
+- A `#symbol` that several declarations share (overloads, a function
+  defined twice) is `side_ambiguous`, and the error lists them (at most 20, then
+  how many more), each with a JSON anchor that selects it alone, by a line
+  only it holds. Such an anchor
+  resolves while the name has that many declarations, and its scope is all
+  of them: a copy of its line in another of them, the original then edited,
+  takes the claim. Read the line the side shows.
+- Units that are identical, with identical text around them, in one
+  scope cannot be anchored one by one: `claim` answers `side_ambiguous`
+  with each unit marked "cannot be told apart". Follow the sentence hibi
+  prints with them. In `cover`, ask
+  the user to exclude each one by its key, or the whole file; a claim on
+  the containing unit does not cover them. (`quote_not_distinguishable` is a guard behind this:
+  the file provider returns it when the anchor it would store does not
+  select the same unit alone.)
+- Two evidence anchors that resolve to the same unit are refused
+  (`invalid_argument`), however they are written.
+- A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is
+  refused (`quote_in_comment`): anchor the code the comment describes. A
+  Python docstring is a string and can be quoted.
+- When you type a quote, quote whole lines or whole tokens: the line of a
+  `#name::<line>` that ends inside a number still matches after an edit
+  (`A = 1` in `A = 10`), so the side is only `changed`. A printed anchor may
+  end inside a word; it still selects its unit.
+- A quote must lie inside one unit (`quote_spans_units`). A quote copied from
+  a member line may keep its indentation and a trailing `,` or `;`.
+- A `file:` path must be one git lists (tracked, or untracked and not
+  ignored), spelled with the same letter case. Ignored files and paths under
+  `.git/` or `.hibi/` cannot be anchored.
+
+Units of code: functions, methods, classes, structs, interfaces, traits,
+enums, types, variables, modules, impls (symbol `impl fmt::Debug for Id`), macros, top-level statements, and
+members: `field` for data members, `variant` for enum variants and Java enum
+constants. Rust attributes and TS decorators belong to the declaration they
+precede. Units of prose: `sentence`, `heading`, `list-item`, `table-row`,
+`fenced`.
+
+## What stales a claim
+
+Fingerprints are exact. Prose ignores whitespace changes. The code
+fingerprint ignores whitespace, line breaks, comments and a trailing comma,
+but a Python backslash line continuation counts, and a formatter that
+changes semicolons, quote style or parentheses stales claims; re-check and
+mark them. A claim on a declaration by name stays fresh through the ignored
+edits. A bare quote is found by the text right around it, so such an edit
+near it (a comment inside the quoted text, a comment or whitespace inserted
+between tokens with no whitespace within 48 characters of the quote, a
+trailing comma removed) makes the side `missing` (`not_exact`) with the
+unit as a candidate: re-anchor it. A comment or whitespace added right at
+the edge of the quote changes nothing. A reverted change
+makes a claim fresh again.
+
+## Batches
+
+`claim` and `mark` take a JSON array on standard input with `--stdin`, written
+all or nothing. Failing elements are reported with their `index`.
+
+```bash
+hibi claim --stdin <<'EOF'
+[{"statement": "The client gives up after 3 attempts.",
+  "subject": "file:docs/retry.md::gives up after 3 attempts",
+  "evidence": ["file:src/retry.rs#MAX_ATTEMPTS"],
+  "by": "agent:claude"}]
 EOF
 ```
 
-| key | rule |
-|---|---|
-| `doc`, `kind` | required |
-| `docQuote` / `docRange` | exactly one; `L3:L3` or offsets `100:130` |
-| `code` | code only: `[{file, quote or range}]` |
-| `ref` | reference only: `{file, quote or range}` |
-| `sources` | `[{id?, resource, title?}]`, never fetched |
-| `procedure` | `{instructions, steps?}`; steps are hints |
-| `ttl` | ISO 8601 (`P90D`); required on attested |
-| `owner` | actor to contact on expiry |
-| `by` | required (here or `--by`); use `agent:<name>` |
-| `suggest` | `true`: never gates |
-
-Quote the load-bearing token, not the whole line. `file` may be `alias:path` via `config.repos`. Agent-recorded claims with a ttl start expired.
-
-**e. Worklist:** `hibi check --json` → `worklist[]: {claimId, sentence, kind, document, procedure, sources, owner, lastEvidence?, reason}`. Follow `procedure.instructions` with your tools, then:
-
-```sh
-hibi evidence --from-file - --by agent:claude <<'EOF'
-[{"claimId":"clm_…","evidence":"Pro plan: $29.00 / month","source":"stripe","summary":"Stripe lists Pro at $29/month"}]
-EOF
+```bash
+echo '["c1-xqhb", {"claim": "c1-2axv", "note": "checked against delay_ms"}]' | hibi mark --stdin
 ```
 
-`evidence`: observed text, at most 32,000 characters, never secrets; only its hash and the numbers, money, versions, and dates in it are stored. `summary`: one stored line. `--by` is required unless every item has `by`. Attested claims only. `results[].judge`: `supported` appends an evidence attestation and resets ttl; `refuted` gates; `review` needs more pointed evidence; `pending` writes nothing. Exit 0 regardless.
+An anchor in a batch is a compact string, `{"loc": ..., "sel": {...}}`, or
+that object as a JSON string, as candidates and errors print it.
+Compact syntax is split at the first `::` and then at the first `#`, so an
+anchor whose path contains `#` or `::`, or whose symbol contains `::` (a
+Rust impl:
+`{"loc": "file:src/id.rs", "sel": {"symbol": "impl fmt::Debug for Id"}}`),
+must be written as JSON, as must a selector other than the empty one on an
+external scheme, for example `{"loc": "ref:notes", "sel": {"key": "n1"}}`. Each `cover` item has an `anchor` object you
+can use as `subject` unchanged, or `null` for a unit that cannot be anchored
+alone.
 
-**f. Attest:** `hibi attest <id> --by <actor> --note "…"`. A `human:` vouch resets ttl; an agent vouch returns `countsTowardTtl: false`. Never vouch as `human:`; ask the `owner`. `--ack conflict:<otherId>` or `--ack review` acknowledges a finding; it needs `--note` and never resets ttl. `--ack review` fails when there is no current supports verdict.
+## Rules
 
-**g. Verdicts.**
+- Re-check before every `mark` and `reanchor`. Both record that you checked.
+- Never edit `.hibi/claims/` or `.hibi/marks/` by hand. `.hibi/hibi.toml` is
+  edited by hand, with the user's agreement.
+- When the document and the code disagree and you cannot tell which is
+  right, ask the user.
+- `triage`, `suggest-evidence` and `status --judge-order` send text to
+  TypeSafe's API and need `TYPESAFE_API_KEY`. Use them only when the user has
+  set the key and asked for them. Their output is a ranking, never a finding.
+- `hibi providers --check <scheme>` starts the provider program registered in
+  the user's config. Run it only when the user asks.
+- Provider commands and sibling directories are set up in the user's own
+  config, never in `.hibi/hibi.toml`. Do not add a `command` to `hibi.toml`.
 
-| enforced claim | `check` | `check --doc` |
-|---|---|---|
-| `changed`, `orphaned`, `ambiguous`, `refuted`, conflict | gate | gate |
-| `expired` | warn | gate |
-| `moved`, `review`, `pending`, `unavailable` | warn | warn |
+## References
 
-Exit 0 clean or warnings, 2 gating (any warning under `--fail-on warn`), 1 error.
-
-`check` verdict: `{claimId, kind, doc, evidence?, judge?, expired, conflicts[], gates, warns, changed?, reasons[], remediation}`. `reasons[]` names every rule applied. `remediation.actions[].command` runs once you fill its `<…>` placeholders.
-
-| flag | do |
-|---|---|
-| `changed` | fix the sentence if wrong, then run the remediation `reanchor` command (it names the new span) |
-| `orphaned` | `hibi reanchor <id> --suggest`, reanchor with a span, or retire |
-| `moved` | `hibi reanchor <id>`; every moved claim at once: `hibi reanchor --moved [--doc <path>]` |
-| `refuted` | fix sentence or evidence; never reanchor |
-| conflict | rewrite the wrong sentence, or ack |
-| `expired` | submit evidence (attested), or ask the owner |
-
-Never rewrite a sentence to silence a flag. Never delete a `.claims/` file; use `hibi retire <id>`.
-
-Recipes: `references/cookbook.md`. CI: `assets/hibi-ci.yml`.
+- `references/cookbook.md`: worked tasks with real commands and outputs.
+- `references/cli-reference.md`: every command and option, generated from the
+  code.

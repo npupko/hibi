@@ -1,0 +1,27 @@
+{
+  "name": "hello offering only an unknown protocol version is unsupported_protocol",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            99
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "error": {
+          "code": "unsupported_protocol",
+          "message": "<string>"
+        }
+      }
+    }
+  ]
+}

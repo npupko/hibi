@@ -1,0 +1,1 @@
+const MaxAttempts = 5

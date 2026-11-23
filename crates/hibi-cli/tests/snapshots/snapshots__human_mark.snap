@@ -1,0 +1,16 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"mark\", &cache, \"--by\", \"nick\", \"--note\", \"read the function\"])"
+---
+$ hibi mark c1-h11mnkp70sgmegp55r2g --by nick --note 'read the function'
+exit status: 0
+---- standard output ----
+c1-h11mnkp70sgmegp55r2g  marked  m1-s381ry6wr3shrpycvnkw
+  was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it
+    evidence 1 is now:
+    | pub fn limit() -> u32 {
+    |     let max_entries = 64;
+    |     max_entries * 2
+    | }
+---- standard error ----
+(empty)

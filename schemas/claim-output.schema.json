@@ -1,0 +1,659 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi claim output",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ClaimResult"
+      }
+    },
+    "command": {
+      "type": "string"
+    },
+    "nextNote": {
+      "description": "How to read `next` and `accepted` (section 15.2).",
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean",
+      "const": true
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "claims",
+    "nextNote",
+    "warnings"
+  ],
+  "$defs": {
+    "Accepted": {
+      "description": "What a write that produces a mark took over without being told: the\nstate the claim was in before the write, and the sides that were not\n`same` then. The write made the claim fresh; this is the record that it\nwas not. `sides` is empty when the claim was `fresh`, and when it was\n`expired` (only time had run out).",
+      "type": "object",
+      "properties": {
+        "sides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcceptedSide"
+          }
+        },
+        "was": {
+          "description": "The claim's state before the write.",
+          "$ref": "#/$defs/ClaimState"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "was",
+        "sides"
+      ]
+    },
+    "AcceptedSide": {
+      "description": "One side that was not `same` when a write accepted its claim.",
+      "type": "object",
+      "properties": {
+        "index": {
+          "description": "0 for the subject.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "state": {
+          "description": "The side's state before the write.",
+          "$ref": "#/$defs/SideState"
+        },
+        "text": {
+          "description": "The whole text of the unit the write marked for this side: what the\ncaller accepted, so none of it is left out. From `claim` and `mark`\nit is present for a side that was `changed`. From `reanchor` it is\nthe unit the new claim has for the side, whatever the side's state\nwas, and absent for a side that was dropped: never the text of a\nunit that the new claim no longer points at.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "role",
+        "loc",
+        "state",
+        "reason"
+      ]
+    },
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "Candidate": {
+      "description": "One unit a side's anchor could mean (section 15.2).",
+      "type": "object",
+      "properties": {
+        "anchor": {
+          "description": "The anchor the provider printed for this unit, to give to\n`reanchor`: `<loc>#<symbol>`, or a JSON anchor. `null` when another\nlisted candidate is identical where it stands, so that no anchor of\nthis form selects one of the two alone.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "endLine": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "sameFingerprint": {
+          "description": "True when the unit's fingerprint equals the side's fingerprint in\nthe reference mark: the unit is the one that was marked, and it\nmoved or was renamed. `false` also when the claim has no mark.",
+          "type": "boolean"
+        },
+        "text": {
+          "description": "The unit text cut to 240 characters, or `null` when the provider\ngave none.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "kind",
+        "label",
+        "line",
+        "endLine",
+        "text",
+        "anchor",
+        "sameFingerprint"
+      ]
+    },
+    "ClaimId": {
+      "type": "string",
+      "pattern": "^c1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "ClaimResult": {
+      "description": "One entry of `claims` in the output of `claim`.",
+      "type": "object",
+      "properties": {
+        "accepted": {
+          "description": "For a claim that already existed: the state it was in before this\nmark and the sides that were not `same`. `null` for a new claim.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Accepted"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimView"
+        },
+        "created": {
+          "description": "`false` when the claim already existed and only received a mark.",
+          "type": "boolean"
+        },
+        "id": {
+          "$ref": "#/$defs/ClaimId"
+        },
+        "mark": {
+          "$ref": "#/$defs/MarkId"
+        },
+        "notes": {
+          "description": "What the caller should know about the anchors it gave: one sentence\nfor each quote-only anchor that landed inside a code declaration,\nsaying that the anchor tracks that text in its place and which\nanchor follows the declaration instead. Empty otherwise.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "created",
+        "mark",
+        "accepted",
+        "notes",
+        "claim"
+      ]
+    },
+    "ClaimState": {
+      "description": "The state of a claim (section 9.3).",
+      "type": "string",
+      "enum": [
+        "fresh",
+        "stale",
+        "expired",
+        "retired"
+      ]
+    },
+    "ClaimView": {
+      "description": "ClaimView of section 15.2.",
+      "type": "object",
+      "properties": {
+        "expiresAt": {
+          "description": "`add(markedAt, recheck)` when the claim is `fresh` or `expired` and\n`recheck` is set.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/ClaimId"
+        },
+        "mark": {
+          "description": "Id of the reference mark (section 9.3).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarkId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "markedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next": {
+          "description": "One command line, or `null` (section 15.2).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recheck": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sides": {
+          "description": "Empty for a retired claim.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Side"
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/ClaimState"
+        },
+        "statement": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "recheck",
+        "note",
+        "state",
+        "mark",
+        "markedAt",
+        "expiresAt",
+        "sides",
+        "next"
+      ]
+    },
+    "Fingerprint": {
+      "type": "string",
+      "pattern": "^b3:[a-z][a-z0-9-]*:[0-9a-f]{32,64}$"
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^(?:file:(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|repo:[a-z0-9][a-z0-9-]*//(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|(?!file:|repo:)[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+)$"
+    },
+    "MarkId": {
+      "type": "string",
+      "pattern": "^m1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "Reason": {
+      "description": "Why a side is not `same` (section 9.2). A closed list.",
+      "type": "string",
+      "enum": [
+        "scheme_not_declared",
+        "provider_not_registered",
+        "provider_failed",
+        "resource_not_found",
+        "not_text",
+        "too_large",
+        "repo_not_found",
+        "repo_not_allowed",
+        "provider_error",
+        "resource_unavailable",
+        "selector_refused",
+        "selector_not_found",
+        "not_exact",
+        "several_units",
+        "no_mark",
+        "fingerprint_differs",
+        "profile_mismatch"
+      ]
+    },
+    "Role": {
+      "description": "`subject` for side 0, `evidence` for the others.",
+      "type": "string",
+      "enum": [
+        "subject",
+        "evidence"
+      ]
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 2
+        },
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "prefix": {
+          "description": "Up to 48 characters of the unit's own text before the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "quote": {
+          "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
+          "type": "string",
+          "maxLength": 2048,
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters of the unit's own text after the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource, as typed.",
+          "type": "string",
+          "minLength": 1
+        },
+        "within": {
+          "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "dependentRequired": {
+        "prefix": [
+          "quote"
+        ],
+        "suffix": [
+          "quote"
+        ],
+        "within": [
+          "quote"
+        ]
+      },
+      "dependentSchemas": {
+        "count": {
+          "anyOf": [
+            {
+              "required": [
+                "symbol"
+              ]
+            },
+            {
+              "required": [
+                "within"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "Side": {
+      "description": "Side of section 15.2.",
+      "type": "object",
+      "properties": {
+        "anchor": {
+          "description": "The anchor as stored.",
+          "$ref": "#/$defs/Anchor"
+        },
+        "candidates": {
+          "description": "Present when the side is `ambiguous`, `missing` with reason\n`not_exact`, or `missing` with reason `selector_not_found` when units\nwith the marked content were found (candidates by content, section\n15.2): the units the stored anchor could mean, at most\n[`MAX_CANDIDATES`](super::MAX_CANDIDATES). A candidate is a guess to\ncheck, never the side's unit.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          }
+        },
+        "candidatesTotal": {
+          "description": "Present with `candidates`: how many there are in all.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "detail": {
+          "description": "For a side that cannot be evaluated: what the provider or the\nregistry said, cut to [`DETAIL_CHARS`] characters. `null` otherwise.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fp": {
+          "description": "The current fingerprint.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fingerprint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "index": {
+          "description": "0 for the subject.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "markedFp": {
+          "description": "The fingerprint in the reference mark.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fingerprint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "remediation": {
+          "description": "For a side that cannot be evaluated: what the limit or the cause is\nand what the author can do ([`unavailable_remediation`]). For\n`resource_unavailable` it is the provider's own message and what to\ndo after it. `null` for every other side; a side that changed, is\nmissing or is ambiguous is answered by the claim's `next`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "state": {
+          "$ref": "#/$defs/SideState"
+        },
+        "text": {
+          "description": "The current unit text. Present with `--detail`, whole, for every\nresolved side; and without it for a `changed` side, cut to 240\ncharacters: the label of a unit can be the same before and after a\nchange, the text is not.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "description": "The unit the side resolves to exactly, or `null`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UnitRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "role",
+        "anchor",
+        "state",
+        "reason",
+        "unit",
+        "fp",
+        "markedFp",
+        "remediation",
+        "detail"
+      ]
+    },
+    "SideState": {
+      "description": "The state of one side (section 9.2).",
+      "type": "string",
+      "enum": [
+        "same",
+        "changed",
+        "missing",
+        "ambiguous",
+        "unavailable"
+      ]
+    },
+    "Timestamp": {
+      "description": "RFC 3339 in UTC with second precision and the Z suffix",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "UnitRef": {
+      "description": "UnitRef of section 15.2. `label` is `null` when the provider gave none;\n`line` and `endLine` are `null` without a range.",
+      "type": "object",
+      "properties": {
+        "endLine": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "kind",
+        "label",
+        "line",
+        "endLine"
+      ]
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old",
+        "unknown_kind"
+      ]
+    }
+  }
+}

@@ -1,0 +1,482 @@
+[
+  {
+    "name": "fixed seconds: P90D",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P90D"
+    },
+    "expected": {
+      "instant": "2026-04-01T00:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › days, weeks, and time parts add fixed seconds",
+    "origin": "copied"
+  },
+  {
+    "name": "fixed seconds: P2W",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P2W"
+    },
+    "expected": {
+      "instant": "2026-01-15T00:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › days, weeks, and time parts add fixed seconds",
+    "origin": "copied"
+  },
+  {
+    "name": "fixed seconds: PT12H",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "PT12H"
+    },
+    "expected": {
+      "instant": "2026-01-01T12:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › days, weeks, and time parts add fixed seconds",
+    "origin": "copied"
+  },
+  {
+    "name": "fixed seconds: PT1H30M15S",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "PT1H30M15S"
+    },
+    "expected": {
+      "instant": "2026-01-01T01:30:15.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › days, weeks, and time parts add fixed seconds",
+    "origin": "copied"
+  },
+  {
+    "name": "fixed seconds: P1DT1H",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1DT1H"
+    },
+    "expected": {
+      "instant": "2026-01-02T01:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › days, weeks, and time parts add fixed seconds",
+    "origin": "copied"
+  },
+  {
+    "name": "calendar: 2026-01-01T00:00:00.000Z + P1Y",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1Y"
+    },
+    "expected": {
+      "instant": "2027-01-01T00:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › years and months add calendar units, clamping to the month's last day",
+    "origin": "copied"
+  },
+  {
+    "name": "calendar: 2026-01-01T00:00:00.000Z + P3M",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P3M"
+    },
+    "expected": {
+      "instant": "2026-04-01T00:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › years and months add calendar units, clamping to the month's last day",
+    "origin": "copied"
+  },
+  {
+    "name": "calendar: 2026-01-31T10:00:00Z + P1M",
+    "input": {
+      "start": "2026-01-31T10:00:00Z",
+      "duration": "P1M"
+    },
+    "expected": {
+      "instant": "2026-02-28T10:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › years and months add calendar units, clamping to the month's last day",
+    "origin": "copied"
+  },
+  {
+    "name": "calendar: 2028-01-31T10:00:00Z + P1M",
+    "input": {
+      "start": "2028-01-31T10:00:00Z",
+      "duration": "P1M"
+    },
+    "expected": {
+      "instant": "2028-02-29T10:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › years and months add calendar units, clamping to the month's last day",
+    "origin": "copied"
+  },
+  {
+    "name": "calendar: 2028-02-29T00:00:00Z + P1Y",
+    "input": {
+      "start": "2028-02-29T00:00:00Z",
+      "duration": "P1Y"
+    },
+    "expected": {
+      "instant": "2029-02-28T00:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › years and months add calendar units, clamping to the month's last day",
+    "origin": "copied"
+  },
+  {
+    "name": "calendar: 2026-11-15T00:00:00Z + P1Y2M3DT4H",
+    "input": {
+      "start": "2026-11-15T00:00:00Z",
+      "duration": "P1Y2M3DT4H"
+    },
+    "expected": {
+      "instant": "2028-01-18T04:00:00.000Z"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › years and months add calendar units, clamping to the month's last day",
+    "origin": "copied"
+  },
+  {
+    "name": "invalid: \"\"",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": ""
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › rejects strings that are not durations",
+    "origin": "copied"
+  },
+  {
+    "name": "invalid: \"P\"",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › rejects strings that are not durations",
+    "origin": "copied"
+  },
+  {
+    "name": "invalid: \"90D\"",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "90D"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › rejects strings that are not durations",
+    "origin": "copied"
+  },
+  {
+    "name": "invalid: \"PT\"",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "PT"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › rejects strings that are not durations",
+    "origin": "copied"
+  },
+  {
+    "name": "invalid: \"P1.5D\"",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1.5D"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › rejects strings that are not durations",
+    "origin": "copied"
+  },
+  {
+    "name": "invalid: \"P1H\"",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1H"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › rejects strings that are not durations",
+    "origin": "copied"
+  },
+  {
+    "name": "invalid: \"PT1D\"",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "PT1D"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "test/expiry.test.ts › addDuration (ISO 8601) › rejects strings that are not durations",
+    "origin": "copied"
+  },
+  {
+    "name": "months then days: Jan 31 + P1M1D",
+    "input": {
+      "start": "2026-01-31T00:00:00Z",
+      "duration": "P1M1D"
+    },
+    "expected": {
+      "instant": "2026-03-01T00:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "Mar 31 + P1M clamps to Apr 30",
+    "input": {
+      "start": "2026-03-31T08:00:00Z",
+      "duration": "P1M"
+    },
+    "expected": {
+      "instant": "2026-04-30T08:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "Aug 31 + P6M clamps to Feb 28",
+    "input": {
+      "start": "2026-08-31T00:00:00Z",
+      "duration": "P6M"
+    },
+    "expected": {
+      "instant": "2027-02-28T00:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "P13M rolls the year",
+    "input": {
+      "start": "2026-12-15T00:00:00Z",
+      "duration": "P13M"
+    },
+    "expected": {
+      "instant": "2028-01-15T00:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "P12M equals P1Y",
+    "input": {
+      "start": "2028-02-29T00:00:00Z",
+      "duration": "P12M"
+    },
+    "expected": {
+      "instant": "2029-02-28T00:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "PT36H crosses a day",
+    "input": {
+      "start": "2026-01-01T18:00:00Z",
+      "duration": "PT36H"
+    },
+    "expected": {
+      "instant": "2026-01-03T06:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "P1M vs PT1M: M before T is months",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1M"
+    },
+    "expected": {
+      "instant": "2026-02-01T00:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "PT1M is one minute",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "PT1M"
+    },
+    "expected": {
+      "instant": "2026-01-01T00:01:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "P0D adds nothing",
+    "input": {
+      "start": "2026-05-05T05:05:05.123Z",
+      "duration": "P0D"
+    },
+    "expected": {
+      "instant": "2026-05-05T05:05:05.123Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "PT0S adds nothing",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "PT0S"
+    },
+    "expected": {
+      "instant": "2026-01-01T00:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "milliseconds are kept",
+    "input": {
+      "start": "2026-01-31T23:59:59.999Z",
+      "duration": "P1M"
+    },
+    "expected": {
+      "instant": "2026-02-28T23:59:59.999Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "start with a +02:00 offset is read as an instant",
+    "input": {
+      "start": "2026-01-31T01:00:00+02:00",
+      "duration": "P1M"
+    },
+    "expected": {
+      "instant": "2026-02-28T23:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "weeks and days together (allowed by v4's pattern)",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1W1D"
+    },
+    "expected": {
+      "instant": "2026-01-09T00:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "all fields",
+    "input": {
+      "start": "2026-01-01T00:00:00Z",
+      "duration": "P1Y1M1W1DT1H1M1S"
+    },
+    "expected": {
+      "instant": "2027-02-09T01:01:01.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "large day count",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P36500D"
+    },
+    "expected": {
+      "instant": "2125-12-08T00:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "DST-free: a day is always 86400 s",
+    "input": {
+      "start": "2026-03-28T12:00:00Z",
+      "duration": "P2D"
+    },
+    "expected": {
+      "instant": "2026-03-30T12:00:00.000Z"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "invalid: lowercase",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "p1d"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "invalid: trailing space",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1D "
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "invalid: negative",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "-P1D"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "invalid: units out of order",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1D1M"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "invalid: repeated unit",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "P1Y1Y"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  },
+  {
+    "name": "invalid: comma fraction",
+    "input": {
+      "start": "2026-01-01T00:00:00.000Z",
+      "duration": "PT1,5H"
+    },
+    "expected": {
+      "error": "invalid_duration"
+    },
+    "source": "computed: src/engine/expiry.ts addDuration",
+    "origin": "computed"
+  }
+]

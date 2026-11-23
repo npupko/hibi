@@ -1,0 +1,114 @@
+---
+title: "Working with ranges"
+description: "Restrict status and cover to what a branch or a commit range changed with --since."
+---
+
+On a feature branch the useful questions are narrower than "what is stale"
+and "what is uncovered": which claims did this branch break, and what did it
+add that no claim covers. `--since <range>` answers both.
+
+## Range forms
+
+The compared end is always the working tree, including uncommitted and
+untracked files. The range selects the base commit:
+
+| Form | Base |
+|---|---|
+| `A`, `A..`, `A..HEAD` | Commit `A` |
+| `A...`, `A...HEAD` | The merge base of `A` and `HEAD` |
+
+`A` is anything git resolves to a commit: a branch, a tag, a hash, `HEAD~3`.
+Any other form is an error:
+
+```text output
+$ hibi status --since main..tidy-retry
+error: invalid_range: "main..tidy-retry" is not a range hibi accepts
+  fix: Use A, A.., A..HEAD, A... or A...HEAD, where A names a commit.
+```
+
+The changed paths are the files that differ between the base and the working
+tree, plus untracked files that git does not ignore. A rename counts as a
+deletion and an addition. `--since` needs git.
+
+## `status --since`
+
+Lists the stale claims that the range caused: a claim is listed when it is
+stale and at least one of its `file:` sides is in a changed file, resolved to
+exactly one unit at the base, and now resolves differently or to a unit with
+a different fingerprint. A stale claim made in the range, whose id is not
+in the store at the base, is listed too. A claim that was already stale at
+the base for another reason is not listed, and expired claims are never
+listed.
+
+On the branch `tidy-retry`, `delay_ms` was rewritten from `200 * 2u64.pow(n)`
+to `200 << n`:
+
+```bash
+hibi status --since main
+```
+
+```text output
+3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
+since main (base 4a29495b3d0fed48190769e1d91818e6c66f5381)
+
+c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-22T22:31:30Z (m1-j8mrrw7qemeg68ypsara)
+  evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
+    | pub fn delay_ms(n: u32) -> u64 {
+    |     200 << n
+    | }
+  next: hibi mark c1-xwck2bdefbx39g56m7dn
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+The rewrite computes the same values, so the statement still holds:
+
+```bash
+hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
+```
+
+`--since` can be combined with `--loc`. It cannot be combined with `--state`
+or with claim ids; that is a usage error.
+
+## `cover --since`
+
+Lists the uncovered units that the range added or changed: a unit is kept
+when its file is a changed path and no unit of the same file at the base had
+the same key and the same fingerprint. So a sentence copied within its
+file, with the original then edited, is not listed, even when no claim
+covers it; plain `hibi cover` lists it. The branch above also added a
+section to `docs/retry.md`:
+
+```bash
+hibi cover --since main
+```
+
+```text output
+since main (base 4a29495b3d0fed48190769e1d91818e6c66f5381)
+docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
+  file:docs/retry.md
+        9  sentence  Each attempt times out after 10 seconds.
+```
+
+The counts cover only the kept units. Scopes on `repo:` and external schemes
+are not evaluated with `--since`, and say so:
+
+```text output
+$ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
+since main (base c4a55f8cfef5098fec234c5332009d92ed3d0821)
+notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
+  not evaluated: --since works only for scopes on scheme "file"
+```
+
+## Before opening a pull request
+
+```bash
+hibi status --since main...
+hibi cover --since main...
+hibi status
+```
+
+Plain `hibi status` is the complete check: it lists every stale and expired
+claim, not only those the range touched. The three-dot form compares against the point where the branch left `main`,
+so changes merged into `main` since then are not reported as the branch's.

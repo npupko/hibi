@@ -1,0 +1,379 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi providers output",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "builtin": {
+      "$ref": "#/$defs/Builtin"
+    },
+    "check": {
+      "$ref": "#/$defs/ProviderCheck"
+    },
+    "command": {
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean",
+      "const": true
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RepoReport"
+      }
+    },
+    "schemes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SchemeReport"
+      }
+    },
+    "userConfig": {
+      "description": "The user-config location.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "builtin",
+    "repos",
+    "schemes",
+    "userConfig",
+    "warnings"
+  ],
+  "$defs": {
+    "Builtin": {
+      "description": "`builtin` in the output of `providers`: what the file provider serves.\nThe caller fills it from the file provider's constants.",
+      "type": "object",
+      "properties": {
+        "classes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "schemes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schemes",
+        "classes",
+        "profiles"
+      ]
+    },
+    "Capabilities": {
+      "description": "Optional provider methods. A missing key is `false`.",
+      "type": "object",
+      "properties": {
+        "batch": {
+          "type": "boolean",
+          "default": false
+        },
+        "render": {
+          "type": "boolean",
+          "default": false
+        },
+        "units": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "CaseResult": {
+      "description": "The outcome of one case.",
+      "type": "object",
+      "properties": {
+        "detail": {
+          "description": "Why the case failed or was skipped.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "ok": {
+          "description": "True when the case passed or was skipped.",
+          "type": "boolean"
+        },
+        "skipped": {
+          "description": "True when the provider lacks a capability the case requires.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "ok",
+        "skipped"
+      ]
+    },
+    "NameVersion": {
+      "description": "A name and a version, as in `hello` (`client`, `provider`).",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ]
+    },
+    "ProviderCheck": {
+      "description": "`check` in the output of `hibi providers --check <scheme>` (section\n15.3): the scheme and the outcome of the protocol cases.",
+      "type": "object",
+      "properties": {
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CaseResult"
+          }
+        },
+        "failed": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "hello": {
+          "description": "The first `hello` result the provider gave, or `null`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProviderInfo"
+            },
+            {
+              "description": "No `hello` result was received.",
+              "type": "null"
+            },
+            {
+              "description": "The result of a provider that does not conform, as it sent it. The `hello` case then fails."
+            }
+          ]
+        },
+        "passed": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "scheme": {
+          "type": "string"
+        },
+        "skipped": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "scheme",
+        "hello",
+        "passed",
+        "failed",
+        "skipped",
+        "cases"
+      ]
+    },
+    "ProviderInfo": {
+      "description": "The `hello` result (section 13.3): what a provider is and accepts.",
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "$ref": "#/$defs/Capabilities",
+          "default": {
+            "batch": false,
+            "render": false,
+            "units": false
+          }
+        },
+        "kinds": {
+          "description": "Unit kinds it can return. Informational.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "protocol": {
+          "description": "The protocol version chosen from the client's list.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "provider": {
+          "$ref": "#/$defs/NameVersion"
+        },
+        "schemes": {
+          "description": "Schemes this process serves.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selectors": {
+          "description": "Selector keys it accepts, from `quote`, `symbol`, `key`. `quote`\nincludes `prefix`, `suffix`, `within` and, with `within`, `count`;\n`symbol` includes `count`. `{}` is always accepted. See\n[`Selector::disallowed_key`].",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SelectorKey"
+          }
+        }
+      },
+      "required": [
+        "protocol",
+        "provider",
+        "schemes",
+        "selectors"
+      ]
+    },
+    "RepoReport": {
+      "description": "One `[repos]` alias with the result of the checks of section 11.1.",
+      "type": "object",
+      "properties": {
+        "alias": {
+          "type": "string"
+        },
+        "error": {
+          "description": "`null`, `repo_not_found` or `repo_not_allowed`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "The directory from the user config, as written there.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "remediation": {
+          "description": "For an alias the user config does not allow: the lines to add to\nthe user config. `null` otherwise.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "suggested": {
+          "description": "The value in `hibi.toml`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alias",
+        "suggested",
+        "path",
+        "error",
+        "remediation"
+      ]
+    },
+    "SchemeReport": {
+      "description": "One scheme of `hibi.toml` with its registration.",
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "registered": {
+          "type": "boolean"
+        },
+        "remediation": {
+          "description": "For a scheme without a registration: the lines to add to the user\nconfig, with the command to fill in. `null` otherwise.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scheme": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "scheme",
+        "registered",
+        "command",
+        "remediation"
+      ]
+    },
+    "SelectorKey": {
+      "description": "Selector keys a provider can accept (section 13.3, `hello.selectors`).",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "key"
+          ]
+        },
+        {
+          "description": "`quote`, with `prefix`, `suffix` and `within`.",
+          "type": "string",
+          "const": "quote"
+        },
+        {
+          "description": "`symbol`, with `count`.",
+          "type": "string",
+          "const": "symbol"
+        }
+      ]
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old",
+        "unknown_kind"
+      ]
+    }
+  }
+}

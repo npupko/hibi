@@ -1,0 +1,612 @@
+[
+  {
+    "name": "a side that resolves to a unit covers it",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": null
+        },
+        {
+          "key": "s2",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [
+        "s1"
+      ],
+      "exclude": []
+    },
+    "expected": {
+      "covered": [
+        "s1"
+      ],
+      "excluded": [],
+      "uncovered": [
+        "s2"
+      ],
+      "matched": []
+    },
+    "source": "SPEC 10.2: a side that resolves to exactly one unit covers that unit. s2 has no side and no exclusion: uncovered.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "a side covers every ancestor by the parent chain",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "list",
+          "kind": "list",
+          "parent": null
+        },
+        {
+          "key": "item",
+          "kind": "list-item",
+          "parent": "list"
+        },
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": "item"
+        },
+        {
+          "key": "s2",
+          "kind": "sentence",
+          "parent": "item"
+        }
+      ],
+      "kinds": [
+        "list",
+        "list-item",
+        "sentence"
+      ],
+      "resolved": [
+        "s1"
+      ],
+      "exclude": []
+    },
+    "expected": {
+      "covered": [
+        "list",
+        "item",
+        "s1"
+      ],
+      "excluded": [],
+      "uncovered": [
+        "s2"
+      ],
+      "matched": []
+    },
+    "source": "SPEC 10.2 and decision 12: s1 -> item -> list; the walk stops at the null parent of list. The sibling s2 is not on the chain.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "a side on the parent does not cover the children",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "h",
+          "kind": "heading",
+          "parent": null
+        },
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": "h"
+        }
+      ],
+      "kinds": [
+        "heading",
+        "sentence"
+      ],
+      "resolved": [
+        "h"
+      ],
+      "exclude": []
+    },
+    "expected": {
+      "covered": [
+        "h"
+      ],
+      "excluded": [],
+      "uncovered": [
+        "s1"
+      ],
+      "matched": []
+    },
+    "source": "SPEC 10.2: coverage goes to ancestors only.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "the walk stops at a key that is not in the unit list",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": "ghost"
+        },
+        {
+          "key": "s2",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [
+        "s1"
+      ],
+      "exclude": []
+    },
+    "expected": {
+      "covered": [
+        "s1"
+      ],
+      "excluded": [],
+      "uncovered": [
+        "s2"
+      ],
+      "matched": []
+    },
+    "source": "SPEC 10.2: s1 is covered; its parent key ghost is not a unit of the resource, so the walk stops there.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "a parent cycle terminates",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "a",
+          "kind": "sentence",
+          "parent": "b"
+        },
+        {
+          "key": "b",
+          "kind": "sentence",
+          "parent": "c"
+        },
+        {
+          "key": "c",
+          "kind": "sentence",
+          "parent": "a"
+        },
+        {
+          "key": "d",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [
+        "a"
+      ],
+      "exclude": []
+    },
+    "expected": {
+      "covered": [
+        "a",
+        "b",
+        "c"
+      ],
+      "excluded": [],
+      "uncovered": [
+        "d"
+      ],
+      "matched": []
+    },
+    "source": "SPEC 10.2: a -> b -> c -> a; the walk stops at a key already visited (R50). All three are covered; d is not on the cycle.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "a unit that is its own parent",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "a",
+          "kind": "sentence",
+          "parent": "a"
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [
+        "a"
+      ],
+      "exclude": []
+    },
+    "expected": {
+      "covered": [
+        "a"
+      ],
+      "excluded": [],
+      "uncovered": [],
+      "matched": []
+    },
+    "source": "SPEC 10.2: the parent of a is a, a key already visited: the walk stops.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "a resolved key that is not in the unit list covers nothing",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [
+        "gone"
+      ],
+      "exclude": []
+    },
+    "expected": {
+      "covered": [],
+      "excluded": [],
+      "uncovered": [
+        "s1"
+      ],
+      "matched": []
+    },
+    "source": "SPEC 10.2: the walk stops at a key that is not in the resource's unit list, here at its first key.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "units of other kinds are not scope units but carry the chain",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "h",
+          "kind": "heading",
+          "parent": null
+        },
+        {
+          "key": "fence",
+          "kind": "fenced",
+          "parent": "h"
+        },
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": "fence"
+        },
+        {
+          "key": "h2",
+          "kind": "heading",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "heading"
+      ],
+      "resolved": [
+        "s1"
+      ],
+      "exclude": []
+    },
+    "expected": {
+      "covered": [
+        "h"
+      ],
+      "excluded": [],
+      "uncovered": [
+        "h2"
+      ],
+      "matched": []
+    },
+    "source": "SPEC 10.1: units of a scope are those whose kind is in kinds, so the fenced unit is not listed. 10.2: the chain s1 -> fence -> h still reaches h.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "an exclusion without unit excludes every uncovered unit of the resource",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": null
+        },
+        {
+          "key": "s2",
+          "kind": "sentence",
+          "parent": null
+        },
+        {
+          "key": "s3",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [
+        "s1"
+      ],
+      "exclude": [
+        {
+          "resource": "file:docs/a.md",
+          "unit": null
+        }
+      ]
+    },
+    "expected": {
+      "covered": [
+        "s1"
+      ],
+      "excluded": [
+        "s2",
+        "s3"
+      ],
+      "uncovered": [],
+      "matched": [
+        2
+      ]
+    },
+    "source": "SPEC 10.1 and 10.2: excluded means not covered and an exclusion matches. s1 is covered and stays covered; it is not counted in matched.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "an exclusion with unit excludes that key only",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": null
+        },
+        {
+          "key": "s2",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [],
+      "exclude": [
+        {
+          "resource": "file:docs/a.md",
+          "unit": "s2"
+        }
+      ]
+    },
+    "expected": {
+      "covered": [],
+      "excluded": [
+        "s2"
+      ],
+      "uncovered": [
+        "s1"
+      ],
+      "matched": [
+        1
+      ]
+    },
+    "source": "SPEC 10.1: unit, when present, is an exact unit key.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "an exclusion on another resource does not match",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [],
+      "exclude": [
+        {
+          "resource": "file:docs/b.md",
+          "unit": null
+        }
+      ]
+    },
+    "expected": {
+      "covered": [],
+      "excluded": [],
+      "uncovered": [
+        "s1"
+      ],
+      "matched": [
+        0
+      ]
+    },
+    "source": "SPEC 10.1: the exclusion's resource must match the unit's resource.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "exclusion patterns are globs: * stays in one segment, ** crosses",
+    "input": {
+      "loc": "file:docs/x/y.md",
+      "units": [
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [],
+      "exclude": [
+        {
+          "resource": "file:docs/*.md",
+          "unit": null
+        },
+        {
+          "resource": "file:docs/**/*.md",
+          "unit": null
+        }
+      ]
+    },
+    "expected": {
+      "covered": [],
+      "excluded": [
+        "s1"
+      ],
+      "uncovered": [],
+      "matched": [
+        0,
+        1
+      ]
+    },
+    "source": "SPEC 10.1: file:docs/*.md does not match file:docs/x/y.md because * matches within a segment; file:docs/**/*.md does.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "two exclusions match one unit: the first in declaration order counts it",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [
+        {
+          "key": "s1",
+          "kind": "sentence",
+          "parent": null
+        },
+        {
+          "key": "s2",
+          "kind": "sentence",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [],
+      "exclude": [
+        {
+          "resource": "file:docs/a.md",
+          "unit": "s2"
+        },
+        {
+          "resource": "file:docs/**",
+          "unit": null
+        }
+      ]
+    },
+    "expected": {
+      "covered": [],
+      "excluded": [
+        "s1",
+        "s2"
+      ],
+      "uncovered": [],
+      "matched": [
+        1,
+        1
+      ]
+    },
+    "source": "SPEC 15.3: matched counts the units each exclusion excluded. A unit is excluded once; it is counted for the first matching exclusion (lead ruling, engine erratum 3).",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "a resource with no units",
+    "input": {
+      "loc": "file:docs/a.md",
+      "units": [],
+      "kinds": [
+        "sentence"
+      ],
+      "resolved": [
+        "s1"
+      ],
+      "exclude": [
+        {
+          "resource": "file:docs/a.md",
+          "unit": null
+        }
+      ]
+    },
+    "expected": {
+      "covered": [],
+      "excluded": [],
+      "uncovered": [],
+      "matched": [
+        0
+      ]
+    },
+    "source": "SPEC 10.2: nothing to cover; every exclusion matched 0.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "an external locator is matched exactly by an exclusion",
+    "input": {
+      "loc": "arch:model",
+      "units": [
+        {
+          "key": "auth",
+          "kind": "component",
+          "parent": null
+        },
+        {
+          "key": "billing",
+          "kind": "component",
+          "parent": null
+        }
+      ],
+      "kinds": [
+        "component"
+      ],
+      "resolved": [
+        "auth"
+      ],
+      "exclude": [
+        {
+          "resource": "arch:model",
+          "unit": "billing"
+        },
+        {
+          "resource": "arch:other",
+          "unit": null
+        }
+      ]
+    },
+    "expected": {
+      "covered": [
+        "auth"
+      ],
+      "excluded": [
+        "billing"
+      ],
+      "uncovered": [],
+      "matched": [
+        1,
+        0
+      ]
+    },
+    "source": "SPEC 10.1: for any other scheme the pattern is one exact locator.",
+    "origin": "spec-derived"
+  }
+]

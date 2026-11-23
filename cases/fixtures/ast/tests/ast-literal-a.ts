@@ -1,0 +1,1 @@
+const MAX = 5;

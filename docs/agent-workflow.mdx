@@ -1,0 +1,296 @@
+---
+title: "Agent workflow"
+description: "How an agent uses hibi in a working session: status, re-check, mark or reanchor, claim, cover."
+---
+
+hibi is built for an agent that is trusted to judge whether a statement is
+true. hibi supplies the memory: which statements were checked, against what,
+and what changed since. The agent supplies the judgement, and asks the user
+when it cannot decide.
+
+## The session loop
+
+<Steps>
+  <Step title="Start with status">
+    ```bash
+    hibi status
+    ```
+
+    By default `status` lists the stale and expired claims. For each one it
+    lists the sides that are not the same as at the mark, with a state and a
+    reason, and a `next` command. A side that cannot be found exactly also
+    lists candidates: units it could mean, each with an anchor, or with none when
+the unit is identical, where it stands, to another unit. Add `--detail` to
+    include the current text of every side:
+
+    ```bash
+    hibi status --detail
+    ```
+  </Step>
+  <Step title="Re-check each listed claim">
+    Read the statement, then read what changed. For a `changed` side,
+    `status` prints the unit's text as it is now, and
+    `hibi status --detail <id>` prints the text of every side. That is the
+    current text, not a diff. To see the change itself, run `git diff` on
+    the side's path for an edit that is not committed, or `git log -p` on it
+    when the change is committed. `mark` prints the text it accepted, as
+    "evidence 1 is now:" followed by the lines. Decide whether the statement
+    still holds against that text. Never mark several claims at once without
+    having read each change.
+
+    `next` is what to run when the statement holds; it is not a verdict.
+    When a listed claim's `next` is `mark` or `reanchor`, hibi prints the
+    reminder once per run: "Re-check each statement before
+    running its next command. If it no longer holds, fix the text or the
+    code, or retire the claim with hibi retire."
+  </Step>
+  <Step title="Re-anchor a side that no longer identifies its unit">
+    A stored anchor identifies its unit by name or by place. A `#name`
+    follows the declaration with that name while the name refers to as many
+    declarations as when the claim was made. A quote follows its words in
+    their container (the heading and paragraph, or the enclosing
+    declaration), with the text right around them unchanged. Anything else
+    makes the side `missing` (`not_exact`, or `selector_not_found` when the
+    anchor matches nothing where it points) or `ambiguous`, usually with
+    candidates:
+
+    - the quoted words of a sentence, or the words right around a quoted
+      phrase, were edited;
+    - the first 120 characters of the paragraph's first sentence were
+      edited, or the heading renamed;
+    - the sentence moved out of its paragraph or section, which keeps its
+      name (then the reason is `selector_not_found`, with the sentence as a
+      candidate);
+    - the function around a quote was renamed;
+    - a name now has a second declaration.
+
+    A candidate is a guess. hibi lists the units with the content that was
+    marked first, then its guesses. Read them, and the file, and decide
+    which unit the claim is about. Then re-check the statement against it
+    and run `next` with its anchor, for example
+    `hibi reanchor <id> --subject <anchor>`. If the statement no longer
+    holds, fix the text or retire the claim. The right unit may not be among
+    the candidates: a function renamed while the claim names it with
+    `#name`, or one moved to another file, is not listed. Find it yourself and give its anchor. `mark` refuses a claim
+    with such a side, so the claim never silently follows a guess.
+
+    `mark` is the step for a `changed` side: a declaration edited under its
+    `#name`, or a long sentence edited away from its quote. When the line of
+    a `#name::<line>` anchor was edited, the side is `changed` with
+    "the stored quote is no longer in this unit", `next` is a `reanchor`,
+    and `mark` refuses it: give the new line. An edit to a neighbouring
+    sentence leaves the claim fresh, unless it is the paragraph's first
+    sentence.
+  </Step>
+  <Step title="Record what you found">
+    | Finding | Command |
+    |---|---|
+    | The statement still holds | `hibi mark <id>` |
+    | It holds, but a side is missing (moved, reworded, renamed) or matches several units | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for that side |
+    | The statement must change (you fixed the text, or the code changed what is true) | Fix the text, then `hibi reanchor <id> --statement "..." --subject ...` |
+    | The statement was removed or no longer applies | `hibi retire <id> --note "why"` |
+    | You cannot tell which side is right, the document or the code | Ask the user. Do not mark. |
+  </Step>
+  <Step title="Claim what you checked">
+    When you write or verify a statement during the session, record it with
+    `hibi claim` right after the check, while the evidence is in front of
+    you.
+  </Step>
+  <Step title="Look for gaps">
+    ```bash
+    hibi cover --since main
+    ```
+
+    lists the units of the declared scopes that the branch added or changed
+    and that no claim covers. Claim the checkable ones. `--since` lists only
+    units whose key and content are new since the base, so a sentence copied
+    within its file, with the original then edited, is not listed even when
+    no claim covers it. After copying text, run `hibi cover` without
+    `--since`. A unit that states
+    nothing checkable can be excluded in `.hibi/hibi.toml` with a reason;
+    exclusions are visible in every `cover` report, so agree on them with the
+    user.
+  </Step>
+  <Step title="Before you finish">
+    ```bash
+    hibi status --since main
+    hibi status
+    ```
+
+    The first lists the claims that the branch made stale, and stale claims
+    made on the branch; plain `hibi status` is the complete check. Resolve what they list, then commit
+    `.hibi/` with the change.
+  </Step>
+</Steps>
+
+## Reading `next`
+
+`next` is one command line, or `null`. It is a template and is not
+shell-quoted. Replace each `<anchor>` before you run it, quoting the anchor
+for your shell, because a shell reads `<` and `>` as redirections. A fix
+line that repeats a `reanchor` command quotes the arguments you gave for a
+POSIX shell, and can hold `<anchor>` or `<text>`, which you replace the same
+way. Commands that hibi prints, in
+`next` and in fix lines, assume the same working directory and the same
+`--root` as the command that printed them; add `--root` yourself when you
+used it. hibi picks the first row that
+applies:
+
+| Condition | `next` |
+|---|---|
+| Fresh or retired | `null` |
+| A side is missing or ambiguous, its stored line is gone from its declaration, or the provider refuses its stored anchor (`selector_refused`) | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side, and one per side that is unavailable because its file is not text or too large, its provider answered with an error, or its code file does not parse |
+| A side is unavailable because its provider is not registered, or a sibling repository is not allowed | `hibi providers` |
+| A side is unavailable because its provider failed | `hibi providers --check <scheme>`, which starts the provider and reports what fails; `hibi providers` for the `file` and `repo` schemes |
+| A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, or the resource cannot be read now (for example a code file that does not parse, a file this user cannot read, or git's file list) | `null`; the side's `remediation` says what to do |
+| Otherwise: expired, a side changed, or a side is unavailable with `profile_mismatch` | `hibi mark <id>` |
+
+`next` never contains a candidate. Where a side has to be anchored again it
+says `<anchor>`, and you choose the anchor after reading the candidates.
+
+Here the sentence was reworded from "doubles each time" to "doubles every
+time". The quoted words changed, so the subject is missing and the reworded
+sentence is listed as a candidate:
+
+```text output
+$ hibi status
+4 claims: 1 fresh, 1 stale, 1 expired, 1 retired
+
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
+
+c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-22T22:31:30Z (m1-bsymx580snhj8rg69njf)
+  subject  file:docs/retry.md  missing (not_exact)
+    the stored anchor no longer identifies one unit
+    stored: quote "The delay between attempts doubles each time, starting at 200 ms."
+    1 candidate; each is a guess, read it before you anchor to it:
+    - sentence "The delay between attempts doubles every time, starting at …", line 5
+      | The delay between attempts doubles every time, starting at 200 ms.
+      anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}
+  next: hibi reanchor c1-xwck2bdefbx39g56m7dn --subject <anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+`mark` refuses the claim, because its subject resolves to no unit:
+
+```text output
+$ hibi mark c1-xwck --by agent:claude
+error: side_missing: the subject (file:docs/retry.md) resolves to no unit (not_exact): the stored anchor no longer identifies one unit; 1 candidate, each a guess to check before use: sentence "The delay between attempts doubles every time, starting at 200 ms.", line 5: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}
+  fix: hibi reanchor c1-xwck2bdefbx39g56m7dn --subject <anchor>
+```
+
+The candidate is the same sentence, and the statement still holds. Anchor the
+subject to it with a quote of your own. The printed anchor quotes the whole
+sentence; your own quote keeps the words the claim is about:
+
+```text output
+$ hibi reanchor c1-xwck --subject 'file:docs/retry.md::doubles every time'
+c1-xwck2bdefbx39g56m7dn is retired and replaced by the new claim c1-2axv59jx0ztvfjd1adn9
+  mark m1-63dpymkp78q9k8xhhprz, retirement r1-bksenecxxh0be9zcbv2k
+  was stale: subject file:docs/retry.md missing (not_exact); now marked: make sure you re-checked it
+    subject is now:
+    | The delay between attempts doubles every time, starting at 200 ms.
+  subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
+    {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"The delay between attempts","suffix":", starting at 200 ms.","within":["Retries","The client retries a failed download."]}}
+  evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
+    {"loc":"file:src/retry.rs","sel":{"symbol":"delay_ms"}}
+```
+
+The old claim is retired into the new one, and `status` no longer lists it:
+
+```text output
+$ hibi status
+5 claims: 2 fresh, 0 stale, 1 expired, 2 retired
+
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+## JSON for agents
+
+In an agent's shell tool standard output is not a terminal, so each command
+prints one JSON object, except `hibi completions`, `hibi schema <name>` and
+`--help`, which print text. The fields an agent reads from `status`:
+
+| Field | Meaning |
+|---|---|
+| `summary` | Counts of every claim in the store by state, before any filter |
+| `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
+| `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `unit`, `fp`, `markedFp`, `remediation` and `detail`; `candidates` and `candidatesTotal` for a side that is ambiguous, missing with `not_exact`, or missing with `selector_not_found` when a unit in the file has the content at the reference mark; `text` with `--detail` |
+| `claims[].sides[].candidates[]` | A unit the anchor could mean: `key`, `kind`, `label`, `line`, `endLine`, `text` (whole with `--detail`, otherwise at most 240 characters; cut text ends with `… (<n> characters)`), `anchor` and `sameFingerprint`. `anchor` is a string that selects that unit alone, or `null` when no anchor selects the unit alone, because it is identical, where it stands, to another unit. At most 20 are listed; `candidatesTotal` counts all of them. |
+| `claims[].sides[].detail` | For an unavailable side: the message that says why, from the provider or from hibi. For a `not_exact` side: why nothing resolved, "the stored anchor no longer identifies one unit", or "the name and the quoted text now point to different units: ..." when a `#name::<line>` anchor's line moved into another declaration. For a changed side whose stored line is gone from its declaration: "the stored quote is no longer in this unit". Otherwise `null` |
+| `claims[].sides[].remediation` | For a side that cannot be evaluated, except one with `profile_mismatch`: the limit or the cause and what you can do. For a missing or ambiguous side with a candidate whose `anchor` is `null`: what to anchor instead. Otherwise `null` |
+| `claims[].next` | The command to run after a successful re-check, or `null` |
+| `nextNote` | The reminders: re-check a statement before running its `next`; when it no longer holds, fix the text or the code, or retire the claim; and a candidate is a guess to read before you anchor to it |
+
+`sameFingerprint` is `true` when the candidate's content equals the content
+at the reference mark: the unit has the content that was checked, at
+another place or under another path, for example a sentence moved to
+another paragraph or a field whose struct was renamed. Content alone never
+identifies a unit, so a copy of the text has `true` as well. Read the
+candidate before you anchor to it. After you re-anchor to it, check that it
+is the original and not a copy: look at its line in the file, or run
+`hibi cover` and see whether the original is now uncovered. `status` cannot
+tell you, because the claim is fresh either way.
+
+Every write that adds a mark to an existing claim (`claim` on an existing
+claim, `mark`, `reanchor`) reports what it accepted:
+`"accepted": {"was": <state before>, "sides": [{"index", "role", "loc", "state", "reason", "text"}]}`,
+listing the sides that were not `same`. `text`, the whole text that was
+marked, is present for a `changed` side and, from `reanchor`, for every
+listed side the new claim keeps; a side that `reanchor` drops is listed
+without `text`. For a new claim `accepted` is `null`.
+In text this is a line such as
+`was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it`,
+followed by the text of each changed side after "is now:".
+Every result that carries a `next` also carries `nextNote`.
+
+Errors are `{"ok": false, "command": <command>, "errors": [{"code", "message", "remediation"}]}`,
+and an error from a `--stdin` element also has its `index`, with
+exit status 1. `remediation` is text or a command that says how to fix the
+cause, or `null` when hibi has none for that error.
+
+## Batches
+
+`claim` and `mark` read a JSON array from standard input with `--stdin`. A
+batch is written all or nothing: if any element fails, nothing is written and
+every failing element is reported in the same run, each with its `index`:
+
+```text output
+$ echo '[{"statement":"a","subject":"file:docs/nope.md"},{"statement":"b","subject":"file:docs/cache.md::The cache"},{"statement":"c","subject":"file:docs/cache.md::holds 64 entries","recheck":"P0D"}]' | hibi claim --stdin
+error: element 0: side_missing: the subject (file:docs/nope.md) resolves to no unit (resource_not_found): file:docs/nope.md is not in git's file list of the root (tracked, or untracked and not ignored)
+  fix: Point the anchor at text that exists in the resource.
+error: element 1: side_ambiguous: the subject (file:docs/cache.md): the anchor matches 2 units; use one of these anchors: sentence "The cache holds 64 entries.", line 3: {"loc":"file:docs/cache.md","sel":{"quote":"The cache holds 64 entries.","prefix":"","suffix":"","within":["Cache","The cache holds 64 entries."]}}; sentence "The cache is cleared on restart.", line 5: {"loc":"file:docs/cache.md","sel":{"quote":"The cache is cleared on restart.","prefix":"","suffix":"","within":["Cache","The cache holds 64 entries."]}}
+  fix: Give a longer quote, so that the anchor matches one unit.
+error: element 2: invalid_duration: the recheck period "P0D" is zero; it must be longer than zero
+  fix: Give a period longer than zero, for example P90D, or leave the recheck period out.
+```
+
+```bash
+echo '["c1-xqhb", {"claim": "c1-2axv", "note": "checked against delay_ms"}]' | hibi mark --stdin
+```
+
+```bash
+hibi claim --stdin <<'EOF'
+[{"statement": "The client retries a failed download.",
+  "subject": "file:docs/retry.md::retries a failed download",
+  "evidence": ["file:src/retry.rs#MAX_ATTEMPTS"],
+  "by": "agent:claude"}]
+EOF
+```
+
+Each element of a `cover` item list carries an `anchor` object that can be
+used as `subject` as it is, or `null` when no anchor selects the unit alone. `hibi schema claim-input` and
+`hibi schema mark-input` print the schemas of these documents.
+
+## Who checked
+
+`--by` (or the `by` field, or the `HIBI_BY` environment variable) is free text
+stored with a mark for the record, for example `agent:claude`. hibi never
+interprets it.

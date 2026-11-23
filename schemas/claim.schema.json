@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hibi claim record",
+  "description": "A claim (section 3.2). Immutable.",
+  "type": "object",
+  "properties": {
+    "evidence": {
+      "description": "May be empty. Order is significant.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Anchor"
+      }
+    },
+    "id": {
+      "$ref": "#/$defs/ClaimId"
+    },
+    "note": {
+      "description": "Never empty: an empty note is stored as `null`.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "recheck": {
+      "description": "A duration in the grammar of section 9.4, longer than zero.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^P(?=[0-9]|T[0-9])([0-9]+Y)?([0-9]+M)?([0-9]+W)?([0-9]+D)?(T(?=[0-9])([0-9]+H)?([0-9]+M)?([0-9]+S)?)?$"
+    },
+    "statement": {
+      "description": "Non-empty, stored trimmed.",
+      "type": "string",
+      "minLength": 1
+    },
+    "subject": {
+      "$ref": "#/$defs/Anchor"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "statement",
+    "subject",
+    "evidence",
+    "recheck",
+    "note"
+  ],
+  "$defs": {
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "ClaimId": {
+      "type": "string",
+      "pattern": "^c1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^(?:file:(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|repo:[a-z0-9][a-z0-9-]*//(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|(?!file:|repo:)[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+)$"
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 2
+        },
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "prefix": {
+          "description": "Up to 48 characters of the unit's own text before the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "quote": {
+          "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
+          "type": "string",
+          "maxLength": 2048,
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters of the unit's own text after the quote.",
+          "type": "string",
+          "maxLength": 48
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource, as typed.",
+          "type": "string",
+          "minLength": 1
+        },
+        "within": {
+          "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "dependentRequired": {
+        "prefix": [
+          "quote"
+        ],
+        "suffix": [
+          "quote"
+        ],
+        "within": [
+          "quote"
+        ]
+      },
+      "dependentSchemas": {
+        "count": {
+          "anyOf": [
+            {
+              "required": [
+                "symbol"
+              ]
+            },
+            {
+              "required": [
+                "within"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

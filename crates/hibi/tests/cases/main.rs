@@ -1,0 +1,152 @@
+//! The data cases of `cases/` (spec section 16) and requirement R1: every
+//! case file is loaded by a test.
+//!
+//! Bind a case file by adding one line to the `bindings!` table below:
+//!
+//! - `file "<path>" => <test name>, <check>;` loads the file with
+//!   `harness::run` and applies `check: fn(&harness::Case) -> Result<(), String>`
+//!   to every case.
+//! - `dir "<prefix>/" => <test name>, <runner>;` covers every case file whose
+//!   path starts with the prefix; `runner: fn(&[String])` receives those
+//!   paths and must load each of them (for cases that are not
+//!   `{name, input, expected, source, origin}` arrays, such as the provider
+//!   conformance cases of section 13.6).
+//!
+//! Then remove the file from `PENDING`.
+
+mod harness;
+
+mod canon;
+#[cfg(feature = "file")]
+mod code;
+mod duration;
+mod engine;
+mod fingerprint;
+#[cfg(feature = "judge")]
+mod judge;
+mod locate;
+#[cfg(feature = "file")]
+mod prose;
+#[cfg(feature = "command")]
+mod provider;
+#[cfg(feature = "file")]
+mod resolve;
+mod text;
+#[cfg(feature = "file")]
+mod units;
+
+/// Case files that no test loads yet, because the module they bind belongs
+/// to a unit that has not landed. R1 fails if a file listed here does not
+/// exist or is bound in `bindings!`. This list MUST be empty at release.
+const PENDING: &[&str] = &[];
+
+enum Binding {
+    File(&'static str),
+    Dir(&'static str),
+}
+
+// A row may carry `#[cfg(...)]` attributes. They apply to the generated test
+// only: the file stays in `BINDINGS`, so R1 counts it as bound in every
+// feature set, and the test runs when the features it needs are on.
+macro_rules! bindings {
+    ($( $(#[$m:meta])* $kind:ident $path:literal => $test:ident, $check:path; )*) => {
+        const BINDINGS: &[Binding] = &[ $( bindings!(@entry $kind $path) ),* ];
+        $( bindings!(@test [$(#[$m])*] $kind $path, $test, $check); )*
+    };
+    (@entry file $path:literal) => { Binding::File($path) };
+    (@entry dir $path:literal) => { Binding::Dir($path) };
+    (@test [$(#[$m:meta])*] file $path:literal, $test:ident, $check:path) => {
+        $(#[$m])*
+        #[test]
+        fn $test() {
+            harness::run($path, $check);
+        }
+    };
+    (@test [$(#[$m:meta])*] dir $path:literal, $test:ident, $runner:path) => {
+        $(#[$m])*
+        #[test]
+        fn $test() {
+            let files: Vec<String> = harness::all_case_files()
+                .into_iter()
+                .filter(|f| f.starts_with($path))
+                .collect();
+            assert!(!files.is_empty(), "no case files under {}", $path);
+            $runner(&files);
+        }
+    };
+}
+
+bindings! {
+    file "canon.json" => canon_json, canon::canon;
+    file "ids.json" => ids_json, canon::ids;
+    file "normalize.json" => normalize_json, text::normalize;
+    file "levenshtein.json" => levenshtein_json, text::levenshtein;
+    file "similarity.json" => similarity_json, text::similarity;
+    file "error-budget.json" => error_budget_json, locate::error_budget;
+    file "within-budget.json" => within_budget_json, locate::within_budget;
+    file "bitap.json" => bitap_json, locate::bitap;
+    file "fuzzy-locate.json" => fuzzy_locate_json, locate::fuzzy;
+    file "locate.json" => locate_json, locate::locate;
+    file "quote-selector.json" => quote_selector_json, locate::quote_selector;
+    file "duration.json" => duration_json, duration::duration;
+    file "recheck-boundary.json" => recheck_boundary_json, duration::recheck_boundary;
+    file "fingerprint.json" => fingerprint_json, fingerprint::fingerprint;
+    #[cfg(feature = "file")] file "regions.json" => regions_json, prose::regions;
+    #[cfg(feature = "file")] file "ast-node.json" => ast_node_json, code::ast_node;
+    #[cfg(feature = "file")] file "ast-equivalence.json" => ast_equivalence_json, code::ast_equivalence;
+    #[cfg(feature = "file")] file "units-code.json" => units_code_json, units::units_code;
+    #[cfg(feature = "file")] file "resolve.json" => resolve_json, resolve::resolve;
+    file "freshness.json" => freshness_json, engine::freshness;
+    file "coverage.json" => coverage_json, engine::coverage;
+    #[cfg(feature = "judge")] file "judge/triage.json" => judge_triage_json, judge::triage;
+    #[cfg(feature = "judge")] file "judge/suggest-evidence.json" => judge_suggest_evidence_json, judge::suggest_evidence;
+    #[cfg(feature = "judge")] file "judge/order.json" => judge_order_json, judge::order;
+    #[cfg(feature = "command")] dir "provider/protocol/" => provider_protocol_cases, provider::protocol;
+    #[cfg(feature = "command")] dir "provider/reference/" => provider_reference_cases, provider::reference;
+}
+
+fn is_bound(file: &str) -> bool {
+    BINDINGS.iter().any(|b| match b {
+        Binding::File(f) => *f == file,
+        Binding::Dir(prefix) => file.starts_with(prefix),
+    })
+}
+
+/// R1: every case file under `cases/` is loaded by a test, apart from the
+/// files in `PENDING`; every pending file exists and is not bound.
+#[test]
+fn r1_every_case_file_is_loaded() {
+    let files = harness::all_case_files();
+    let mut problems = Vec::new();
+    for f in &files {
+        if !is_bound(f) && !PENDING.contains(&f.as_str()) {
+            problems.push(format!(
+                "{f} is loaded by no test: bind it in tests/cases/main.rs"
+            ));
+        }
+    }
+    for p in PENDING {
+        if !files.iter().any(|f| f == p) {
+            problems.push(format!(
+                "PENDING lists {p}, which does not exist under cases/"
+            ));
+        }
+        if is_bound(p) {
+            problems.push(format!(
+                "PENDING lists {p}, which is bound: remove it from PENDING"
+            ));
+        }
+    }
+    for b in BINDINGS {
+        match b {
+            Binding::File(f) if !files.iter().any(|x| x == f) => {
+                problems.push(format!("{f} is bound but does not exist under cases/"));
+            }
+            Binding::Dir(d) if !files.iter().any(|x| x.starts_with(d)) => {
+                problems.push(format!("{d} is bound but no case file is under it"));
+            }
+            _ => {}
+        }
+    }
+    assert!(problems.is_empty(), "R1:\n{}", problems.join("\n"));
+}

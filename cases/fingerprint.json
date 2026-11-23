@@ -1,0 +1,478 @@
+[
+  {
+    "name": "prose-v1: empty text",
+    "input": {
+      "profile": "prose-v1",
+      "text": ""
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:138e02c4226aaa41b8530cae51b39a29"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: whitespace only is the empty text",
+    "input": {
+      "profile": "prose-v1",
+      "text": " \n\t　 "
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:138e02c4226aaa41b8530cae51b39a29"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: plain sentence",
+    "input": {
+      "profile": "prose-v1",
+      "text": "Pro costs $29/month."
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:34d38d4b4e477872f957981fa2e23d11"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: reflowed sentence equals the plain one",
+    "input": {
+      "profile": "prose-v1",
+      "text": "  Pro costs\n   $29/month.\n"
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:34d38d4b4e477872f957981fa2e23d11"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: changed word",
+    "input": {
+      "profile": "prose-v1",
+      "text": "Pro costs $30/month."
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:0180c0157be2476cef56b91e8cd81530"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: NFC: decomposed e-acute",
+    "input": {
+      "profile": "prose-v1",
+      "text": "Café open."
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:71edd79c9b736fdf70e18692366a417e"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: NFC: precomposed e-acute equals decomposed",
+    "input": {
+      "profile": "prose-v1",
+      "text": "Café open."
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:71edd79c9b736fdf70e18692366a417e"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: NFC: Hangul jamo compose",
+    "input": {
+      "profile": "prose-v1",
+      "text": "각"
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:0b4c5b8b06389a56443dcc6523fbaf2f"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: U+FEFF is not whitespace and is kept",
+    "input": {
+      "profile": "prose-v1",
+      "text": "﻿Title"
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:7bd5a82fa49ce02bd6a1c1b64d744e2a"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: NEL U+0085 and NBSP U+00A0 collapse",
+    "input": {
+      "profile": "prose-v1",
+      "text": "ab  c"
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:db1aad368318bf1ff58301eaeb48cde8"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: U+2028 and U+3000 collapse",
+    "input": {
+      "profile": "prose-v1",
+      "text": "a 　b"
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:d85e57b2dc5a70691a98be46ab4d4e7c"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: characters outside the BMP",
+    "input": {
+      "profile": "prose-v1",
+      "text": "Emoji 😀 hier."
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:b5a22db1b27529f9673fc60a700da176"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "prose-v1: fenced block text",
+    "input": {
+      "profile": "prose-v1",
+      "text": "```ts\nconst a = 1;\n\nconst b = 2;\n```"
+    },
+    "expected": {
+      "fingerprint": "b3:prose-v1:8b3eeff35117af219e0ccd97efe326f8"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: typescript: stream of ast-node.json [fixtures/ast/typescript/base.ts [MAX_ATTEMPTS = 5]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "typescript",
+      "stream": [
+        "variable_declarator",
+        "identifier:MAX_ATTEMPTS",
+        "=:=",
+        "number:5",
+        "=5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:ff7971e85f046e9afb67ad2dbfb20353"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/typescript/base.ts [MAX_ATTEMPTS = 5]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: typescript: stream of ast-node.json [fixtures/ast/typescript/reformat.ts [MAX_ATTEMPTS = 5]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "typescript",
+      "stream": [
+        "variable_declarator",
+        "identifier:MAX_ATTEMPTS",
+        "=:=",
+        "number:5",
+        "=5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:ff7971e85f046e9afb67ad2dbfb20353"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/typescript/reformat.ts [MAX_ATTEMPTS = 5]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: tsx: stream of ast-node.json [fixtures/ast/tsx/base.tsx [LIMIT = 99]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "tsx",
+      "stream": [
+        "variable_declarator",
+        "identifier:LIMIT",
+        "=:=",
+        "number:99",
+        "=99"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:a8bdc5654173b6cc9a51588dc2b88f58"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/tsx/base.tsx [LIMIT = 99]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: tsx: stream of ast-node.json [fixtures/ast/tsx/reformat.tsx [LIMIT = 99]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "tsx",
+      "stream": [
+        "variable_declarator",
+        "identifier:LIMIT",
+        "=:=",
+        "number:99",
+        "=99"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:a8bdc5654173b6cc9a51588dc2b88f58"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/tsx/reformat.tsx [LIMIT = 99]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: python: stream of ast-node.json [fixtures/ast/python/base.py [MAX_ATTEMPTS = 5]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "python",
+      "stream": [
+        "assignment",
+        "identifier:MAX_ATTEMPTS",
+        "=:=",
+        "integer:5",
+        "=5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:6022974874f91b48cc348383efc9249d"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/python/base.py [MAX_ATTEMPTS = 5]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: python: stream of ast-node.json [fixtures/ast/python/reformat.py [MAX_ATTEMPTS=5]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "python",
+      "stream": [
+        "assignment",
+        "identifier:MAX_ATTEMPTS",
+        "=:=",
+        "integer:5",
+        "=5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:6022974874f91b48cc348383efc9249d"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/python/reformat.py [MAX_ATTEMPTS=5]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: rust: stream of ast-node.json [fixtures/ast/rust/base.rs [const MAX_ATTEMPTS: u32 = 5;]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "rust",
+      "stream": [
+        "const_item",
+        "visibility_modifier",
+        "pub:pub",
+        "const:const",
+        "identifier:MAX_ATTEMPTS",
+        ":::",
+        "primitive_type:u32",
+        "=:=",
+        "integer_literal:5",
+        "=5",
+        ";:;"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/rust/base.rs [const MAX_ATTEMPTS: u32 = 5;]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: rust: stream of ast-node.json [fixtures/ast/rust/reformat.rs [const MAX_ATTEMPTS : u32 = 5;]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "rust",
+      "stream": [
+        "const_item",
+        "visibility_modifier",
+        "pub:pub",
+        "const:const",
+        "identifier:MAX_ATTEMPTS",
+        ":::",
+        "primitive_type:u32",
+        "=:=",
+        "integer_literal:5",
+        "=5",
+        ";:;"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/rust/reformat.rs [const MAX_ATTEMPTS : u32 = 5;]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: go: stream of ast-node.json [fixtures/ast/go/base.go [MaxAttempts = 5]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "go",
+      "stream": [
+        "const_spec",
+        "identifier:MaxAttempts",
+        "=:=",
+        "expression_list",
+        "int_literal:5",
+        "=5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:cb5af4982a68fe1e173251e13a361bef"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/go/base.go [MaxAttempts = 5]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: go: stream of ast-node.json [fixtures/ast/go/reformat.go [MaxAttempts = 5]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "go",
+      "stream": [
+        "const_spec",
+        "identifier:MaxAttempts",
+        "=:=",
+        "expression_list",
+        "int_literal:5",
+        "=5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:cb5af4982a68fe1e173251e13a361bef"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/go/reformat.go [MaxAttempts = 5]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: java: stream of ast-node.json [fixtures/ast/java/base.java [MAX_ATTEMPTS = 5]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "java",
+      "stream": [
+        "variable_declarator",
+        "identifier:MAX_ATTEMPTS",
+        "=:=",
+        "decimal_integer_literal:5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:6893ecbe1971f0d3d66a4271e27059b7"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/java/base.java [MAX_ATTEMPTS = 5]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: java: stream of ast-node.json [fixtures/ast/java/reformat.java [MAX_ATTEMPTS = 5]]",
+    "input": {
+      "profile": "ast-v1",
+      "class": "java",
+      "stream": [
+        "variable_declarator",
+        "identifier:MAX_ATTEMPTS",
+        "=:=",
+        "decimal_integer_literal:5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:6893ecbe1971f0d3d66a4271e27059b7"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class; stream copied from cases/ast-node.json \"fixtures/ast/java/reformat.java [MAX_ATTEMPTS = 5]\"",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: the class takes part (tsx with the first typescript stream)",
+    "input": {
+      "profile": "ast-v1",
+      "class": "tsx",
+      "stream": [
+        "variable_declarator",
+        "identifier:MAX_ATTEMPTS",
+        "=:=",
+        "number:5",
+        "=5"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:166734869124067012e89968e924c5b3"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: empty stream",
+    "input": {
+      "profile": "ast-v1",
+      "class": "go",
+      "stream": []
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:4c2a41ed72e00886f295efdcf52357f1"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: tokens are joined with U+001F, not concatenated (1 of 2)",
+    "input": {
+      "profile": "ast-v1",
+      "class": "go",
+      "stream": [
+        "ab",
+        "c"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:aa43b2d5116f648e1ad32fd20ba7423a"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: tokens are joined with U+001F, not concatenated (2 of 2)",
+    "input": {
+      "profile": "ast-v1",
+      "class": "go",
+      "stream": [
+        "a",
+        "bc"
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:8aca739beb8752d829226f63a6e0f1f0"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  },
+  {
+    "name": "ast-v1: non-ASCII token is hashed as UTF-8",
+    "input": {
+      "profile": "ast-v1",
+      "class": "python",
+      "stream": [
+        "string",
+        "=\"Größe 😀\""
+      ]
+    },
+    "expected": {
+      "fingerprint": "b3:ast-v1:46d312d5aea343ee831c38798105f0c5"
+    },
+    "source": "independent: @noble/hashes 2.4.0 blake3 under bun 1.4.5; NFC by String.prototype.normalize; WS set of SPEC 4.1 written as an explicit character class",
+    "origin": "independent"
+  }
+]

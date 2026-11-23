@@ -1,0 +1,70 @@
+{
+  "name": "a line that is not a request is answered with id null and invalid_request, and the provider keeps running",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": "this is not json",
+      "expect": {
+        "id": null,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": "[1, 2, 3]",
+      "expect": {
+        "id": null,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": "{\"method\": \"hello\", \"params\": {}}",
+      "expect": {
+        "id": null,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "frobnicate",
+        "params": {}
+      },
+      "expect": {
+        "id": 2,
+        "error": {
+          "code": "unknown_method",
+          "message": "<string>"
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

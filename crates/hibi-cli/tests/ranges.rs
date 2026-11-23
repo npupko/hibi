@@ -1,0 +1,959 @@
+//! `--since` and coverage through the binary: spec sections 10.1 to 10.3 and
+//! 15.3; requirements R19, R20, R21 (V5) and R38.
+
+mod support;
+
+use serde_json::{Value, json};
+use support::*;
+
+const SOURCE: &str = "pub fn first() -> u32 {\n    1\n}\n\npub fn second() -> u32 {\n    2\n}\n";
+const GUIDE: &str = "# Guide\n\nFirst returns one. Second returns two.\n";
+const NEW_SECTION: &str = "\n## Extra\n\nThird thing. Fourth thing.\n";
+
+const DOCS_SCOPE: &str = "[[scope]]\nname = \"docs\"\nresource = \"file:docs/**/*.md\"\nkinds = [\"sentence\", \"heading\"]\n";
+
+/// The ids of the listed claims, in output order.
+fn ids(v: &Value) -> Vec<String> {
+    v["claims"]
+        .as_array()
+        .expect("claims is an array")
+        .iter()
+        .map(|c| c["id"].as_str().expect("an id").to_owned())
+        .collect()
+}
+
+fn sorted(mut ids: Vec<String>) -> Vec<String> {
+    ids.sort();
+    ids
+}
+
+/// `(kind, text)` of every item of one scope, in output order.
+fn items(scope: &Value) -> Vec<(String, String)> {
+    scope["items"]
+        .as_array()
+        .expect("items is an array")
+        .iter()
+        .map(|i| {
+            assert_eq!(i["anchor"]["loc"], i["loc"], "{i}");
+            (
+                i["unit"]["kind"].as_str().expect("a kind").to_owned(),
+                i["text"].as_str().expect("a text").to_owned(),
+            )
+        })
+        .collect()
+}
+
+fn pairs(list: &[(&str, &str)]) -> Vec<(String, String)> {
+    list.iter()
+        .map(|(k, t)| ((*k).to_owned(), (*t).to_owned()))
+        .collect()
+}
+
+fn counts(v: &Value) -> (u64, u64, u64, u64) {
+    (
+        v["units"].as_u64().expect("units"),
+        v["covered"].as_u64().expect("covered"),
+        v["excluded"].as_u64().expect("excluded"),
+        v["uncovered"].as_u64().expect("uncovered"),
+    )
+}
+
+/// The one scope of a `cover` result.
+fn only_scope(v: &Value) -> Value {
+    let scopes = v["scopes"].as_array().expect("scopes is an array");
+    assert_eq!(scopes.len(), 1, "{v}");
+    scopes[0].clone()
+}
+
+fn replace(repo: &Repo, rel: &str, from: &str, to: &str) {
+    let text = repo.read(rel);
+    assert_eq!(text.matches(from).count(), 1, "{rel}: {from:?}");
+    repo.write(rel, &text.replace(from, to));
+}
+
+/// The scenario of R19 and R20.
+///
+/// Base commit on `main`: `src/a.rs` with `first` and `second`,
+/// `docs/guide.md` in scope `docs`, every unit of the scope claimed. One
+/// claim with `second` as evidence is stale at the base, because `second`
+/// was edited after the claim and before the commit.
+///
+/// Branch `feature`: the literal of `first` is edited and a section is
+/// appended to the guide; committed or left in the working tree.
+struct Branch {
+    repo: Repo,
+    base: String,
+    /// The two claims that have `first` as a side.
+    on_first: Vec<String>,
+    /// Stale at the base: `second` as evidence, marked before its edit.
+    second_stale_at_base: String,
+    /// Fresh at the base: `second` as subject, claimed after its edit.
+    second_fresh: String,
+    heading: String,
+}
+
+fn branch(commit_the_edit: bool) -> Branch {
+    let repo = Repo::new();
+    repo.config(DOCS_SCOPE);
+    repo.write("src/a.rs", SOURCE);
+    repo.write("docs/guide.md", GUIDE);
+
+    let first_doc = repo.claim(
+        "first returns one",
+        "file:docs/guide.md::First returns one.",
+        &["file:src/a.rs#first"],
+    );
+    let first_fn = repo.claim("first is the constant 1", "file:src/a.rs#first", &[]);
+    let second_stale_at_base = repo.claim(
+        "second returns two",
+        "file:docs/guide.md::Second returns two.",
+        &["file:src/a.rs#second"],
+    );
+    replace(&repo, "src/a.rs", "    2\n", "    22\n");
+    let second_fresh = repo.claim("second is a constant", "file:src/a.rs#second", &[]);
+    let heading = repo.claim("the guide has a title", "file:docs/guide.md::# Guide", &[]);
+
+    // The base: the scope is fully covered and exactly one claim is stale.
+    let cover = repo.json(&["cover"]);
+    assert_eq!(counts(&cover["summary"]), (3, 3, 0, 0), "{cover}");
+    let status = repo.json(&["status"]);
+    assert_eq!(ids(&status), vec![second_stale_at_base.clone()]);
+    assert_eq!(
+        status["summary"],
+        json!({"claims": 5, "fresh": 4, "stale": 1, "expired": 0, "retired": 0})
+    );
+
+    let base = repo.commit("base");
+    repo.git(&["checkout", "-q", "-b", "feature"]);
+    replace(&repo, "src/a.rs", "    1\n", "    11\n");
+    let mut guide = repo.read("docs/guide.md");
+    guide.push_str(NEW_SECTION);
+    repo.write("docs/guide.md", &guide);
+    if commit_the_edit {
+        let head = repo.commit("feature");
+        assert_ne!(head, base);
+    }
+
+    Branch {
+        repo,
+        base,
+        on_first: sorted(vec![first_doc, first_fn]),
+        second_stale_at_base,
+        second_fresh,
+        heading,
+    }
+}
+
+fn new_section_items() -> Vec<(String, String)> {
+    pairs(&[
+        ("heading", "## Extra"),
+        ("sentence", "Third thing."),
+        ("sentence", "Fourth thing."),
+    ])
+}
+
+/// The checks of R19 on one `status --since` result.
+fn assert_lists_the_first_function_claims(b: &Branch, v: &Value, range: &str, base: &str) {
+    assert_eq!(v["command"], "status");
+    assert_eq!(v["since"], json!({"range": range, "base": base}), "{range}");
+    // Output order is by id.
+    assert_eq!(ids(v), b.on_first, "{range}");
+    assert!(!ids(v).contains(&b.second_stale_at_base));
+    // The summary counts every claim in the store, before filtering.
+    assert_eq!(
+        v["summary"],
+        json!({"claims": 5, "fresh": 2, "stale": 3, "expired": 0, "retired": 0}),
+        "{range}"
+    );
+    for claim in v["claims"].as_array().unwrap() {
+        assert_eq!(claim["state"], "stale", "{claim}");
+        let id = claim["id"].as_str().unwrap();
+        assert_eq!(claim["next"], format!("hibi mark {id}"));
+        let changed: Vec<&Value> = claim["sides"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|s| s["state"] != "same")
+            .collect();
+        assert_eq!(changed.len(), 1, "{claim}");
+        assert_eq!(changed[0]["anchor"]["loc"], "file:src/a.rs");
+        assert_eq!(changed[0]["anchor"]["sel"]["symbol"], "first");
+        assert_eq!(changed[0]["state"], "changed");
+        assert_eq!(changed[0]["reason"], "fingerprint_differs");
+        assert_eq!(changed[0]["unit"]["key"], "function:first");
+    }
+}
+
+/// R19 (V5): `status --since <base>` lists exactly the claims anchored to the
+/// edited function and not the claim that was already stale at the base, in
+/// every accepted form of the range.
+#[test]
+fn r19_status_since_lists_exactly_the_claims_the_range_invalidated() {
+    let b = branch(true);
+    let repo = &b.repo;
+
+    // Plain status also lists the claim that was stale before the range.
+    let plain = repo.json(&["status"]);
+    assert_eq!(plain["since"], Value::Null);
+    let mut all_stale = b.on_first.clone();
+    all_stale.push(b.second_stale_at_base.clone());
+    assert_eq!(ids(&plain), sorted(all_stale));
+    assert_eq!(repo.state(&b.second_fresh), "fresh");
+    assert_eq!(repo.state(&b.heading), "fresh");
+
+    let sha = b.base.as_str();
+    for a in [sha, "main", "HEAD~1"] {
+        for suffix in ["", "..", "..HEAD", "...", "...HEAD"] {
+            let range = format!("{a}{suffix}");
+            let v = repo.json(&["status", "--since", &range]);
+            assert_lists_the_first_function_claims(&b, &v, &range, sha);
+        }
+    }
+
+    // `--loc` filters the listed claims further.
+    let v = repo.json(&["status", "--since", "main", "--loc", "file:docs/**"]);
+    assert_eq!(ids(&v).len(), 1, "{v}");
+    assert_eq!(v["claims"][0]["statement"], "first returns one");
+    let v = repo.json(&["status", "--since", "main", "--loc", "file:nothing/**"]);
+    assert_eq!(ids(&v), Vec::<String>::new());
+}
+
+/// Section 10.3: a claim that was made in the range and is stale now is
+/// listed by `status --since`. The branch adds a constant, a sentence about
+/// it and a claim, and a later commit on the branch changes the constant.
+/// The claim did not exist at the base, so nothing about it can be read
+/// there; it is stale because of the range all the same.
+#[test]
+fn status_since_lists_a_stale_claim_that_was_made_in_the_range() {
+    let repo = Repo::new();
+    repo.write("src/a.py", "LIMIT = 1\n");
+    repo.write("docs/guide.md", "# Guide\n\nThe limit is 1.\n");
+    let old = repo.claim(
+        "the limit is 1",
+        "file:docs/guide.md::The limit is 1.",
+        &["file:src/a.py#LIMIT"],
+    );
+    let base = repo.commit("base");
+    repo.git(&["checkout", "-q", "-b", "feature"]);
+
+    repo.write("src/a.py", "LIMIT = 1\nDELAY = 2\n");
+    repo.write(
+        "docs/guide.md",
+        "# Guide\n\nThe limit is 1.\n\nThe delay is 2.\n",
+    );
+    let made = repo.claim(
+        "the delay is 2",
+        "file:docs/guide.md::The delay is 2.",
+        &["file:src/a.py#DELAY"],
+    );
+    repo.commit("add the delay and its claim");
+    for range in ["main...", "main"] {
+        let v = repo.json(&["status", "--since", range]);
+        assert_eq!(
+            ids(&v),
+            Vec::<String>::new(),
+            "{range}: nothing is stale yet"
+        );
+    }
+
+    repo.write("src/a.py", "LIMIT = 1\nDELAY = 3\n");
+    repo.commit("change the delay");
+    assert_eq!(ids(&repo.json(&["status"])), vec![made.clone()]);
+    for range in ["main...", "main", "main..HEAD"] {
+        let v = repo.json(&["status", "--since", range]);
+        assert_eq!(v["since"]["base"], base.as_str(), "{range}");
+        assert_eq!(ids(&v), vec![made.clone()], "{range}");
+        assert_eq!(v["claims"][0]["state"], "stale");
+        assert_eq!(v["claims"][0]["next"], format!("hibi mark {made}"));
+    }
+    // The claim that existed at the base and did not change is not listed,
+    // and a claim made in the range that is fresh is not either.
+    assert_eq!(repo.state(&old), "fresh");
+    // Since the commit that made the claim, the claim existed: it is listed
+    // by the rule for claims of the base (its evidence changed since).
+    let v = repo.json(&["status", "--since", "HEAD~1"]);
+    assert_eq!(ids(&v), vec![made.clone()]);
+    // Since HEAD nothing changed, and the claim exists there.
+    let v = repo.json(&["status", "--since", "HEAD"]);
+    assert_eq!(ids(&v), Vec::<String>::new());
+}
+
+/// Section 10.3: `A`, `A..` and `A..HEAD` use commit `A`; `A...` and
+/// `A...HEAD` use the merge base of `A` and `HEAD`. Shown with a `main` that
+/// moved after the branch was cut: its new commit edits `second` again.
+#[test]
+fn r19_the_three_dot_forms_use_the_merge_base() {
+    let b = branch(true);
+    let repo = &b.repo;
+    repo.git(&["checkout", "-q", "main"]);
+    replace(repo, "src/a.rs", "    22\n", "    222\n");
+    let main_tip = repo.commit("main moves on");
+    repo.git(&["checkout", "-q", "feature"]);
+    assert_ne!(main_tip, b.base);
+    assert_eq!(repo.git(&["merge-base", "main", "HEAD"]), b.base);
+
+    for range in ["main...", "main...HEAD"] {
+        let v = repo.json(&["status", "--since", range]);
+        assert_lists_the_first_function_claims(&b, &v, range, &b.base);
+    }
+
+    // With the tip of main as the base, `second` differs between the base
+    // and the working tree as well, so the claim that is stale on it is
+    // listed too. The claim that is fresh on `second` is not: only stale
+    // claims are listed.
+    let mut expected = b.on_first.clone();
+    expected.push(b.second_stale_at_base.clone());
+    let expected = sorted(expected);
+    for range in ["main", "main..", "main..HEAD"] {
+        let v = repo.json(&["status", "--since", range]);
+        assert_eq!(v["since"], json!({"range": range, "base": main_tip}));
+        assert_eq!(ids(&v), expected, "{range}");
+        assert!(!ids(&v).contains(&b.second_fresh));
+    }
+}
+
+/// R20 (V5): `cover --since <base>` lists exactly the units of the new
+/// section; plain `cover` lists the same units, because the base was fully
+/// covered.
+#[test]
+fn r20_cover_since_lists_exactly_the_units_of_the_new_section() {
+    let b = branch(true);
+    let repo = &b.repo;
+    let sha = b.base.as_str();
+
+    for a in [sha, "main"] {
+        for suffix in ["", "..", "..HEAD", "...", "...HEAD"] {
+            let range = format!("{a}{suffix}");
+            let v = repo.json(&["cover", "--since", &range]);
+            assert_eq!(v["command"], "cover");
+            assert_eq!(v["since"], json!({"range": range, "base": sha}));
+            // With --since the counts cover only the kept units.
+            assert_eq!(counts(&v["summary"]), (3, 0, 0, 3), "{range}: {v}");
+            let scope = only_scope(&v);
+            assert_eq!(scope["name"], "docs");
+            assert_eq!(scope["skipped"], Value::Null);
+            assert_eq!(scope["truncated"], false);
+            assert_eq!(counts(&scope), (3, 0, 0, 3));
+            assert_eq!(items(&scope), new_section_items(), "{range}");
+            for item in scope["items"].as_array().unwrap() {
+                assert_eq!(item["loc"], "file:docs/guide.md");
+            }
+            assert_eq!(scope["unavailable"], json!([]));
+        }
+    }
+
+    let plain = repo.json(&["cover"]);
+    assert_eq!(plain["since"], Value::Null);
+    assert_eq!(counts(&plain["summary"]), (6, 3, 0, 3), "{plain}");
+    let scope = only_scope(&plain);
+    assert_eq!(counts(&scope), (6, 3, 0, 3));
+    assert_eq!(items(&scope), new_section_items());
+    let lines: Vec<(u64, u64)> = scope["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| {
+            (
+                i["unit"]["line"].as_u64().unwrap(),
+                i["unit"]["endLine"].as_u64().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(lines, vec![(5, 5), (7, 7), (7, 7)]);
+
+    // The anchors of the listed items can be passed to `claim --stdin`
+    // (section 15.3); once claimed, the new section is covered.
+    let input: Vec<Value> = scope["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .enumerate()
+        .map(|(n, i)| json!({"statement": format!("new unit {n}"), "subject": i["anchor"]}))
+        .collect();
+    let claimed = repo
+        .hibi()
+        .args(["--format", "json", "--now", NOW, "claim", "--stdin"])
+        .stdin(&Value::Array(input).to_string())
+        .run()
+        .ok();
+    assert_eq!(claimed["claims"].as_array().unwrap().len(), 3);
+    let after = repo.json(&["cover", "--since", sha]);
+    assert_eq!(counts(&after["summary"]), (3, 3, 0, 0), "{after}");
+    assert_eq!(items(&only_scope(&after)), Vec::new());
+    let after = repo.json(&["cover"]);
+    assert_eq!(counts(&after["summary"]), (6, 6, 0, 0), "{after}");
+}
+
+/// Section 10.3: the compared end is the working tree, so uncommitted edits
+/// and untracked files count.
+#[test]
+fn r19_r20_uncommitted_and_untracked_changes_count() {
+    let b = branch(false);
+    let repo = &b.repo;
+    let sha = b.base.as_str();
+    assert_eq!(repo.git(&["rev-parse", "HEAD"]), sha);
+    assert_ne!(repo.git(&["status", "--porcelain"]), "");
+
+    for range in ["HEAD", "main", "main...", sha] {
+        let v = repo.json(&["status", "--since", range]);
+        assert_lists_the_first_function_claims(&b, &v, range, sha);
+
+        let v = repo.json(&["cover", "--since", range]);
+        assert_eq!(v["since"], json!({"range": range, "base": sha}));
+        assert_eq!(counts(&v["summary"]), (3, 0, 0, 3), "{v}");
+        assert_eq!(items(&only_scope(&v)), new_section_items());
+    }
+
+    // An untracked file in scope: all of its units are new.
+    repo.write("docs/new.md", "Brand new sentence.\n");
+    assert!(
+        repo.git(&["status", "--porcelain"])
+            .contains("?? docs/new.md")
+    );
+    let v = repo.json(&["cover", "--since", "HEAD"]);
+    assert_eq!(counts(&v["summary"]), (4, 0, 0, 4), "{v}");
+    let scope = only_scope(&v);
+    let mut expected = new_section_items();
+    expected.push(("sentence".to_owned(), "Brand new sentence.".to_owned()));
+    assert_eq!(items(&scope), expected);
+    assert_eq!(scope["items"][3]["loc"], "file:docs/new.md");
+
+    // An ignored untracked file is not a changed path and not in the file
+    // list.
+    repo.write(".gitignore", "docs/ignored.md\n");
+    repo.write("docs/ignored.md", "Ignored sentence.\n");
+    let v = repo.json(&["cover", "--since", "HEAD"]);
+    assert_eq!(items(&only_scope(&v)), expected);
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (7, 3, 0, 4), "{v}");
+    assert_eq!(items(&only_scope(&v)), expected);
+}
+
+/// R21 (V5): a right-hand side other than `HEAD`, an unknown revision and any
+/// other form are `invalid_range`, for `status` and for `cover`. `--since`
+/// with `--state` or with ids is `usage`.
+#[test]
+fn r21_other_range_forms_are_invalid_range() {
+    let b = branch(true);
+    let repo = &b.repo;
+    let sha = b.base.as_str();
+    let before = repo.files();
+
+    let bad = [
+        format!("{sha}..feature"),
+        format!("{sha}..main"),
+        format!("{sha}..{sha}"),
+        "main..feature".to_owned(),
+        "main...feature".to_owned(),
+        format!("{sha}...main"),
+        "no-such-revision".to_owned(),
+        "no-such-revision..".to_owned(),
+        "no-such-revision...HEAD".to_owned(),
+        "main....".to_owned(),
+        format!("{sha}...."),
+        "..HEAD".to_owned(),
+        "...".to_owned(),
+        // A blob, not a commit.
+        "HEAD:src/a.rs".to_owned(),
+    ];
+    for range in &bad {
+        for command in ["status", "cover"] {
+            let out = repo.run(&[command, "--since", range]);
+            let e = out.err();
+            assert_eq!(e["code"], "invalid_range", "{command} --since {range}: {e}");
+            assert_eq!(out.json()["command"], command);
+            assert_eq!(out.errs().len(), 1);
+        }
+    }
+
+    let out = repo.run(&["status", "--since", sha, "--state", "stale"]);
+    assert_eq!(out.code(), "usage", "{out:?}");
+    let out = repo.run(&["status", "--since", sha, &b.on_first[0]]);
+    assert_eq!(out.code(), "usage", "{out:?}");
+    let out = repo.run(&[
+        "status",
+        &b.on_first[0],
+        "--since",
+        "main...",
+        "--state",
+        "fresh",
+    ]);
+    assert_eq!(out.code(), "usage", "{out:?}");
+
+    assert_eq!(repo.files(), before);
+}
+
+const CODE: &str = "pub struct Counter;\n\nimpl Counter {\n    pub fn bump(&self) -> u32 {\n        1\n    }\n\n    pub fn reset(&self) -> u32 {\n        0\n    }\n}\n\npub fn free() -> u32 {\n    7\n}\n";
+
+fn keys(scope: &Value) -> Vec<String> {
+    scope["items"]
+        .as_array()
+        .expect("items is an array")
+        .iter()
+        .map(|i| i["unit"]["key"].as_str().expect("a key").to_owned())
+        .collect()
+}
+
+/// R38: a unit is covered when a live claim side resolves to it or to a unit
+/// nested in it (section 10.2: the side covers its unit and every ancestor by
+/// the `parent` chain). Siblings and children of the claimed unit are not
+/// covered.
+#[test]
+fn r38_a_claim_covers_its_unit_and_every_enclosing_unit() {
+    let repo = Repo::new();
+    repo.config(
+        "[[scope]]\nname = \"code\"\nresource = \"file:src/**/*.rs\"\nkinds = [\"struct\", \"impl\", \"method\", \"function\"]\n\n[[scope]]\nname = \"files\"\nresource = \"file:src/**/*.rs\"\nkinds = [\"file\"]\n",
+    );
+    repo.write("src/lib.rs", CODE);
+
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (6, 0, 0, 6), "{v}");
+    let code = &v["scopes"][0];
+    assert_eq!(code["name"], "code");
+    assert_eq!(counts(code), (5, 0, 0, 5));
+    // Ordered by locator, then start offset.
+    assert_eq!(
+        keys(code),
+        [
+            "struct:Counter",
+            "impl:impl Counter",
+            "method:Counter.bump",
+            "method:Counter.reset",
+            "function:free"
+        ]
+    );
+    let files = &v["scopes"][1];
+    assert_eq!(files["name"], "files");
+    assert_eq!(counts(files), (1, 0, 0, 1));
+    assert_eq!(keys(files), ["file"]);
+    assert_eq!(
+        files["items"][0]["anchor"],
+        json!({"loc": "file:src/lib.rs", "sel": {}})
+    );
+
+    // A claim on the method covers the method, the impl around it and the
+    // file; not the sibling method, the struct or the free function.
+    let id = repo.claim("bump adds one", "file:src/lib.rs#Counter.bump", &[]);
+    assert_eq!(
+        repo.view(&id)["sides"][0]["unit"]["key"],
+        "method:Counter.bump"
+    );
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (6, 3, 0, 3), "{v}");
+    assert_eq!(counts(&v["scopes"][0]), (5, 2, 0, 3));
+    assert_eq!(
+        keys(&v["scopes"][0]),
+        ["struct:Counter", "method:Counter.reset", "function:free"]
+    );
+    assert_eq!(counts(&v["scopes"][1]), (1, 1, 0, 0));
+    assert_eq!(keys(&v["scopes"][1]), Vec::<String>::new());
+
+    // An evidence side covers as a subject does.
+    repo.write("docs/a.md", "Free returns seven.\n");
+    repo.claim(
+        "free returns seven",
+        "file:docs/a.md::Free returns seven.",
+        &["file:src/lib.rs#free"],
+    );
+    let v = repo.json(&["cover", "--scope", "code"]);
+    assert_eq!(counts(&v["scopes"][0]), (5, 3, 0, 2));
+    assert_eq!(
+        keys(&v["scopes"][0]),
+        ["struct:Counter", "method:Counter.reset"]
+    );
+
+    // A claim on the impl covers the impl, not the methods nested in it.
+    let repo = Repo::new();
+    repo.config(
+        "[[scope]]\nname = \"code\"\nresource = \"file:src/**/*.rs\"\nkinds = [\"struct\", \"impl\", \"method\", \"function\"]\n",
+    );
+    repo.write("src/lib.rs", CODE);
+    repo.claim("Counter has methods", "file:src/lib.rs#impl Counter", &[]);
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (5, 1, 0, 4), "{v}");
+    assert_eq!(
+        keys(&only_scope(&v)),
+        [
+            "struct:Counter",
+            "method:Counter.bump",
+            "method:Counter.reset",
+            "function:free"
+        ]
+    );
+}
+
+/// Section 10.2: the claim's state does not matter, a stale claim still
+/// covers; a retired claim is not live and covers nothing.
+#[test]
+fn r38_a_stale_claim_covers_and_a_retired_claim_does_not() {
+    let repo = Repo::new();
+    repo.config(
+        "[[scope]]\nname = \"code\"\nresource = \"file:src/**/*.rs\"\nkinds = [\"function\"]\n",
+    );
+    repo.write("src/a.rs", SOURCE);
+    let id = repo.claim("first is the constant 1", "file:src/a.rs#first", &[]);
+
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (2, 1, 0, 1), "{v}");
+    assert_eq!(keys(&only_scope(&v)), ["function:second"]);
+
+    replace(&repo, "src/a.rs", "    1\n", "    11\n");
+    assert_eq!(repo.state(&id), "stale");
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (2, 1, 0, 1), "{v}");
+    assert_eq!(keys(&only_scope(&v)), ["function:second"]);
+
+    let retired = repo.json(&["retire", &id]);
+    assert_eq!(retired["retired"][0]["claim"], id.as_str());
+    assert_eq!(retired["retired"][0]["alreadyRetired"], false);
+    assert_eq!(repo.state(&id), "retired");
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (2, 0, 0, 2), "{v}");
+    assert_eq!(keys(&only_scope(&v)), ["function:first", "function:second"]);
+}
+
+/// Section 10.2 with section 9.2: only a side that resolves exactly covers.
+/// A side found only by similarity covers nothing, so the reworded sentence
+/// is uncovered, and `status --since` lists its claim with the candidate.
+#[test]
+fn a_side_found_only_by_similarity_covers_nothing_and_is_listed_since() {
+    let repo = Repo::new();
+    repo.config(DOCS_SCOPE);
+    repo.write("docs/guide.md", GUIDE);
+    let title = repo.claim("the guide has a title", "file:docs/guide.md::# Guide", &[]);
+    let first = repo.claim("first", "file:docs/guide.md::First returns one.", &[]);
+    let second = repo.claim("second", "file:docs/guide.md::Second returns two.", &[]);
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (3, 3, 0, 0), "{v}");
+    let base = repo.commit("base");
+    repo.git(&["checkout", "-q", "-b", "feature"]);
+
+    replace(&repo, "docs/guide.md", "returns two", "returns three");
+    repo.commit("reword");
+    let view = repo.view(&second);
+    assert_eq!(view["sides"][0]["reason"], "not_exact", "{view}");
+    assert_eq!(repo.state(&first), "fresh");
+    assert_eq!(repo.state(&title), "fresh");
+
+    // The candidate is not the side's unit: nothing covers the sentence.
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (3, 2, 0, 1), "{v}");
+    assert_eq!(
+        items(&only_scope(&v)),
+        pairs(&[("sentence", "Second returns three.")])
+    );
+    let v = repo.json(&["cover", "--since", "main"]);
+    assert_eq!(
+        items(&only_scope(&v)),
+        pairs(&[("sentence", "Second returns three.")])
+    );
+
+    // The range invalidated exactly that claim.
+    let v = repo.json(&["status", "--since", "main"]);
+    assert_eq!(v["since"]["base"], base.as_str());
+    assert_eq!(ids(&v), vec![second.clone()]);
+    let side = &v["claims"][0]["sides"][0];
+    assert_eq!(side["state"], "missing");
+    assert_eq!(side["reason"], "not_exact");
+    assert_eq!(side["candidates"][0]["text"], "Second returns three.");
+    assert_eq!(
+        v["claims"][0]["next"],
+        format!("hibi reanchor {second} --subject <anchor>")
+    );
+}
+
+/// R38: every exclusion is reported with its reason and the number of units
+/// it excluded. A covered unit is counted as covered, not as excluded.
+#[test]
+fn r38_exclusions_are_reported_with_reason_and_match_count() {
+    let repo = Repo::new();
+    repo.write("docs/a.md", "Alpha is one. Beta is two. Gamma is three.\n");
+    repo.write("docs/changelog.md", "Released one. Released two.\n");
+
+    // The key of one sentence of docs/a.md, for the unit exclusion.
+    repo.write(
+        ".hibi/hibi.toml",
+        "version = 1\n\n[[scope]]\nname = \"docs\"\nresource = \"file:docs/**/*.md\"\nkinds = [\"sentence\"]\n",
+    );
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (5, 0, 0, 5), "{v}");
+    let scope = only_scope(&v);
+    assert_eq!(scope["exclusions"], json!([]));
+    let gamma = scope["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["text"] == "Gamma is three.")
+        .expect("the sentence is listed")["unit"]["key"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(gamma.starts_with("sentence:"), "{gamma}");
+
+    repo.write(
+        ".hibi/hibi.toml",
+        &format!(
+            "version = 1\n\n[[scope]]\nname = \"docs\"\nresource = \"file:docs/**/*.md\"\nkinds = [\"sentence\"]\nexclude = [\n  {{ resource = \"file:docs/changelog.md\", reason = \"release notes, not claims\" }},\n  {{ resource = \"file:docs/a.md\", unit = \"{gamma}\", reason = \"an aside\" }},\n  {{ resource = \"file:docs/absent.md\", reason = \"matches nothing\" }},\n]\n"
+        ),
+    );
+    let expected_exclusions = |changelog: u64| {
+        json!([
+            {"resource": "file:docs/changelog.md", "unit": null,
+             "reason": "release notes, not claims", "matched": changelog},
+            {"resource": "file:docs/a.md", "unit": gamma, "reason": "an aside", "matched": 1},
+            {"resource": "file:docs/absent.md", "unit": null, "reason": "matches nothing", "matched": 0},
+        ])
+    };
+    // The changelog is excluded as a whole: it is not read, its two
+    // sentences are not units of the scope, and its exclusion counts one
+    // resource. The exclusion of one sentence counts that unit.
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (3, 0, 1, 2), "{v}");
+    let scope = only_scope(&v);
+    assert_eq!(counts(&scope), (3, 0, 1, 2));
+    assert_eq!(
+        items(&scope),
+        pairs(&[("sentence", "Alpha is one."), ("sentence", "Beta is two.")])
+    );
+    assert_eq!(scope["exclusions"], expected_exclusions(1));
+
+    // The human output names each exclusion with its reason.
+    let human = repo.human(&["cover"]);
+    assert_eq!(human.status, 0, "{human:?}");
+    assert_eq!(human.stderr, "");
+    for needle in [
+        "file:docs/changelog.md (1 resource): release notes, not claims",
+        "(1 unit): an aside",
+        "file:docs/absent.md (0 resources): matches nothing",
+        "release notes, not claims",
+        "an aside",
+        "matches nothing",
+        "Alpha is one.",
+        "Beta is two.",
+    ] {
+        assert!(human.stdout.contains(needle), "{needle}: {}", human.stdout);
+    }
+    assert!(!human.stdout.contains("Released one."), "{}", human.stdout);
+
+    // A claim on a unit of the excluded file changes nothing in the scope.
+    repo.claim(
+        "one was released",
+        "file:docs/changelog.md::Released one.",
+        &[],
+    );
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (3, 0, 1, 2), "{v}");
+    assert_eq!(only_scope(&v)["exclusions"], expected_exclusions(1));
+}
+
+/// A resource that an exclusion without `unit` matches is not read at all.
+/// A code file that does not parse, a file over the size limit and a file
+/// that is not UTF-8 are taken out of a scope this way: they are not
+/// listed under `unavailable`, and the exclusion counts each as one
+/// resource. An exclusion that names a unit still needs the file read.
+#[test]
+fn a_whole_resource_exclusion_takes_an_unreadable_file_out_of_cover() {
+    let repo = Repo::new();
+    let scope = |exclude: &str| {
+        format!(
+            "version = 1\n\n[[scope]]\nname = \"code\"\nresource = \"file:src/*\"\nkinds = [\"function\", \"sentence\"]\n{exclude}"
+        )
+    };
+    repo.write("src/good.py", "def ok():\n    return 1\n");
+    repo.write("src/bad.py", "def broken(:\n    return 1\n");
+    let mut big = "A sentence.\n".repeat(700_000);
+    big.truncate(usize::try_from(hibi::provider::file::MAX_FILE_BYTES).unwrap() + 1);
+    repo.write("src/big.md", &big);
+    std::fs::write(repo.root.join("src/data.md"), [0xff, 0xfe, 0x00, 0x80]).unwrap();
+    repo.write(".hibi/hibi.toml", &scope(""));
+
+    // Without exclusions the three are reported, each with its reason.
+    let v = repo.json(&["cover"]);
+    assert_eq!(
+        only_scope(&v)["unavailable"],
+        json!([
+            {"loc": "file:src/bad.py", "reason": "resource_unavailable"},
+            {"loc": "file:src/big.md", "reason": "too_large"},
+            {"loc": "file:src/data.md", "reason": "not_text"}
+        ])
+    );
+    assert_eq!(counts(&v["summary"]), (1, 0, 0, 1), "{v}");
+    assert_eq!(v["summary"]["excludedResources"], 0);
+    let human = repo.human(&["cover"]);
+    assert!(
+        human
+            .stdout
+            .contains("1 unit, 0 covered, 0 excluded, 1 uncovered\n"),
+        "{}",
+        human.stdout
+    );
+
+    repo.write(
+        ".hibi/hibi.toml",
+        &scope(
+            "exclude = [\n  { resource = \"file:src/bad.py\", reason = \"does not parse yet\" },\n  { resource = \"file:src/*.md\", reason = \"data, not prose\" },\n]\n",
+        ),
+    );
+    let v = repo.json(&["cover"]);
+    let s = only_scope(&v);
+    assert_eq!(s["unavailable"], json!([]), "{v}");
+    assert_eq!(counts(&v["summary"]), (1, 0, 0, 1), "{v}");
+    // The unit counts say nothing of the files taken out; a count of
+    // resources does, in the scope and in the summary.
+    assert_eq!(s["excludedResources"], 3, "{v}");
+    assert_eq!(
+        v["summary"],
+        json!({"units": 1, "covered": 0, "excluded": 0, "uncovered": 1, "excludedResources": 3})
+    );
+    assert_eq!(
+        s["exclusions"],
+        json!([
+            {"resource": "file:src/bad.py", "unit": null, "reason": "does not parse yet", "matched": 1},
+            {"resource": "file:src/*.md", "unit": null, "reason": "data, not prose", "matched": 2}
+        ])
+    );
+    let human = repo.human(&["cover"]);
+    assert!(
+        human
+            .stdout
+            .contains("excluded: file:src/bad.py (1 resource): does not parse yet")
+            && human
+                .stdout
+                .contains("excluded: file:src/*.md (2 resources): data, not prose"),
+        "{}",
+        human.stdout
+    );
+    assert!(!human.stdout.contains("unavailable:"), "{}", human.stdout);
+    // The count line says both, so "0 excluded" does not stand alone above
+    // the exclusions.
+    assert!(
+        human
+            .stdout
+            .contains("1 unit, 0 covered, 0 excluded, 1 uncovered; 3 resources excluded\n"),
+        "{}",
+        human.stdout
+    );
+
+    // `--since`: the excluded files changed in the range and stay out.
+    let base = repo.commit("base");
+    repo.write("src/bad.py", "def broken(:\n    return 2\n");
+    repo.write("src/good.py", "def ok():\n    return 2\n");
+    let v = repo.json(&["cover", "--since", &base]);
+    let s = only_scope(&v);
+    assert_eq!(s["unavailable"], json!([]), "{v}");
+    assert_eq!(s["exclusions"][0]["matched"], 1, "{v}");
+    assert_eq!(s["exclusions"][1]["matched"], 0, "{v}");
+    assert_eq!(counts(&v["summary"]), (1, 0, 0, 1), "{v}");
+
+    // An exclusion that names a unit needs the resource read: the broken
+    // file is reported again.
+    repo.write(
+        ".hibi/hibi.toml",
+        &scope(
+            "exclude = [\n  { resource = \"file:src/bad.py\", unit = \"function:broken\", reason = \"one unit\" },\n  { resource = \"file:src/*.md\", reason = \"data, not prose\" },\n]\n",
+        ),
+    );
+    let v = repo.json(&["cover"]);
+    assert_eq!(
+        only_scope(&v)["unavailable"],
+        json!([{"loc": "file:src/bad.py", "reason": "resource_unavailable"}])
+    );
+    assert_eq!(only_scope(&v)["exclusions"][0]["matched"], 0);
+}
+
+/// Section 15.3: `--limit` caps `items` per scope and never the counts;
+/// `--scope` selects scopes; an unknown scope and a config with no scope are
+/// errors.
+#[test]
+fn r38_limit_scope_selection_and_scope_errors() {
+    let repo = Repo::new();
+    let before = repo.files();
+    let e = repo.fail(&["cover"]);
+    assert_eq!(e["code"], "no_scopes");
+    let e = repo.fail(&["cover", "--scope", "docs"]);
+    assert_eq!(e["code"], "no_scopes");
+    assert_eq!(repo.files(), before);
+
+    repo.config(
+        "[[scope]]\nname = \"docs\"\nresource = \"file:docs/**/*.md\"\nkinds = [\"sentence\"]\n\n[[scope]]\nname = \"titles\"\nresource = \"file:docs/**/*.md\"\nkinds = [\"heading\"]\n",
+    );
+    repo.write(
+        "docs/a.md",
+        "# One\n\nAlpha is one. Beta is two. Gamma is three.\n",
+    );
+    repo.write("docs/b.md", "# Two\n\nDelta is four.\n");
+    repo.claim("beta", "file:docs/a.md::Beta is two.", &[]);
+
+    let all = repo.json(&["cover"]);
+    assert_eq!(counts(&all["summary"]), (6, 1, 0, 5), "{all}");
+    assert_eq!(all["scopes"].as_array().unwrap().len(), 2);
+    let docs = &all["scopes"][0];
+    assert_eq!(docs["name"], "docs");
+    assert_eq!(docs["resource"], "file:docs/**/*.md");
+    assert_eq!(docs["kinds"], json!(["sentence"]));
+    assert_eq!(counts(docs), (4, 1, 0, 3));
+    assert_eq!(docs["truncated"], false);
+    // Ordered by locator, then start offset.
+    assert_eq!(
+        items(docs),
+        pairs(&[
+            ("sentence", "Alpha is one."),
+            ("sentence", "Gamma is three."),
+            ("sentence", "Delta is four.")
+        ])
+    );
+    let titles = &all["scopes"][1];
+    assert_eq!(titles["name"], "titles");
+    assert_eq!(counts(titles), (2, 0, 0, 2));
+    assert_eq!(
+        items(titles),
+        pairs(&[("heading", "# One"), ("heading", "# Two")])
+    );
+
+    // --limit 1: one item per scope, both truncated, counts as before.
+    let v = repo.json(&["cover", "--limit", "1"]);
+    assert_eq!(counts(&v["summary"]), (6, 1, 0, 5), "{v}");
+    assert_eq!(counts(&v["scopes"][0]), (4, 1, 0, 3));
+    assert_eq!(v["scopes"][0]["truncated"], true);
+    assert_eq!(
+        items(&v["scopes"][0]),
+        pairs(&[("sentence", "Alpha is one.")])
+    );
+    assert_eq!(counts(&v["scopes"][1]), (2, 0, 0, 2));
+    assert_eq!(v["scopes"][1]["truncated"], true);
+    assert_eq!(items(&v["scopes"][1]), pairs(&[("heading", "# One")]));
+
+    // A limit that is not reached does not truncate: 2 cuts only `docs`.
+    let v = repo.json(&["cover", "--limit", "2"]);
+    assert_eq!(v["scopes"][0]["truncated"], true);
+    assert_eq!(v["scopes"][0]["items"].as_array().unwrap().len(), 2);
+    assert_eq!(v["scopes"][1]["truncated"], false);
+    assert_eq!(v["scopes"][1]["items"].as_array().unwrap().len(), 2);
+    assert_eq!(counts(&v["summary"]), (6, 1, 0, 5));
+
+    // 0 is no cap.
+    let v = repo.json(&["cover", "--limit", "0"]);
+    assert_eq!(v["scopes"], all["scopes"]);
+
+    // --scope selects; the summary counts the selected scopes.
+    let v = repo.json(&["cover", "--scope", "titles"]);
+    assert_eq!(counts(&v["summary"]), (2, 0, 0, 2), "{v}");
+    let scope = only_scope(&v);
+    assert_eq!(scope, all["scopes"][1]);
+    let v = repo.json(&["cover", "--scope", "docs", "--limit", "1"]);
+    assert_eq!(counts(&v["summary"]), (4, 1, 0, 3), "{v}");
+    let scope = only_scope(&v);
+    assert_eq!(scope["name"], "docs");
+    assert_eq!(scope["truncated"], true);
+    let v = repo.json(&["cover", "--scope", "docs", "--scope", "titles"]);
+    assert_eq!(v["scopes"], all["scopes"]);
+    assert_eq!(v["summary"], all["summary"]);
+
+    let before = repo.files();
+    let out = repo.run(&["cover", "--scope", "nope"]);
+    assert_eq!(out.code(), "unknown_scope", "{out:?}");
+    assert!(out.err()["message"].as_str().unwrap().contains("nope"));
+    let out = repo.run(&["cover", "--scope", "docs", "--scope", "nope"]);
+    assert_eq!(out.code(), "unknown_scope", "{out:?}");
+    assert_eq!(repo.files(), before);
+}

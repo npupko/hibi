@@ -1,0 +1,11 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"status\"])"
+---
+$ hibi status
+exit status: 0
+---- standard output ----
+2 claims: 2 fresh, 0 stale, 0 expired, 0 retired
+nothing stale
+---- standard error ----
+(empty)

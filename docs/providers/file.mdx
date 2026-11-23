@@ -1,0 +1,310 @@
+---
+title: "The file provider"
+description: "How hibi splits documents, code and plain text into units: classes, languages and unit kinds."
+---
+
+A provider turns a locator into units, text and fingerprints. The file
+provider is built into hibi and serves the schemes `file:` and `repo:`. Other
+sources are served by [external providers](/providers/external).
+
+## Resource classes
+
+The class of a file follows from its lower-cased extension:
+
+| Class | Extensions | Units |
+|---|---|---|
+| `markdown` | `.md`, `.mdx` | Prose units; frontmatter is skipped |
+| `prose` | `.markdown`, `.txt`, `.rst` | Prose units |
+| `typescript` | `.ts`, `.mts`, `.cts` | Code units |
+| `tsx` | `.tsx`, `.js`, `.mjs`, `.cjs`, `.jsx` | Code units, with the TSX grammar |
+| `python` | `.py`, `.pyi` | Code units |
+| `rust` | `.rs` | Code units |
+| `go` | `.go` | Code units |
+| `java` | `.java` | Code units |
+| `text` | anything else | Blocks |
+
+Every file also has one unit of kind `file` that spans all of it; the empty
+selector, as in `--subject file:docs/retry.md`, selects it.
+
+A code file that does not parse without error cannot be anchored until it
+parses: every side on it is `unavailable` with reason
+`resource_unavailable`, naming the line where the parser reports its first error (the mistake can be before or after it), a new anchor on
+it fails, and `cover` lists it as unavailable (see
+[fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). A
+`#symbol` on a markdown, prose or text file is refused, because such a file
+has no declarations: a new anchor fails with `invalid_anchor`, and a stored
+one makes the side `unavailable` with reason `selector_refused`. A file that
+is not valid UTF-8 is not read, and a side on it is `unavailable` with reason
+`not_text`. A code file larger than 2 MiB, or any other file larger than
+8 MiB, is `unavailable` with reason `too_large`, as is a file with more than
+100,000 units. A symbolic link anywhere in the path is not followed: the file counts as not found, and a side
+on it is `missing` with reason `resource_not_found`. CRLF line endings are
+read as LF.
+
+A claim on `src/grow.rs#SMALL`, after the file grew past 2 MiB:
+
+```text output
+$ hibi status
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-r7bnw9yaen8skwsc0ngx  stale  SMALL is 1.
+  marked 2026-11-22T22:31:36Z (m1-7qxwrtznmsbp2vntseeh)
+  evidence 1  file:src/grow.rs  unavailable (too_large)
+    file:src/grow.rs has 2457830 bytes, more than the limit of 2097152 bytes for a code file
+    The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; in a scope, add an exclusion for the resource. To move on without that: hibi reanchor c1-r7bnw9yaen8skwsc0ngx --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor c1-r7bnw9yaen8skwsc0ngx --drop-evidence 1 drops it.
+```
+
+When git can be used, a `file:` path must also be in the root's git file
+list: tracked, or untracked and not ignored, compared byte for byte. A path
+that differs only in letter case, or a file git ignores, is not found, even
+on a file system that ignores case. Paths under `.git/` and `.hibi/` are
+never read. Without git, any regular file under the root can be read.
+
+```text output
+$ hibi claim "x" --subject "file:README.MD::The limit"
+error: side_missing: the subject (file:README.MD) resolves to no unit (resource_not_found): file:README.MD is not in git's file list of the root (tracked, or untracked and not ignored)
+  fix: Point the anchor at text that exists in the resource.
+```
+
+```text output
+$ hibi claim "x" --subject "file:docs/secret.md::The secret"
+error: side_missing: the subject (file:docs/secret.md) resolves to no unit (resource_not_found): file:docs/secret.md is not in git's file list of the root (tracked, or untracked and not ignored)
+  fix: Point the anchor at text that exists in the resource.
+```
+
+## Unit kinds
+
+| Kinds | From |
+|---|---|
+| `sentence`, `heading`, `list-item`, `table-row`, `fenced` | Prose |
+| `function`, `method`, `class`, `struct`, `interface`, `trait`, `enum`, `type`, `variable`, `field`, `variant`, `module`, `impl`, `macro`, `statement` | Code |
+| `block` | Plain text |
+| `file` | Every file |
+
+`hibi providers` lists the classes and profiles of the build.
+
+## Prose
+
+A Markdown or prose file is split into blocks at blank lines, lines that hold
+only an HTML or JSX tag, and thematic breaks (`---`, `***`, `___`). A fenced
+code block is one unit of kind `fenced`. A heading, a list item, a blockquote
+line and a table row each start a new piece; a table's separator row is
+dropped. Pieces other than headings and fences are cut into sentences after
+`.`, `!` or `?` followed by whitespace, or followed by one `"`, `'`, `)` or
+`]` and then whitespace. There is no cut inside an inline code span, inside
+a list item's marker such as `3.`, or at the end of a table row.
+
+Three consequences of these rules can surprise:
+
+- **Prose directly after a fence, with no blank line, joins the fenced
+  unit.** A block that contains a fence is one `fenced` unit.
+- **An HTML comment is prose.** Its text is cut into sentences like any
+  other line, the `<!--` and `-->` included.
+- **A setext heading is a sentence.** Only `#` headings are `heading` units.
+  A line underlined with `===` becomes one sentence together with its
+  underline.
+
+For example, this file:
+
+````markdown docs/split.md
+Intro line.
+
+```text
+inside fence
+```
+Prose right after the fence.
+
+<!-- An HTML comment. It has two sentences. -->
+
+Setext heading
+==============
+
+Body text.
+````
+
+has these units:
+
+```text output
+d (file:docs/split.md; sentence, heading, list-item, table-row, fenced): 7 units, 0 covered, 0 excluded, 7 uncovered
+  file:docs/split.md
+        1  sentence  Intro line.
+        3  fenced  ```text inside fence ``` Prose right after the fence.
+        8  sentence  <!-- An HTML comment.
+        8  sentence  It has two sentences.
+        8  sentence  -->
+       10  sentence  Setext heading ==============
+       13  sentence  Body text.
+```
+
+This document:
+
+````markdown docs/guide.md
+---
+title: Guide
+---
+
+# Configuration
+
+The server reads `config.toml` at start-up. It never reloads it.
+
+- `port`: the port to listen on. Default 8080.
+- `workers`: how many workers run. Default 4.
+
+| Key | Default |
+|---|---|
+| `timeout` | 30 s |
+
+```toml
+port = 8080
+```
+````
+
+has these units, as listed by a scope that asks for every prose kind:
+
+```text output
+guide (file:docs/*.md; sentence, heading, list-item, table-row, fenced): 10 units, 0 covered, 0 excluded, 10 uncovered
+  file:docs/guide.md
+        5  heading  # Configuration
+        7  sentence  The server reads `config.toml` at start-up.
+        7  sentence  It never reloads it.
+        9  list-item  - `port`: the port to listen on.
+        9  list-item  Default 8080.
+       10  list-item  - `workers`: how many workers run.
+       10  list-item  Default 4.
+       12  table-row  | Key | Default |
+       14  table-row  | `timeout` | 30 s |
+       16  fenced  ```toml port = 8080 ```
+```
+
+A list item with two sentences gives two units of kind `list-item`. A
+`.mdx` component tag on its own line is a boundary, so prose inside a
+component is still split.
+
+## Code
+
+Code is parsed with tree-sitter. Six grammars are compiled in: TypeScript,
+TSX, Python, Rust, Go and Java. Declarations are found at the top level and
+inside containers (classes, interfaces, traits, impls, structs, enums,
+modules). hibi never looks inside a function body, so local declarations are
+not units.
+
+- **Members are units.** Struct fields, enum variants, interface members, Java
+  enum constants and record components each are a unit. A data member has
+  kind `field`; an enum variant or constant has kind `variant`; a function
+  member has kind `method`.
+- **Attributes and decorators belong to their declaration.** A Rust
+  `#[derive(...)]` or a TypeScript `@Injectable()` is part of the unit of the
+  declaration it precedes, so changing it stales claims on that declaration.
+- **Doc comments are not part of the fingerprint.** A comment, including
+  rustdoc, JSDoc and Javadoc, never changes a fingerprint and cannot be
+  quoted in an anchor. A Python docstring is a string and counts.
+- **Top-level statements** that are not declarations, such as
+  `console.log("loaded");` or Go's `package main`, are units of kind
+  `statement`.
+
+These files in `src/` give the units below, as listed by a scope over
+`file:src/**` with every code kind:
+
+```rust src/config.rs
+/// Settings read at start-up.
+#[derive(Debug, Clone)]
+pub struct Config {
+    /// Seconds before a request is abandoned.
+    pub timeout_secs: u32,
+    pub retries: u8,
+}
+
+pub enum Mode {
+    Fast,
+    Safe { checks: u8 },
+}
+
+impl Config {
+    pub fn new() -> Self {
+        Config { timeout_secs: 30, retries: 5 }
+    }
+}
+```
+
+```typescript src/api.ts
+export interface Options {
+  timeoutMs: number;
+  retry?: boolean;
+}
+
+export enum Level { Low = 1, High = 2 }
+
+@Injectable()
+export class Client {
+  private base = "https://example.com";
+  fetch(path: string): string { return this.base + path; }
+}
+```
+
+| Unit key | Kind | Line |
+|---|---|---|
+| `struct:Config` | struct | 2, with its `#[derive]` |
+| `field:Config.timeout_secs` | field | 5 |
+| `field:Config.retries` | field | 6 |
+| `enum:Mode` | enum | 9 |
+| `variant:Mode.Fast` | variant | 10 |
+| `variant:Mode.Safe` | variant | 11 |
+| `impl:impl Config` | impl | 14 |
+| `method:Config.new` | method | 15 |
+| `interface:Options` | interface | 1 |
+| `field:Options.timeoutMs` | field | 2 |
+| `field:Options.retry` | field | 3 |
+| `enum:Level` | enum | 6 |
+| `variant:Level.Low` | variant | 6 |
+| `variant:Level.High` | variant | 6 |
+| `class:Client` | class | 8, with its `@Injectable()` |
+| `field:Client.base` | field | 10 |
+| `method:Client.fetch` | method | 11 |
+
+The other languages follow the same pattern:
+
+| Source | Units |
+|---|---|
+| Python `class Job:` with `retries = 3` and `def run(self)` | `class:Job`, `field:Job.retries`, `method:Job.run` |
+| Python module-level `MAX_JOBS = 100` | `variable:MAX_JOBS` |
+| Go `type Server struct { Port int }` and `func (s *Server) Start()` | `type:Server`, `field:Server.Port`, `method:Server.Start` |
+| Java `enum Color { RED, GREEN; private final int code = 1; }` | `enum:Color`, `variant:Color.RED`, `variant:Color.GREEN`, `field:Color.code` |
+| Java `record Point(int x, int y) {}` | `class:Point`, `field:Point.x`, `field:Point.y`; a varargs component such as `int... values` is a field too |
+| TypeScript `export const handler = (x: number) => x * 2;` | `function:handler` |
+| TypeScript `export const limit = 10;` | `variable:limit` |
+
+## Symbols and keys
+
+The symbol of a declaration is its path, joined with `.`: `MAX_ATTEMPTS`,
+`Config.timeout_secs`, `Store.get`, `inner.LIMIT`. Use it after `#` in a
+compact anchor. A Rust impl block is named `impl Config` (or
+`impl Display for Config` for a trait impl); its methods have paths that start
+with the type, `Config.new`, whichever impl block they are in. A symbol that
+contains `::`, such as `impl fmt::Display for Config`, cannot be written in
+a compact anchor: write the anchor as JSON (see
+[compact anchors](/concepts/anchors#compact-anchors-on-the-command-line)).
+
+Unit keys identify a unit within one file:
+
+| Unit | Key |
+|---|---|
+| The whole file | `file` |
+| A declaration | `<kind>:<symbol>`, such as `field:Config.timeout_secs` |
+| A prose unit, statement or block | `<kind>:<12 hex digits of its fingerprint>`, such as `sentence:619145cf695d` |
+
+A declaration key stays the same when the declaration is edited or moved
+within the file. A content key stays the same when the unit moves or is edited in a way
+its fingerprint ignores, such as whitespace, and changes when its
+fingerprint changes. When two units of a file would get the same key, the
+second and later in the file get `~2`, `~3` and so on, so moving one of them
+ahead of the other swaps their keys. Exclusions in a scope use these
+keys.
+
+## Sibling repositories
+
+`repo:<alias>//<path>` reads a file of another git repository with the same
+rules. The alias must be declared in `.hibi/hibi.toml` and allowed in your
+user config; see [configuration](/configuration#sibling-repositories). The
+file must also be in the sibling's git file list: tracked, or untracked and
+not ignored. Any other path is `missing` with reason `resource_not_found`,
+even when the file exists on disk.

@@ -1,0 +1,99 @@
+[
+  {
+    "name": "suggest-evidence: two candidates, one fits",
+    "input": {
+      "statement": "The client retries a request three times.",
+      "candidates": [
+        {"where": "file:src/client.rs fn retries", "code": "pub fn retries() -> u32 {\n    3\n}"},
+        {"where": "file:src/client.rs struct Client", "code": "pub struct Client {\n    pub timeout: u32,\n}"}
+      ],
+      "response": {
+        "model": "jev-1.14.0",
+        "answers": {
+          "q0": {"type": "noul", "noul": 0.88},
+          "q1": {"type": "noul", "noul": 0.21}
+        },
+        "usage": {"input_tokens": 140, "output_tokens": 4}
+      }
+    },
+    "expected": {
+      "request": {
+        "model": "jev-1.14.0",
+        "state": {"task": "hibi-suggest-evidence-v1", "statement": "The client retries a request three times."},
+        "questions": {
+          "q0": {"type": "noul",
+            "instructions": {"ask": "This code determines whether the statement is true. Reading it would confirm or refute the statement.",
+                             "where": "file:src/client.rs fn retries", "code": "pub fn retries() -> u32 {\n    3\n}"}},
+          "q1": {"type": "noul",
+            "instructions": {"ask": "This code determines whether the statement is true. Reading it would confirm or refute the statement.",
+                             "where": "file:src/client.rs struct Client", "code": "pub struct Client {\n    pub timeout: u32,\n}"}}
+        }
+      },
+      "answers": {"q0": {"noul": 0.88}, "q1": {"noul": 0.21}},
+      "results": [{"p": 0.88, "fits": true}, {"p": 0.21, "fits": false}],
+      "noneFits": false
+    },
+    "source": "Written by hand from SPEC 14.2 and 14.4 (fits at p >= 0.7) and the NoulAnswer schema of https://api.typesafe.ai/openapi.json (read 2026-11-20).",
+    "origin": "synthetic"
+  },
+  {
+    "name": "suggest-evidence: none fits at 0.69",
+    "input": {
+      "statement": "Timeouts are ten seconds.",
+      "candidates": [
+        {"where": "file:src/client.rs fn retries", "code": "pub fn retries() -> u32 {\n    3\n}"}
+      ],
+      "response": {
+        "model": "jev-1.14.0",
+        "answers": {"q0": {"type": "noul", "noul": 0.69}},
+        "usage": {"input_tokens": 90, "output_tokens": 2}
+      }
+    },
+    "expected": {
+      "request": {
+        "model": "jev-1.14.0",
+        "state": {"task": "hibi-suggest-evidence-v1", "statement": "Timeouts are ten seconds."},
+        "questions": {
+          "q0": {"type": "noul",
+            "instructions": {"ask": "This code determines whether the statement is true. Reading it would confirm or refute the statement.",
+                             "where": "file:src/client.rs fn retries", "code": "pub fn retries() -> u32 {\n    3\n}"}}
+        }
+      },
+      "answers": {"q0": {"noul": 0.69}},
+      "results": [{"p": 0.69, "fits": false}],
+      "noneFits": true
+    },
+    "source": "Written by hand from SPEC 14.4 (noneFits when no candidate has p >= 0.7).",
+    "origin": "synthetic"
+  },
+  {
+    "name": "suggest-evidence: a probability outside [0, 1] is unusable",
+    "input": {
+      "statement": "Timeouts are ten seconds.",
+      "candidates": [
+        {"where": "file:src/client.rs fn retries", "code": "pub fn retries() -> u32 {\n    3\n}"}
+      ],
+      "response": {
+        "model": "jev-1.14.0",
+        "answers": {"q0": {"type": "noul", "noul": 1.5}},
+        "usage": {"input_tokens": 90, "output_tokens": 2}
+      }
+    },
+    "expected": {
+      "request": {
+        "model": "jev-1.14.0",
+        "state": {"task": "hibi-suggest-evidence-v1", "statement": "Timeouts are ten seconds."},
+        "questions": {
+          "q0": {"type": "noul",
+            "instructions": {"ask": "This code determines whether the statement is true. Reading it would confirm or refute the statement.",
+                             "where": "file:src/client.rs fn retries", "code": "pub fn retries() -> u32 {\n    3\n}"}}
+        }
+      },
+      "answers": {"q0": null},
+      "results": null,
+      "noneFits": null
+    },
+    "source": "The NoulAnswer schema of https://api.typesafe.ai/openapi.json describes noul as a probability from 0 to 1; hibi reads any other value as no answer of the right type (SPEC 14.2).",
+    "origin": "synthetic"
+  }
+]

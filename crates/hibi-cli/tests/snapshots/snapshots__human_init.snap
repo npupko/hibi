@@ -1,0 +1,19 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shots(&repo, &[&[\"init\"], &[\"init\"]])"
+---
+$ hibi init
+exit status: 0
+---- standard output ----
+Created the hibi store in [ROOT]: 36 files under .hibi/.
+Next: declare scopes in .hibi/hibi.toml, then run `hibi cover`.
+---- standard error ----
+(empty)
+
+$ hibi init
+exit status: 1
+---- standard output ----
+(empty)
+---- standard error ----
+error: already_initialized: [ROOT] already has .hibi/hibi.toml
+  fix: The store is already there. Run hibi status to see its claims.

@@ -1,244 +1,159 @@
 ---
-title: "The Judge: Jev Behind a Small Interface"
-sidebarTitle: "Judge"
-description: "Three judgments (triage, supports, conflict), one threshold, three-way outcomes, and a cache that keeps the same tree on the same verdicts."
-icon: "gavel"
+title: "The judge"
+description: "Optional, advisory ranking by TypeSafe's Jev model: what it does, what it sends, and what it never changes."
 ---
 
-Some questions cannot be answered by comparing text. Does this passage of the billing guide still support the sentence in the README? Do these two sentences contradict each other? Is this region a factual claim at all? Hibi sends these questions to a model, the **judge**, and decides the outcome in code from the probabilities it returns.
+Three optional features ask a language model for a ranking. They are
+advisory: no answer is written to the store or changes a claim's state, and
+`status --judge-order` lists the same claims as `status`. They only rank and
+label; `triage` and `suggest-evidence` print the top of the ranking, up to
+`--limit`.
 
-The judge is an interface with three methods. The shipped implementation is **Jev**, TypeSafe's System One model. Tests use a fake implementation that answers from a script.
-
-## The interface
-
-| method | input | result |
-|---|---|---|
-| `triage(doc, regions[])` | a document path and its regions | per region: `kind`, `kindProbabilities`, `kindConfidence`, `evidenceKind` (factual claims only), `evidenceProbabilities` |
-| `supports(input)` | `sentence`, `context`, `evidence`, `source` | `relation` (`supports`, `refutes`, `does_not_address`), `probabilities`, `confidence`, `addresses` |
-| `conflict(a, b)` | two sides, each `{ text, doc, context }` | `relation` (`consistent`, `contradictory`, `unrelated`), `probabilities`, `confidence`, `sameSubject`, `contradicts` |
-
-Every call returns the model id, the exact request, the raw answers, and the result. Hibi stores the first three in the [cache](#the-cache).
-
-Who calls which judgment:
-
-| judgment | called by | when |
-|---|---|---|
-| `triage` | `hibi audit` | for the regions no claim covers |
-| `supports` | `hibi check`, `hibi list` | for a `reference` claim, when no cached verdict exists for the current sentence, context, and referenced text |
-| `supports` | `hibi evidence` | for each submitted item with no cached verdict |
-| `conflict` | `hibi check`, `hibi list`, `hibi audit` | once per pair from the [contradiction pass](/conflicts); `check --doc` and `audit` judge only the pairs with a claim in the document |
-
-## Jev and TypeSafe
-
-Hibi calls TypeSafe's System One API over plain HTTP:
-
-```
-POST https://api.typesafe.ai/v1/systemone
-Authorization: Bearer $TYPESAFE_API_KEY
-{ "model": "jev-1.14.0", "state": { … }, "questions": { … } }
-```
-
-| setting | where |
+| Command | Ranks |
 |---|---|
-| API key | `TYPESAFE_API_KEY` in the environment |
-| base URL | `TYPESAFE_BASE_URL` in the environment; default `https://api.typesafe.ai` |
-| model | `judge.model` in `.claims/config.json` |
-| threshold | `judge.threshold` in `.claims/config.json` |
+| `hibi triage` | Uncovered prose units, by how likely each states a fact that code or configuration could confirm, and where the evidence would be |
+| `hibi suggest-evidence <statement> --in <glob>` | Code units that may decide whether a statement is true, with a signal when none fits |
+| `hibi status --judge-order` | The listed stale claims, most likely broken first |
 
-`hibi init` writes `{ "model": "jev-1.14.0", "threshold": 0.8 }`. The model id must be a pinned version of the form `jev-X.Y.Z`. An alias such as `jev-latest` is refused when the config is loaded, because an alias can point at a different model tomorrow and change verdicts without a change in the repository.
-
-The official `@typesafe-ai/sdk` package is not used. Under Bun it reads the response body twice and every request fails (as of 0.7.0).
-
-### Retries and limits
-
-The retry numbers copy the SDK's documented defaults. They live in `src/judge/http.ts` and `src/judge/jev.ts`.
-
-| rule | value |
-|---|---|
-| retried statuses | 408, 429, and every 5xx (which includes 529), plus connection errors and timeouts |
-| retries | 2, so at most 3 attempts |
-| backoff | 500 ms doubled up to 5 s, minus up to 25 percent jitter |
-| `retry-after` | honored; a value over 60 s is clamped to 60 s |
-| per-attempt timeout | 10 s |
-| requests in flight | at most 8 per process |
-| request budget | 48,000 estimated tokens for state plus questions (model limit 64k) |
-| question budget | 24,000 estimated tokens for state plus any one question (model limit 32k) |
-
-Tokens are estimated at 4 characters per token. `triage` splits a long document into several requests that each carry the document path and only their own regions. `hibi evidence` refuses an evidence text longer than 32,000 characters. A `reference` claim whose referenced span is longer than 32,000 characters is not sent; its judgment is `pending` with the label `referenced span is longer than 32,000 characters`.
-
-### Failures
-
-A judge failure never aborts a run and never exits 1. It makes the judgment `pending`, which warns.
-
-| failure | kind |
-|---|---|
-| no `TYPESAFE_API_KEY`, a 401 or 403, or no answer after the last retry | unavailable |
-| a 400, a 422, or another 4xx other than 401, 403, 408, and 429 | error |
-| a 200 whose body is not JSON, or has no `answers` object and `model` string | error |
-| an answer that is missing, of the wrong type, or names an unknown option | error |
-
-An error carries the label `judge error: <message>`, for example `judge error: TypeSafe returned HTTP 400: …`. An unavailable judge carries `judge unavailable: <message>` on a `reference` claim, an evidence item, and an audit row. A conflict pair the judge could not answer, or whose answer could not be used, is pending: each of its two claims gets one reason, `conflict checks pending: <n>`, and `summary.conflictPass.pending` counts the pending pairs.
-
-Where the label appears:
-
-| judgment | on failure |
-|---|---|
-| `supports` for a `reference` claim | the claim's `judge` is `pending`; its reasons carry the label |
-| `supports` for a submitted evidence item | the item's `judge` is `pending`, nothing is written for it, and its `reasons` carry the label |
-| `conflict` | the pair is pending; each claim warns with one reason, `conflict checks pending: <n>`, counting its pending pairs |
-| `triage` | the regions of that request are `pending` rows; each row's `reason` carries the label |
-
-## The three judgments
-
-The questions are JSON files in [`src/judge/questions/`](https://github.com/npupko/hibi/tree/main/src/judge/questions): `triage.json`, `supports.json`, `conflict.json`. Each file lists the state fields and the TypeSafe question objects sent as written, with their instructions and criteria. When a verdict looks wrong, read the question first. Sentences and evidence are always passed as named state fields; they are never pasted into the instructions. Choice options are sent in a fixed order.
-
-### triage
-
-| | |
-|---|---|
-| state | `doc: { path }`, `regions: [{ id, kind, text, headingPath }]` |
-| `kind_<i>` | Choice over `factual_claim`, `instruction`, `opinion`, `narrative` |
-| `evidenceKind_<i>` | Choice over `code`, `other_doc`, `external`, `nothing`: where an agent would look first for evidence |
-
-
-Code rule: a region is `code` by construction when it is a fenced block, contains a fence, contains an inline code span holding a path or a command, or contains a file path in prose. Such a region is not asked the `evidenceKind` question; when its `kind` is `factual_claim`, its evidence kind is `code` with probability 1. URLs are not paths, and names such as `Node.js` are not files.
-
-[Audit](/audit) maps the result to a row kind.
-
-### supports
-
-| | |
-|---|---|
-| state | `claim`, `claim_context`, `evidence`, `evidence_source` |
-| `relation` | Choice over `supports`, `contradicts`, `says_nothing` (the options of TypeSafe's citation-check cookbook), reported as `supports`, `refutes`, `does_not_address` |
-| `addresses` | Noul: does the evidence speak to what the claim asserts, either way |
-
-`claim_context` is the heading path above the sentence and the paragraph that contains it, at most 600 characters, built in code. For a list item, the context also holds the list's lead-in: the paragraph directly above the list, even across a blank line. For a `reference` claim, `evidence` is the current text of the referenced span and `evidence_source` is its file path.
-
-Code rule: when `addresses` is below 0.3, the relation is `does_not_address` whatever the Choice said.
-
-### conflict
-
-| | |
-|---|---|
-| state | `a: { text, doc, context }`, `b: { text, doc, context }` |
-| `same_subject` | Noul: are both sentences about the same thing |
-| `relation` | Choice over `consistent`, `contradictory`, `unrelated` |
-| `contradicts` | Noul: does `b` assert something that cannot be true if `a` is true |
-
-Code rules: when `same_subject` is below 0.3, the relation is `unrelated` whatever the Choice said. A `contradictory` relation with `contradicts` below 0.5 is a review case, not a finding. The full decision table is on [Conflicts](/conflicts).
-
-## Confidence and the threshold
-
-Hibi turns probabilities into a confidence with the formulas from the TypeSafe docs:
-
-| answer type | confidence |
-|---|---|
-| Choice with `n` options | `(p_max - 1/n) / (1 - 1/n)` |
-| Noul with probability `p` | `abs(2p - 1)` |
-
-With three options, confidence 0.8 means the top probability is about 0.867.
-
-There is one threshold, `judge.threshold`, default `0.8`. It applies to every judgment. There are no per-judgment thresholds and no review band.
-
-| judgment | gates | review (warns) | clean |
-|---|---|---|---|
-| `supports` | `refutes` at or above the threshold, or the value rule fires | `supports` or `refutes` below the threshold, or `does_not_address` | `supports` at or above the threshold |
-| `conflict` | `contradictory` with confidence, `same_subject`, and `contradicts` all at their bars; or the value rule fires | `contradictory` with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | everything else, including a `contradictory` lean with `same_subject` below the threshold |
-| `triage` | never | never | n/a: a row below the threshold is `unsure` |
-
-On a verdict, `supports` outcomes appear as the `judge` axis: `supported`, `refuted`, `review`, or `pending`. Every outcome carries a reason label, prefixed `judge: ` on the verdict:
-
-| outcome | label |
-|---|---|
-| supported | `evidence supports the sentence (confidence 0.92 >= threshold 0.8)` |
-| refuted | `evidence refutes the sentence (confidence 0.92 >= threshold 0.8)` |
-| refuted by the value rule | `value differs: numbers differ: 29 vs 39` |
-| review | `evidence leans supports, confidence 0.55 below threshold 0.8` |
-| review | `evidence did not address the sentence` (with `(addresses=0.12)` when the Noul forced it) |
-| pending | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.` |
-| pending | `judge error: TypeSafe returned HTTP 400: …` |
-| pending | `referenced span is longer than 32,000 characters` |
-
-When the evidence `source` equals one of the claim's `sources[].id` or `sources[].resource`, the reasons also include `source matches declared source "<id or resource>"`. It changes no state.
-
-## What stays in code
-
-The comparison of quantities is done in code, though the judge's `contradicts` criterion also covers incompatible values. Hibi extracts values from text with a fixed table of regular expressions in `src/engine/values.ts`:
-
-| kind | examples | normalized |
-|---|---|---|
-| `date` | `2026-10-22`, `October 22, 2026` | `2026-10-22` |
-| `version` | `v1.2.3`, `1.2.3`, `version 1.2` | `1.2.3` |
-| `money` | `$29`, `€ 5`, `29 USD`, `USD 29`, `$5m`, `$2.5k`, `$1bn` | `29` with unit `USD`; `$5m` is `5000000` |
-| `number` | `5%`, `5 days`, `90d`, `500ms`, `1,299.50` | `1299.5`, with a unit for `%` and durations |
-
-A suffix `k`, `m`, `b`, or `bn` after a currency amount multiplies it by a thousand, a million, or a billion, so `$5m` is five million dollars, not five minutes. Versions are compared after dropping a leading `v` and trailing `.0` parts, so `v1.2` equals `1.2.0`.
-
-Values are compared only within the same kind and unit (a group). A group differs when both texts have values in it and share none of them: `$29` against `$39` differs, `$29 or $49` against `$29` does not, `5 days` against `5%` is not compared.
-
-| where | groups compared | when the values differ | label |
-|---|---|---|---|
-| `supports` | money, numbers with a unit (`%`, durations), versions, dates; not unitless numbers | the relation is not `does_not_address` | `value differs: numbers differ: 29 vs 39` (state `refuted`) |
-| `conflict` | every group, unitless numbers included | `same_subject` is at or above the threshold and `contradicts` is at or above 0.5 | `numbers differ: 29 vs 39` (a conflict with probability 1) |
-
-On `supports`, a bare number in the evidence (a count, an id, a line number) says too little to refute the sentence, so unitless numbers are left out. On `conflict`, two sentences about the same subject can hold different values for different situations, such as the exit codes of two commands, so the rule also needs the judge's `contradicts` at or above 0.5.
-
-Versions and dates use `versions differ: …` and `dates differ: …`. For submitted evidence, the extracted values are stored in the cache entry, so `check` applies the rule without the raw text.
-
-## The cache
-
-Every answer is written to `.claims/judge/<key>.json`. The key is the sha256 hex of the model id, a newline, and the canonical JSON of the request (object keys sorted, no whitespace). The cache is local and is not committed: `hibi init` writes `.claims/.gitignore` with the line `judge/`. CI restores it with its own cache step; see [CI](/ci).
-
-| field | content |
-|---|---|
-| `key` | the sha256 above |
-| `model` | the model id the response named |
-| `judgment` | `triage`, `supports`, or `conflict` |
-| `subject` | `{ claimId }`, `{ pairId }`, or `{ docId }` |
-| `request` | the state and questions sent |
-| `answers` | the probabilities returned |
-| `evidence` | for submitted evidence: `hash`, `source`, `summary`, `by`, `at`, `values` |
-| `at` | when it was written |
-
-Raw evidence text is never stored. In the stored request, `state.evidence` is replaced by `sha256:<hash>`; the key is computed over the request as sent.
-
-A key that is in the cache is never asked again, so a second run over the same tree answers from the cache and cannot flip a verdict. A new key is asked when any input changes: the sentence, its context paragraph, the referenced text, the evidence, the source, a question file, or `judge.model`. Changing the model therefore asks every judgment again. Hibi does not delete old entries.
-
-## Without a key
-
-There is no offline flag. Without `TYPESAFE_API_KEY`, or when the API cannot be reached, every judgment the cache cannot answer is `pending`. Nothing else changes.
-
-| command | effect |
-|---|---|
-| `check` | a `reference` claim with no cached verdict has `judge: pending` and warns; a claim with new pairs warns with `conflict checks pending: <n>`; both appear in the worklist or the summary. Exit code 0 unless `--fail-on warn`. |
-| `evidence` | each item is `pending`; nothing is written for it; `next` says to set the key and re-submit |
-| `audit` | uncovered regions are `pending` |
-
-Cached verdicts keep working without a key. CI without the secret still gates on anchors, cached verdicts, and cached conflicts, and on expiry under `check --doc`.
-
-## Cost and latency
+They exist for bulk an agent would not read itself: thousands of uncovered
+sentences, or every function of a large codebase. For a single statement the
+agent is about to re-check anyway, the judge adds nothing.
 
 <Warning>
-  The research note `design/evidence/typesafe-research-2026-10-22.md` quotes the price and latency from TypeSafe's documentation and computes the 500-claim estimates from them. Hibi has not measured them in live runs.
+These commands send text to TypeSafe's API at
+`https://api.typesafe.ai/v1/systemone`, authenticated with your
+`TYPESAFE_API_KEY`. Read the next section before you set the key.
 </Warning>
 
-| item | figure |
+## What is sent
+
+Every request names the model `jev-1.14.0` and carries hibi's fixed
+question wording, with the key in the `Authorization` header. Each
+`suggest-evidence` candidate and each stale claim is one question, and each
+`triage` unit is two. The unit text of `triage`, the candidate text of
+`suggest-evidence` and the side text of `status --judge-order` are each cut
+to their first 4,000 characters; headings and a candidate's locator and
+label are not cut. A question whose answer is cached is not sent.
+
+| Command | Sent per request | Sent per item |
+|---|---|---|
+| `triage` | The task name and the locator of the document | The unit's text and the headings above it, with two questions: is this a checkable fact, and where would it be confirmed (code, configuration, another document, outside the repository, or no checkable fact) |
+| `suggest-evidence` | The task name and your statement | The candidate unit's locator, label and text |
+| `status --judge-order` | The task name and the claim's statement | The current text of each side of the stale claim |
+
+Text from files is sent only when git lists the file, in the root or in an
+allowed sibling repository: tracked, or untracked and not ignored. Text of an
+ignored file is never sent. What happens to an item whose text is not sent
+depends on the command:
+
+- `triage` counts it in `skipped`.
+- `suggest-evidence` takes candidates only from files git lists, so an
+  ignored file never yields a candidate. A candidate whose text cannot be
+  rendered is neither sent nor counted.
+- `status --judge-order` treats the claim as one that cannot be rendered (see
+  below).
+
+Text from an external provider is what its `render` returns.
+
+Each request is a `POST` to the service address with the headers
+`Authorization: Bearer <TYPESAFE_API_KEY>`, `Content-Type: application/json`
+and `User-Agent: hibi/<version>`. Redirects are not followed, so the key is
+never sent to a second host; a redirect answer fails the request.
+
+Nothing else reads `TYPESAFE_API_KEY` or uses the network. Without the key
+every other command works.
+
+## Availability
+
+Without the key the three commands fail before doing anything else:
+
+```text output
+$ hibi triage
+error: judge_unavailable: TYPESAFE_API_KEY is not set; the judge commands need it
+  fix: Set TYPESAFE_API_KEY. This command has no form without the judge.
+```
+
+```text output
+$ TYPESAFE_API_KEY= hibi status --judge-order
+error: judge_unavailable: TYPESAFE_API_KEY is empty; the judge commands need it
+  fix: Set TYPESAFE_API_KEY, or run hibi status without --judge-order.
+```
+
+Plain `hibi status` needs no key. With the key set, the commands next find
+the root, then check git, then read the configuration, all before any network
+contact. They fail with `not_a_git_repository` or `git_too_old` when the root
+is not the top level of a git work tree or git is older than 2.45.0.
+
+## Results
+
+The outputs below are described from their JSON Schemas
+(`hibi schema triage-output`, `hibi schema suggest-evidence-output`), not
+recorded from a live call.
+
+### `triage`
+
+Input: the uncovered units that `hibi cover` would list with the same
+`--scope` and `--since`, restricted to prose kinds (`sentence`, `list-item`,
+`table-row`, `heading`) of the file provider. Other uncovered units are not
+sent and are counted in `skipped`.
+
+| Field | Meaning |
 |---|---|
-| price | $0.042 per million input tokens; output tokens are free |
-| typical latency | about 100 ms per request |
-| `triage` of 500 regions | about 14 requests and 650k tokens at 4 characters per token (measured on 500 regions of the specification), about $0.03, a few seconds; the count rose because each criterion carries a definition and examples |
-| `supports` for 500 claims | 500 requests, 0.15M to 0.75M tokens, $0.006 to $0.03, about 10 s at 8 in flight |
+| `items[].checkable` | The model's probability that the unit states a checkable fact |
+| `items[].band` | `likely` at 0.7 or more, `unlikely` at 0.3 or less, otherwise `unsure` |
+| `items[].evidence` | `code`, `config`, `doc`, `external` or `none` when the chosen option's probability is at least 0.6, otherwise `unsure` |
+| `items[].loc`, `unit`, `text`, `anchor` | The unit, as in `cover`; `anchor` can be passed to `hibi claim --stdin` |
+| `considered` | Units ranked, before `--limit` (default 50, 0 for all) |
+| `skipped` | Uncovered units that were not sent |
 
-Rate limits are set per organization in the TypeSafe console; the docs do not state default values. Because answers are cached, a repeated `check` on an unchanged tree makes no requests.
+Items are ordered by `checkable`, highest first. The human output ends with
+"This is a ranking to read, not a finding."
 
-## Next
+### `suggest-evidence`
 
-<CardGroup cols={2}>
-  <Card title="Conflicts" icon="code-compare" href="/conflicts">
-    How pairs are formed and how a `conflict` answer becomes a finding.
-  </Card>
-  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
-    How the judge axis combines with anchors, expiry, and conflicts.
-  </Card>
-</CardGroup>
+Candidates are every unit of the kinds given by `--kind` (default `function`,
+`method`, `class`, `struct`, `interface`, `trait`, `enum`, `type`,
+`variable`) in the files matched by `--in`, which takes `file:` or `repo:`
+globs. More than 10,000 candidates is the error `too_many_candidates`.
+
+| Field | Meaning |
+|---|---|
+| `candidates[].p` | The model's probability that reading this unit would confirm or refute the statement |
+| `candidates[].fits` | `true` when `p` is 0.7 or more |
+| `noneFits` | `true` when no candidate reaches 0.7 |
+| `candidates[].loc`, `unit`, `anchor` | The unit and an anchor usable as evidence |
+| `considered` | Candidates ranked, before `--limit` (default 10) |
+
+A candidate is a suggestion to read, never a finding. The human output ends
+with "These are units to read, not findings."
+
+### `status --judge-order`
+
+Only the order of the listed claims changes: stale claims come first, most
+likely broken first, and every listed claim that is not stale follows, by
+id. A side
+cannot be rendered when it does not resolve to exactly one unit (it is
+missing, ambiguous or unavailable), when its provider does not offer
+`render` or `render` fails, or when it is a `file:` or `repo:` side whose
+file git does not list. Claims with such a side are not sent and come first,
+ordered by id. A claim whose sentence was edited at its quote is usually in
+this group, because the side is `missing` (`not_exact`); the ranking covers
+claims whose sides all resolve. The answer itself is not printed.
+
+## Repeatability and failures
+
+The model gives no determinism guarantee. hibi caches every answer in the
+local [cache database](/configuration#cache), keyed on the model, the request
+state and the exact question, and does not ask a cached question again. Delete
+the cache, or run with `--no-cache`, and a new call may return different
+probabilities.
+
+Each request is tried up to 3 times with backoff on timeouts, connection
+errors and status 408, 429 and 5xx, with at most 6 requests in flight. If a
+request still fails, the command fails with `judge_failed` and prints no
+partial result. A failed call is never read as a "no".
+
+`HIBI_JEV_URL` replaces the service address. It exists for tests. It must be
+an `https://` URL, or an `http://` URL to `127.0.0.1`, `[::1]` or
+`localhost`; an empty value means the default address, and any other value
+is `invalid_argument` before anything is sent.

@@ -1,0 +1,255 @@
+---
+title: "What stales a claim"
+description: "Fingerprints: which edits change them and which do not."
+---
+
+A mark holds one fingerprint per side. A claim is fresh only while the current
+fingerprint of every side is byte for byte equal to the one in some mark.
+Whether an edit stales a claim is therefore a question of whether it changes a
+fingerprint.
+
+A fingerprint looks like `b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0`: the
+hash function (BLAKE3), the profile that normalized the text, and the first 16
+bytes of the digest in hex.
+
+## Prose and plain text: `prose-v1`
+
+Used for prose units (sentences, headings, list items, table rows, fenced
+blocks), for blocks of plain text, and for the whole-file unit of a file that
+has no syntax tree.
+
+The text is normalized to Unicode NFC, every run of whitespace becomes one
+space, and the result is trimmed. So re-wrapping a paragraph or changing
+indentation does not stale a claim. Changing any word, number or punctuation
+mark does.
+
+## Code: `ast-v1`
+
+Used for declarations and top-level statements of TypeScript, TSX (and
+JavaScript), Python, Rust, Go and Java, and for the whole-file unit of a code
+file that parsed without error. The fingerprint is a hash of the unit's syntax
+tree, not of its text.
+
+| Edit | Changes the fingerprint |
+|---|---|
+| Whitespace, indentation, line breaks | No |
+| A Python backslash line continuation, as in `TOTAL = 1 + \` followed by `2` on the next line, added or removed | Yes |
+| Adding, removing or changing a comment, including doc comments, anywhere | No |
+| A trailing comma before `)`, `]`, `}` or `>` | No |
+| The comma that makes a one-element tuple, as in Python `X = (1,)` | Yes |
+| The shared part of a declaration with several names, such as the type in Java `int width, height;` or `const` versus `let` in TypeScript `const LIMIT = 64, MAX = 128;` | Yes, for each name |
+| The ABI string of a Rust `extern "C" { ... }` block, or its attributes | Yes, for each item in it |
+| In Go, the expression of an earlier constant that a later constant without its own expression repeats (`iota`) | Yes, for the later constant too |
+| A changed literal (number, string, character) | Yes |
+| A changed identifier, operator or keyword | Yes |
+| Adding or removing a node | Yes |
+| Adding or removing parentheses | Yes |
+| Adding or removing semicolons | Yes |
+| Changing quote style, such as `"` to `'` | Yes |
+| A change to a Python docstring | Yes, a docstring is a string |
+
+In short: reformatting that changes only whitespace, line breaks, comments or
+a trailing comma keeps the fingerprint the same, so a claim that anchors a
+declaration by name (`#name` or `#name::<line>`) stays fresh. The one line
+break that counts is a Python backslash continuation.
+
+A bare quote is different, because it is found by the text right around it
+inside its unit. Such an edit near the quote makes the side
+`missing` (`not_exact`), with the unit as a candidate: a comment inserted
+inside the quoted text, a comment or whitespace inserted between two tokens
+with no whitespace between them within 48 characters of the quote, a TSX
+`{/* */}` removed, or a trailing comma removed next to the quote. A comment
+or whitespace added right at the edge of the quote, between the quote and
+the token next to it, changes nothing; the same edit one token further away
+makes the side `missing`. A changed run of whitespace has no effect. Such an edit never makes a claim fresh that should be stale.
+
+A formatter that changes semicolons, quote style or parentheses stales
+claims, and each stale claim needs a re-check and a `mark`.
+
+### Examples
+
+This Rust file was reformatted: the constant split over two lines, a comment
+added after it, and the function signature spread over three lines with a
+comment in its body:
+
+```rust
+/// How often a download is tried before the client gives up.
+pub const MAX_ATTEMPTS: u32 =
+    3; // keep in sync with the docs
+
+/// The delay before attempt `n`, in milliseconds.
+pub fn delay_ms(n: u32)
+    -> u64
+{
+    // doubles each time
+    200 * 2u64.pow(n)
+}
+```
+
+The claim on it stayed fresh:
+
+```text output
+$ hibi status
+2 claims: 1 fresh, 0 stale, 0 expired, 1 retired
+nothing stale
+```
+
+In TypeScript, splitting `sum(a: number, b: number)` and `return [a, b];` over
+several lines with trailing commas left its claim fresh. Wrapping the returned
+array in parentheses, `return ([a, b]);`, made it stale:
+
+```text output
+$ hibi status --loc "file:src/sum.ts"
+4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
+
+c1-nvz527nzmpttbc4zknmg  stale  sum returns both numbers.
+  marked 2026-11-22T22:31:31Z (m1-czf1fp64yrvf094a7ddd)
+  evidence 1  file:src/sum.ts  changed (fingerprint_differs)  function "sum", lines 1-3
+    | export function sum(a: number, b: number) {
+    |   return ([a, b]);
+    | }
+  next: hibi mark c1-nvz527nzmpttbc4zknmg
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+## A file that does not parse
+
+A code file whose syntax the built-in grammar cannot parse cannot be
+anchored until it parses. Every side on it, whatever its anchor (a name, a
+quote or the whole file), is `unavailable` with reason
+`resource_unavailable`. The message names the line where the parser reports
+its first error. The mistake itself can be before or after that line, and by
+many lines. In this file the string on line 4 is not closed:
+
+```java src/Conf.java
+class Conf {
+  int a = 1;
+  int b = 2;
+  String s = "open;
+  int c = 3;
+}
+```
+
+The parser reports line 1:
+
+```text output
+$ hibi claim 'a is 1.' --subject 'file:docs/notes.md::See the code.' --evidence 'file:src/Conf.java#Conf.a'
+error: side_unavailable: evidence 1 (file:src/Conf.java) cannot be evaluated (resource_unavailable): file:src/Conf.java does not parse as java (the parser reports its first error at line 1), so its units cannot be read; fix the syntax error
+  fix: file:src/Conf.java does not parse as java (the parser reports its first error at line 1), so its units cannot be read; fix the syntax error. Run the command again once that is fixed.
+```
+
+A new anchor on such a file fails like this until the file parses. For a
+side of a claim that exists, the side's `remediation` repeats the message
+and gives the whole commands to move on without the file: for evidence, one
+that anchors the side to another resource and one that drops it; for the
+subject, one that re-points it and one that retires the claim. `next` is
+`null`, because no hibi command fixes a syntax error. Here `src/size.ts`
+has a claim on the whole file and
+one on a quote inside the declaration `SIZE`, and a syntax error was added
+on line 2:
+
+```text output
+$ hibi status --loc file:src/size.ts
+8 claims: 3 fresh, 3 stale, 0 expired, 2 retired
+
+c1-2vf3dkpm7tpddr20b5xt  stale  size.ts sets the size.
+  marked 2026-11-22T22:31:35Z (m1-dank8bv1tw2rzc64w69v)
+  evidence 1  file:src/size.ts  unavailable (resource_unavailable)
+    file:src/size.ts does not parse as typescript (the parser reports its first error at line 2), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: hibi reanchor c1-2vf3dkpm7tpddr20b5xt --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor c1-2vf3dkpm7tpddr20b5xt --drop-evidence 1 drops it.
+
+c1-vtb62xhvg0pbcwzanh60  stale  The size is 8.
+  marked 2026-11-22T22:31:35Z (m1-f180grc8jyc5p7prxqfe)
+  evidence 1  file:src/size.ts  unavailable (resource_unavailable)
+    file:src/size.ts does not parse as typescript (the parser reports its first error at line 2), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: hibi reanchor c1-vtb62xhvg0pbcwzanh60 --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor c1-vtb62xhvg0pbcwzanh60 --drop-evidence 1 drops it.
+```
+
+A quote on top-level code, outside every declaration, is no different:
+
+```text output
+$ hibi status --loc file:src/ready.ts
+8 claims: 3 fresh, 3 stale, 0 expired, 2 retired
+
+c1-ppk8y3bdgc2fp2xv7are  stale  The module logs ready.
+  marked 2026-11-22T22:31:35Z (m1-0sk1ya2zdjd7m75n023m)
+  evidence 1  file:src/ready.ts  unavailable (resource_unavailable)
+    file:src/ready.ts does not parse as typescript (the parser reports its first error at line 3), so its units cannot be read; fix the syntax error. Run the command again once that is fixed. To move on without that: hibi reanchor c1-ppk8y3bdgc2fp2xv7are --evidence 1=<anchor> gives this side an anchor on another resource, and hibi reanchor c1-ppk8y3bdgc2fp2xv7are --drop-evidence 1 drops it.
+```
+
+A new anchor on such a file fails:
+
+```text output
+$ hibi claim 'SIZE is 8.' --subject 'file:README.md::A job runs at most 3 times.' --evidence 'file:src/size.ts#SIZE'
+error: side_unavailable: evidence 1 (file:src/size.ts) cannot be evaluated (resource_unavailable): file:src/size.ts does not parse as typescript (the parser reports its first error at line 2), so its units cannot be read; fix the syntax error
+  fix: file:src/size.ts does not parse as typescript (the parser reports its first error at line 2), so its units cannot be read; fix the syntax error. Run the command again once that is fixed.
+```
+
+`cover` reads no units from it and lists it as unavailable:
+
+```text output
+$ hibi cover --scope code
+code (file:src/*.ts; variable, statement): 0 units, 0 covered, 0 excluded, 0 uncovered
+  unavailable: file:src/ready.ts (resource_unavailable)
+  unavailable: file:src/size.ts (resource_unavailable)
+```
+
+Fix the syntax error and every side on the file resolves again, with the
+marks it had:
+
+```text output
+$ hibi status --state fresh --state stale --loc "file:src/*.ts"
+8 claims: 6 fresh, 0 stale, 0 expired, 2 retired
+
+c1-2vf3dkpm7tpddr20b5xt  fresh  size.ts sets the size.
+  marked 2026-11-22T22:31:35Z (m1-dank8bv1tw2rzc64w69v)
+
+c1-ppk8y3bdgc2fp2xv7are  fresh  The module logs ready.
+  marked 2026-11-22T22:31:35Z (m1-0sk1ya2zdjd7m75n023m)
+
+c1-vtb62xhvg0pbcwzanh60  fresh  The size is 8.
+  marked 2026-11-22T22:31:35Z (m1-f180grc8jyc5p7prxqfe)
+```
+
+If a file will never parse, for example because it uses syntax the grammar
+does not know, exclude it from the scope in `.hibi/hibi.toml` and anchor its
+statements elsewhere. An exclusion without `unit` means the file is not read
+at all (see [coverage](/coverage#exclusions)):
+
+```text output
+$ hibi cover --scope code
+code (file:src/*.ts; variable, statement): 0 units, 0 covered, 0 excluded, 0 uncovered; 1 resource excluded
+  excluded: file:src/ready.ts (1 resource): generated, does not parse yet
+  unavailable: file:src/size.ts (resource_unavailable)
+```
+
+Two fingerprints of different profiles are never compared.
+`profile_mismatch` occurs when a later hibi ships a new profile version, and
+when an external provider changes the profile name it puts in its
+fingerprints.
+
+Renaming a file, also to another extension, is not a profile mismatch: the
+locator names the old path, so the side is missing and `next` asks for a new
+anchor. Renaming `src/lim.rs` to `src/lim.py` gives:
+
+```text output
+c1-219y84z69sqmxdvykwmp  stale  The cache holds 64 entries.
+  marked 2026-11-22T22:31:42Z (m1-5d92b20xdxbk7vjap7rh)
+  evidence 1  file:src/lim.rs  missing (resource_not_found)
+    stored: symbol LIMIT
+  next: hibi reanchor c1-219y84z69sqmxdvykwmp --evidence 1=<anchor>
+```
+
+## Versioning
+
+The grammar versions are part of `ast-v1`. A hibi release that changes a
+grammar or a rule of the tree hash must use a new profile name, so the change
+shows as `profile_mismatch` instead of silently staling or freshening claims.
+`hibi version` lists the profiles and grammar versions of the build:
+
+```bash
+hibi --format json version
+```
+
+```json output
+{"ok":true,"command":"version","version":"5.0.0","protocol":[1],"storeVersion":1,"profiles":["prose-v1","ast-v1"],"grammars":{"go":"0.25.0","java":"0.23.5","python":"0.25.0","rust":"0.24.2","tsx":"0.23.2","typescript":"0.23.2"},"judgeModel":"jev-1.14.0","warnings":[]}
+```

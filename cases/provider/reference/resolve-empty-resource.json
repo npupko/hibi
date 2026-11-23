@@ -1,0 +1,43 @@
+{
+  "name": "resolve on an existing resource without units returns zero units",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "ref:empty",
+          "sel": {}
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "units": []
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

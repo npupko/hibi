@@ -1,0 +1,12 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"cover\", \"--scope\", \"code\"])"
+---
+$ hibi cover --scope code
+exit status: 0
+---- standard output ----
+code (file:src/**/*.rs; function): 2 units, 1 covered, 0 excluded, 1 uncovered
+  file:src/cache.rs
+        6  function  pub fn timeout() -> u32 { 30 }
+---- standard error ----
+(empty)

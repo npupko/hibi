@@ -1,0 +1,11 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"providers\"])"
+---
+$ hibi providers
+exit status: 0
+---- standard output ----
+built in: schemes file, repo; classes markdown, prose, typescript, tsx, python, rust, go, java, text; profiles prose-v1, ast-v1
+user config: [HOME]/config.toml
+---- standard error ----
+(empty)

@@ -1,0 +1,179 @@
+---
+title: "Freshness"
+description: "The one rule that decides whether a claim is fresh, stale, expired or retired, and what each side state means."
+---
+
+<Note>
+The examples continue the repository from the [quickstart](/quickstart).
+Later in that repository's history `docs/retry.md` gains a section
+`## Timeouts` with the sentence "Each attempt times out after 10 seconds.",
+and the claim `c1-xwck` on its delay sentence is recorded as in the
+[ranges](/ranges) page. Ids are the ones those runs printed.
+</Note>
+
+## Claim states
+
+hibi evaluates a claim from the claim, its marks, its retirements, the current
+resolution of each side, and the current time. Nothing else. The first row
+that applies decides:
+
+| Order | Condition | State |
+|---|---|---|
+| 1 | The claim has a retirement | `retired` |
+| 2 | No mark matches: no mark has, for every side, a fingerprint equal to the side's current one | `stale` |
+| 3 | The claim has no `recheck` period | `fresh` |
+| 4 | Some matching mark is younger than the `recheck` period | `fresh` |
+| 5 | Otherwise | `expired` |
+
+Consequences:
+
+- **Any matching mark counts, not only the newest.** Reverting a file to
+  content that an older mark covers makes the claim fresh again.
+- **A claim with no mark is stale.** `claim` writes the first mark itself, so
+  this happens only if a write was interrupted.
+- **Expired means unchanged but old.** The content still equals a marked
+  state; only the time ran out. At exactly the end of the period the claim is
+  already expired.
+- **A stale claim still covers its units** for [coverage](/coverage).
+
+## Side states
+
+`status` reports each side that is not `same`, with a state and a reason:
+
+| State | Reason | Meaning |
+|---|---|---|
+| `same` | | The unit's fingerprint equals the one in the reference mark |
+| `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs. For a `#name::<line>` anchor whose line was edited or removed, `detail` says "the stored quote is no longer in this unit", and `next` is a `reanchor` |
+| `changed` | `no_mark` | The claim has no mark |
+| `missing` | `selector_not_found` | The resource exists, but no unit matches the anchor |
+| `missing` | `not_exact` | The stored anchor no longer identifies one unit; `detail` says why. `candidates` lists the units it could mean |
+| `missing` | `resource_not_found` | The file or resource does not exist |
+| `ambiguous` | `several_units` | The anchor matches several units, for example a name that now has a second declaration; `candidates` lists them |
+| `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example after an external provider renamed its profile |
+| `unavailable` | `resource_unavailable` | The resource exists but cannot be read now, or can be read and not split into units: a code file that does not parse, for any anchor on it; a file this user cannot read; git's file list, or a file's object at the `--since` base, that cannot be read; or an external provider's `unavailable` or `unparsable` answer |
+| `unavailable` | `scheme_not_declared` | The locator's scheme is not declared in `.hibi/hibi.toml`, for example after its declaration was removed |
+| `unavailable` | `provider_not_registered` | The scheme is declared, but your user config has no command for it. No command is run. |
+| `unavailable` | `provider_failed` | The provider command could not start, timed out, broke the protocol or was killed; `next` is `hibi providers --check <scheme>` |
+| `unavailable` | `selector_refused` | The provider refuses the stored anchor for this resource, or no longer allows one of its selector keys; `detail` says which, and `next` is the `hibi reanchor` template |
+| `unavailable` | `provider_error` | The provider answered with an error, or returned a unit hibi rejects |
+| `unavailable` | `not_text`, `too_large` | The file is not valid UTF-8, or is too large: a code file over 2 MiB, another file over 8 MiB, or more than 100,000 units |
+| `unavailable` | `repo_not_found`, `repo_not_allowed` | A sibling repository could not be used (see [configuration](/configuration#sibling-repositories)) |
+
+A side is never resolved by similarity or by content. A stored anchor
+identifies its unit by name (`#name`) or by place (a quote in its container,
+with the text right around it unchanged); everything else is a candidate
+(see [anchors](/concepts/anchors#how-a-stored-anchor-finds-its-unit)). In
+practice:
+
+- **Code under a `#name` is `changed`** when the declaration was edited.
+  Read the change, re-check, and `hibi mark` the claim if it still holds.
+  When the line of a `#name::<line>` anchor was edited, `next` is a
+  `reanchor` with the new line, and `mark` is refused.
+- **A sentence edited at the quoted words, or right around a quoted
+  phrase, is `missing`** (`not_exact`). Read the candidates and the file,
+  re-check, and `hibi reanchor` the side if the statement still holds.
+  `mark` refuses the claim.
+- **A sentence edited elsewhere, away from the quote, is `changed`**, as
+  for code. An edit in the first 120 characters of the first sentence of a
+  paragraph or list item with several sentences is the exception: it
+  renames the paragraph, and the claims there are `missing`.
+- **An edit to another sentence usually changes nothing.** Edits that
+  rename or restructure its paragraph or section are the exception: the
+  claims there are `missing`, usually with the right sentence listed first.
+  A renamed heading, a sentence moved to another paragraph, and a renamed
+  function around a quote do the same. The
+  [limits](/concepts/anchors#limits) list every such edit.
+- **A copy in the same scope can take a claim over.** A copied sentence
+  keeps the claim fresh on the copy, and `hibi cover` then lists the edited
+  original as uncovered. A line of code copied into another declaration of
+  the same name gives `changed` with `next: hibi mark`, and the mark is
+  accepted. The [limits](/concepts/anchors#limits) say when this
+  happens.
+
+A candidate is a guess for you to read; the side stays `missing` until you
+re-anchor it.
+
+An unavailable side also carries `detail`, the message that says why, from
+the provider or from hibi, and `remediation`, what the limit or the cause is
+and what you can do. A side with reason `profile_mismatch` has neither. A `missing` side with reason `not_exact`, and a changed
+side whose stored line is gone from its declaration, carry a `detail` as
+well. A `changed` side is followed by the unit's text as it is now. The text output prints both under
+the side, except the detail of a `resource_unavailable` side, which its
+remediation repeats, and the remediation of a `provider_not_registered`,
+`provider_failed` or `repo_not_allowed` side. For a scheme whose declaration was
+removed:
+
+```text output
+$ HIBI_CONFIG=user.toml hibi status
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
+  marked 2026-11-22T22:31:32Z (m1-1s3nz2nqsf271zts5eb7)
+  subject  ref:notes  unavailable (scheme_not_declared)
+    the scheme ref is not declared in .hibi/hibi.toml
+    Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.
+```
+
+The reference mark, against which side states are reported, is the newest
+matching mark if any mark matches. If none matches, it is the mark that
+matches the most sides as they resolve now, and of those the newest. Marks
+with the same time, to the second, are ordered by id. The text output
+of `status` names it, with its time, under each listed claim, together with
+the recheck period and when it runs out. For a side that is missing or
+ambiguous it also prints the stored symbol, quote or key, so you can see what
+the anchor was looking for.
+
+## Recheck periods
+
+`--recheck` takes an ISO 8601 duration with whole numbers: `P90D`, `P6M`,
+`P1Y`, `P2W`, `PT12H`. Years and months move the calendar date, using the
+last day of a shorter month; weeks, days, hours, minutes and seconds add fixed
+seconds. A period of zero is refused:
+
+```text output
+$ hibi claim "x" --subject "file:docs/cache.md::holds 64 entries" --recheck P0D
+error: invalid_duration: the recheck period "P0D" is zero; it must be longer than zero
+  fix: Give a period longer than zero, for example P90D, or leave the recheck period out.
+```
+
+```bash
+hibi claim "Each attempt times out after 10 seconds." \
+  --subject "file:docs/retry.md::times out after 10 seconds" \
+  --recheck P90D \
+  --note "The timeout is set by the HTTP client defaults; check its release notes." \
+  --now 2026-08-01T09:00:00Z
+```
+
+Run on 2026-11-20, more than ninety days after that mark, `status` reports the
+claim expired although nothing changed:
+
+```text output
+$ hibi status
+4 claims: 2 fresh, 0 stale, 1 expired, 1 retired
+
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+## The current time
+
+"Now" is the wall clock in UTC. `--now <timestamp>`, accepted by every
+command, replaces it for reproducible runs: RFC 3339 with any offset, a
+fraction of a second dropped. The example above used `--now` to record a mark
+in the past; `hibi status --now 2026-10-01T00:00:00Z` reports the same claim
+fresh.
+
+## Filtering `status`
+
+| Invocation | Lists |
+|---|---|
+| `hibi status` | Stale and expired claims |
+| `hibi status --state fresh --state retired` | Claims in the given states |
+| `hibi status c1-c5dm c1-2kfx` | Exactly these claims, in any state |
+| `hibi status --loc 'file:src/**'` | Claims with a side whose locator matches the glob |
+| `hibi status --since main` | Stale claims that the changes since `main` caused; see [ranges](/ranges) |
+
+The summary line always counts every claim in the store, before any filter.

@@ -1,56 +1,94 @@
 #!/bin/sh
-# curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
-# Downloads the prebuilt single-file executable for this platform (§12).
+# Install the hibi binary from a GitHub release.
+#
+#   curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
+#
+# Downloads the release tarball for this platform and its .sha256 file,
+# checks the checksum, and copies the `hibi` binary into HIBI_BIN_DIR.
+# It runs nothing it downloads and changes no shell profile.
+#
+# Environment:
+#   HIBI_VERSION  release to install, such as 5.1.0 or v5.1.0 (default: the latest release)
+#   HIBI_BIN_DIR  directory to install into (default: $HOME/.local/bin)
 set -eu
 
-REPO="${HIBI_REPO:-npupko/hibi}"
+REPO="npupko/hibi"
 VERSION="${HIBI_VERSION:-latest}"
-BIN_DIR="${HIBI_BIN_DIR:-/usr/local/bin}"
+BIN_DIR="${HIBI_BIN_DIR:-$HOME/.local/bin}"
 
-os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+fail() {
+  echo "install.sh: $*" >&2
+  exit 1
+}
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || fail "this script needs '$1', which was not found"
+}
+
+need curl
+need tar
+need uname
+need mktemp
+
+os="$(uname -s)"
 arch="$(uname -m)"
-case "$os" in linux) os=linux ;; darwin) os=darwin ;; *) echo "unsupported OS: $os" >&2; exit 1 ;; esac
-case "$arch" in x86_64|amd64) arch=x64 ;; arm64|aarch64) arch=arm64 ;; *) echo "unsupported arch: $arch" >&2; exit 1 ;; esac
+case "$arch" in
+  x86_64 | amd64) arch=x86_64 ;;
+  arm64 | aarch64) arch=aarch64 ;;
+  *) fail "no release build for CPU architecture '$arch'" ;;
+esac
+case "$os" in
+  Darwin) target="${arch}-apple-darwin" ;;
+  # The musl builds are statically linked and run on any Linux distribution.
+  Linux) target="${arch}-unknown-linux-musl" ;;
+  *) fail "no release build for '$os'. On Windows, use the PowerShell installer from the release page." ;;
+esac
 
-target="${os}-${arch}"
-if [ "$VERSION" = "latest" ]; then
-  base="https://github.com/${REPO}/releases/latest/download"
+case "$VERSION" in
+  latest) base="https://github.com/${REPO}/releases/latest/download" ;;
+  v*) base="https://github.com/${REPO}/releases/download/${VERSION}" ;;
+  *) base="https://github.com/${REPO}/releases/download/v${VERSION}" ;;
+esac
+
+name="hibi-cli-${target}"
+tarball="${name}.tar.xz"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+echo "Downloading ${base}/${tarball}"
+curl --proto '=https' --tlsv1.2 -fsSL "${base}/${tarball}" -o "${tmp}/${tarball}" ||
+  fail "download failed: ${base}/${tarball}"
+curl --proto '=https' --tlsv1.2 -fsSL "${base}/${tarball}.sha256" -o "${tmp}/${tarball}.sha256" ||
+  fail "download failed: ${base}/${tarball}.sha256"
+
+expected="$(awk '{print $1; exit}' "${tmp}/${tarball}.sha256")"
+if command -v sha256sum >/dev/null 2>&1; then
+  actual="$(sha256sum "${tmp}/${tarball}" | awk '{print $1}')"
+elif command -v shasum >/dev/null 2>&1; then
+  actual="$(shasum -a 256 "${tmp}/${tarball}" | awk '{print $1}')"
 else
-  base="https://github.com/${REPO}/releases/download/${VERSION}"
+  fail "this script needs 'sha256sum' or 'shasum' to check the download"
 fi
-url="${base}/hibi-${target}"
+[ -n "$expected" ] && [ "$expected" = "$actual" ] ||
+  fail "checksum mismatch for ${tarball}: expected '${expected}', got '${actual}'"
 
-echo "Downloading hibi (${target}) from ${url}"
-tmp="$(mktemp)"
-sums="$(mktemp)"
-trap 'rm -f "$tmp" "$sums"' EXIT
-curl -fsSL "$url" -o "$tmp"
+# The tarball holds one directory named like the tarball, with `hibi` inside.
+tar -xJf "${tmp}/${tarball}" -C "$tmp" ||
+  fail "could not unpack ${tarball}; tar needs xz support (install the 'xz' package)"
+[ -f "${tmp}/${name}/hibi" ] || fail "${tarball} does not contain ${name}/hibi"
 
-# Verify the download against the release's published SHA256SUMS.txt.
-if curl -fsSL "${base}/SHA256SUMS.txt" -o "$sums"; then
-  expected="$(awk -v f="hibi-${target}" '$2==f {print $1}' "$sums")"
-  if [ -n "$expected" ]; then
-    if command -v sha256sum >/dev/null 2>&1; then
-      actual="$(sha256sum "$tmp" | awk '{print $1}')"
-    else
-      actual="$(shasum -a 256 "$tmp" | awk '{print $1}')"
-    fi
-    if [ "$expected" != "$actual" ]; then
-      echo "checksum mismatch for hibi-${target}" >&2
-      echo "  expected: $expected" >&2
-      echo "  actual:   $actual" >&2
-      exit 1
-    fi
-    echo "Checksum verified."
-  else
-    echo "warning: no checksum entry for hibi-${target}; skipping verification" >&2
-  fi
-else
-  echo "warning: could not fetch SHA256SUMS.txt; skipping checksum verification" >&2
-fi
-
-chmod +x "$tmp"
-mv "$tmp" "${BIN_DIR}/hibi"
-trap - EXIT
-rm -f "$sums"
+mkdir -p "$BIN_DIR"
+# Copy to a temporary name in the same directory, then rename it onto
+# `hibi`, so a running or partly written binary is never overwritten in place.
+staged="${BIN_DIR}/.hibi.tmp.$$"
+trap 'rm -rf "$tmp"; rm -f "$staged"' EXIT
+cp "${tmp}/${name}/hibi" "$staged" || fail "could not write ${staged}"
+chmod 755 "$staged" || fail "could not make ${staged} executable"
+mv -f "$staged" "${BIN_DIR}/hibi" || fail "could not move ${staged} to ${BIN_DIR}/hibi"
 echo "Installed hibi to ${BIN_DIR}/hibi"
+
+case ":${PATH}:" in
+  *":${BIN_DIR}:"*) ;;
+  *) echo "Add ${BIN_DIR} to your PATH to run hibi." ;;
+esac
