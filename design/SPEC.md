@@ -4826,9 +4826,11 @@ This object is the value of `check` in the output of
 
 ## 14. Judge
 
-The judge is advisory. No judge answer is written to the store, changes a
-claim's state, or changes which claims or units a command reports. It only
-ranks and labels.
+The judge is advisory. No judge answer is written to the store or changes a
+claim's state, and `status --judge-order` lists the same claims as
+`status`. It only ranks and labels; `triage` and `suggest-evidence` print the
+top of the judge's ranking, up to `--limit`, so the score decides which
+units or candidates appear.
 
 ### 14.1 Availability
 

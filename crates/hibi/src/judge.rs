@@ -1,8 +1,11 @@
 //! Jev requests, the judge cache, and the advisory commands `triage`,
 //! `suggest-evidence` and `status --judge-order` (spec section 14).
 //!
-//! The judge is advisory. No answer is written to the store, changes a
-//! claim's state, or changes which claims or units a command reports. Every
+//! The judge is advisory. No answer is written to the store or changes a
+//! claim's state, and `status --judge-order` lists the same claims as
+//! `status`. `triage` and `suggest-evidence` print the top of the judge's
+//! ranking, up to `--limit`, so the score decides which units or candidates
+//! appear. Every
 //! entry point needs a [`Judge`], which only exists when `TYPESAFE_API_KEY`
 //! is set and non-empty ([`Judge::new`] fails with `judge_unavailable`
 //! otherwise), and then checks git (section 10.4) before any network
