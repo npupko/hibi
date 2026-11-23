@@ -367,8 +367,10 @@ pub struct Side {
     /// registry said, cut to [`DETAIL_CHARS`] characters. `null` otherwise.
     #[schemars(with = "Nullable<String>")]
     pub detail: Option<String>,
-    /// Present when the side is `ambiguous`, or `missing` with reason
-    /// `not_exact`: the units the stored anchor could mean, at most
+    /// Present when the side is `ambiguous`, `missing` with reason
+    /// `not_exact`, or `missing` with reason `selector_not_found` when units
+    /// with the marked content were found (candidates by content, section
+    /// 15.2): the units the stored anchor could mean, at most
     /// [`MAX_CANDIDATES`](super::MAX_CANDIDATES). A candidate is a guess to
     /// check, never the side's unit.
     #[serde(default, skip_serializing_if = "Option::is_none")]

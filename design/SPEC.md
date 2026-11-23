@@ -152,7 +152,7 @@ public is re-exported from `engine`:
 | Submodule | Owns |
 |---|---|
 | `engine::types` | States, reasons, warnings and the shared output objects of section 15.2 |
-| `engine::resolve` | Side resolution through `Providers` (sections 2.5 and 9.2); the candidates of an anchor that is ambiguous or was found only by similarity, with the limit `MAX_CANDIDATES` (20) |
+| `engine::resolve` | Side resolution through `Providers` (sections 2.5 and 9.2); the candidates of an anchor that is ambiguous or was found only by similarity, and the candidates by content of a `missing` side (section 15.2), with the limit `MAX_CANDIDATES` (20) |
 | `engine::fresh` | Freshness (section 9) and the `next` suggestion (section 15.2) |
 | `engine::cover` | Coverage and `cover --since` (section 10) |
 | `engine::input` | Inputs of the write commands and the standard-input documents |
@@ -4924,11 +4924,12 @@ Content-Type: application/json
   `http://[::1]:9/x` are allowed. `http://example.com/x`, `ftp://x`,
   `http://127.0.0.1.evil.com/`, `http://u@127.0.0.1:1@evil.com/`, `https://`
   and `https://a b` are refused.
-- Every item is its own question. A request holds at most 100 questions and
-  at most 60,000 bytes of serialized `questions`. Items are packed into
-  requests in input order.
-- Packing rule. An item is the one or two questions a command asks about one
-  thing. Items that share one `state` form a group, and a request never mixes
+- A request holds at most 100 questions and at most 60,000 bytes of
+  serialized `questions`. Items are packed into requests in input order.
+- Packing rule. An item is the questions a command asks about one thing:
+  one question per candidate in `suggest-evidence` and per claim in
+  `status --judge-order`, and two per unit in `triage` (`checkable` and
+  `evidence`, section 14.3). Items that share one `state` form a group, and a request never mixes
   groups. Within a group, in input order:
   1. Questions that have a cached answer (section 14.6) are left out. An item
      with no question left is left out.
@@ -5099,8 +5100,10 @@ The content of a side is the `text` of `render` for its resolved unit. A side
 cannot be rendered when it does not resolve to one unit, when its provider
 has `render: false`, when `render` fails, or when it is a `file:` or `repo:`
 side whose path is not in a file list (section 14.2). A side that is
-`missing` with reason `not_exact` (section 9.2) does not resolve to one unit:
-it cannot be rendered, and its candidates are never rendered and never sent.
+`missing`, with reason `not_exact` or `selector_not_found` (sections 9.2
+and 15.2), does not resolve to one unit: it cannot be rendered, and its
+candidates, the provider's or those by content, are never rendered and
+never sent.
 Stale claims are listed
 in
 ascending order of the answer (most likely broken first); claims with a side
@@ -5114,8 +5117,9 @@ The complete order of the listed claims with the flag:
 2. the other stale claims, by the answer ascending, ties by id;
 3. every listed claim that is not stale (fresh, expired or retired), by id.
 
-A stale claim with a side that is `missing` with reason `not_exact` is in
-group 1, in id order among the other claims of that group. No request is
+A stale claim with a `missing` side, with reason `not_exact` or
+`selector_not_found`, is in group 1, in id order among the other claims of
+that group. No request is
 made for it, also when every other side of it can be rendered.
 
 Only stale claims are sent. Claims of group 3 appear when the selection
@@ -5518,7 +5522,7 @@ Side:
 | `markedFp` | fingerprint in the reference mark or `null` |
 | `remediation` | string or `null` |
 | `detail` | string or `null` |
-| `candidates` | array of Candidate, present only when `state` is `ambiguous`, or `missing` with reason `not_exact` |
+| `candidates` | array of Candidate, present only when `state` is `ambiguous`, `missing` with reason `not_exact`, or `missing` with reason `selector_not_found` when candidates by content were found (below) |
 | `candidatesTotal` | integer, present exactly when `candidates` is present |
 | `text` | current unit text. Present with `--detail`, whole, for every resolved side; without it, for a `changed` side only, cut to 240 characters |
 
@@ -6581,9 +6585,10 @@ Remediation of these errors: for `side_missing`, `side_ambiguous` and
 15.2, evaluated on the current resolution, so `hibi reanchor <id>` with one
 option per missing or ambiguous side, or `hibi providers`, or, when that
 `next` is `null`, the remediation of the error's own code (section 15.2).
-For a `not_exact` side the message lists the candidates with their anchors
-and the remediation is the `hibi reanchor` template with `<anchor>`
-(section 15.2). For `claim_retired`, in `mark` and for a
+For a `not_exact` side, and for a `selector_not_found` side for which
+candidates by content were found, the message lists the candidates with
+their anchors and the remediation is the `hibi reanchor` template with
+`<anchor>` (section 15.2). For `claim_retired`, in `mark` and for a
 retired old claim in `reanchor`, the message says whether the claim was
 retired or replaced, and the remediation points to where it went: a
 retired claim cannot be marked or re-anchored. When the replacements of the
@@ -6634,7 +6639,8 @@ Builds a new claim from the old one:
    that the provider finds only by similarity is `missing` with reason
    `not_exact` and fails with `side_missing`. A kept side that is missing
    or ambiguous has to be replaced with an anchor the caller chooses, and
-   the message lists the candidates when the provider returned any. The
+   the message lists the candidates when there are any: the provider's,
+   and the candidates by content of a `missing` side (section 15.2). The
    error and its remediation for kept sides are given in step 5: one error
    names every kept side that stops the command.
 4. Each side's stored selector becomes the completed selector of its resolved
@@ -7036,7 +7042,7 @@ Closed list. Every error carries one of these codes.
 | `claim_retired` | A write on a retired claim. The message says whether the claim was retired or replaced by another (section 15.2). From `mark`, and from `reanchor` on a retired old claim, the remediation names the claim that replaced it, or is `hibi list <id>`. From `claim` the remediation names the replacement when there is one; for a claim that was retired it says that this stands and that a different `--note` (in a standard-input batch, a different `"note"` in the element) records the statement and anchors again as a new claim. |
 | `no_change` | `reanchor` would produce the same claim |
 | `unknown_scheme` | A new anchor uses a scheme that is not declared |
-| `side_missing` | An anchor resolves to no unit. This includes a stored anchor (in `mark`, or a kept side in `reanchor`) that was found only by similarity: the reason is then `not_exact` and the message lists the candidates (section 15.2). |
+| `side_missing` | An anchor resolves to no unit. This includes a stored anchor (in `mark`, or a kept side in `reanchor`) that was found only by similarity: the reason is then `not_exact` and the message lists the candidates (section 15.2). A stored anchor that finds nothing (`selector_not_found`) lists the candidates by content when units with the marked content were found. |
 | `side_ambiguous` | An anchor resolves to several units. The message lists at most `MAX_CANDIDATES` (20) of them, each with an anchor that selects it, for a new and for a stored anchor (section 15.2). |
 | `side_unavailable` | An anchor cannot be evaluated. The message gives the reason code. |
 | `selector_not_exact` | A new anchor (in `claim`, or a replaced or added side in `reanchor`) was found only by similarity, or its quote does not occur in the unit it resolved to. The message shows what was found; in the first case it lists the candidates, each with an anchor that selects it. |
