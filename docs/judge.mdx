@@ -30,8 +30,10 @@ These commands send text to TypeSafe's API at
 Every request names the model `jev-1.14.0` and carries hibi's fixed
 question wording, with the key in the `Authorization` header. Each
 `suggest-evidence` candidate and each stale claim is one question, and each
-`triage` unit is two. Each text in a question is cut to its first 4,000
-characters. A question whose answer is cached is not sent.
+`triage` unit is two. The unit text of `triage`, the candidate text of
+`suggest-evidence` and the side text of `status --judge-order` are each cut
+to their first 4,000 characters; headings and a candidate's locator and
+label are not cut. A question whose answer is cached is not sent.
 
 | Command | Sent per request | Sent per item |
 |---|---|---|

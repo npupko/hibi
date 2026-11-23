@@ -8,7 +8,8 @@ hibi gives an AI coding agent memory that survives between sessions. The agent
 checks a statement against evidence, for example a sentence in a document
 against the function it describes, and records that check as a claim. Later,
 `hibi status` reports exactly which claims need a new check because the
-statement or its evidence changed, and `hibi cover` reports which parts of a
+statement or its evidence changed or their recheck period ran out, and
+`hibi cover` reports which parts of a
 declared scope have no claim at all.
 
 hibi is a single Rust binary. Its store is plain text under `.hibi/`, committed

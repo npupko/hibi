@@ -142,7 +142,7 @@ applies:
 | A side is missing or ambiguous, its stored line is gone from its declaration, or the provider refuses its stored anchor (`selector_refused`) | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side, and one per side that is unavailable because its file is not text or too large, its provider answered with an error, or its code file does not parse |
 | A side is unavailable because its provider is not registered, or a sibling repository is not allowed | `hibi providers` |
 | A side is unavailable because its provider failed | `hibi providers --check <scheme>`, which starts the provider and reports what fails; `hibi providers` for the `file` and `repo` schemes |
-| A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, a code file does not parse, or git's file list cannot be read | `null`; the side's `remediation` says what to do |
+| A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, or the resource cannot be read now (for example a code file that does not parse, a file this user cannot read, or git's file list) | `null`; the side's `remediation` says what to do |
 | Otherwise: expired, a side changed, or a side is unavailable with `profile_mismatch` | `hibi mark <id>` |
 
 `next` never contains a candidate. Where a side has to be anchored again it
@@ -244,7 +244,8 @@ claim, `mark`, `reanchor`) reports what it accepted:
 `"accepted": {"was": <state before>, "sides": [{"index", "role", "loc", "state", "reason", "text"}]}`,
 listing the sides that were not `same`. `text`, the whole text that was
 marked, is present for a `changed` side and, from `reanchor`, for every
-listed side the new claim keeps. For a new claim `accepted` is `null`.
+listed side the new claim keeps; a side that `reanchor` drops is listed
+without `text`. For a new claim `accepted` is `null`.
 In text this is a line such as
 `was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it`,
 followed by the text of each changed side after "is now:".

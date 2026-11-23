@@ -57,13 +57,14 @@ including how to report a vulnerability, is in
 
 ## Caveats
 
-- **The git hardening is tested, not proven.** Every git process starts
-  with `--no-pager`, `-c core.quotePath=false`,
+- **The git hardening is tested, not proven.** Every git process except
+  the `git --version` check starts with `--no-pager`, `-c core.quotePath=false`,
   `-c safe.bareRepository=explicit`, `-c core.fsmonitor=false` and
   `-c core.untrackedCache=false`, and a git older than 2.45.0 is refused
   with `git_too_old`. The tests run with the git installed where they run.
-  They check that every call carries these options and the environment
-  above; that a bare-repository layout committed inside the tree, whose
+  They check that every call carries these options and the four
+  variables hibi adds; that the eight repository-location variables are
+  removed, on one constructed command and in one test; that a bare-repository layout committed inside the tree, whose
   config names an fsmonitor program, runs nothing, while plain git runs it;
   that `core.fsmonitor=false` wins over an fsmonitor set in the root's
   `.git/config` or in `GIT_CONFIG_*` variables; and that inherited

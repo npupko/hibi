@@ -1000,8 +1000,8 @@ syntax: the whole argument MUST be one JSON object of section 5.3,
   anchor is the text after the first `=`, so `1={"loc": ..., "sel": ...}`
   is a JSON anchor for evidence 1.
 - A JSON anchor is the way to give, as an argument, a path that contains
-  `#` or `::`, a selector for an external scheme, and an anchor that hibi
-  printed.
+  `#` or `::`, a symbol that contains `::`, a selector for an external
+  scheme, and an anchor that hibi printed.
 - No valid compact anchor starts with `{`, because a scheme starts with a
   lower-case letter, so the rule changes the meaning of no compact anchor.
 
@@ -4932,7 +4932,9 @@ Content-Type: application/json
   one question per candidate in `suggest-evidence` and per claim in
   `status --judge-order`, and two per unit in `triage` (`checkable` and
   `evidence`, section 14.3). Items that share one `state` form a group, and a request never mixes
-  groups. Within a group, in input order:
+  groups. `status --judge-order` makes one group for each claim, also when
+  two claims have the same statement and so the same `state` (section
+  14.5). Within a group, in input order:
   1. Questions that have a cached answer (section 14.6) are left out. An item
      with no question left is left out.
   2. The size of a request is the exact byte length of its `questions`
@@ -5106,8 +5108,8 @@ has `render: false`, when `render` fails, or when it is a `file:` or `repo:`
 side whose path is not in a file list (section 14.2). A side that is
 `missing`, with reason `not_exact` or `selector_not_found` (sections 9.2
 and 15.2), does not resolve to one unit: it cannot be rendered, and its
-candidates, the provider's or those by content, are never rendered and
-never sent.
+candidates, the provider's or those by content, are never sent to the
+judge.
 Stale claims are listed
 in
 ascending order of the answer (most likely broken first); claims with a side
